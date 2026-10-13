@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrCnUniversityMapper">
+
+    <resultMap type="AbrCnUniversity" id="AbrCnUniversityResult">
+        <id     property="cnUniversityId"      column="cn_university_id"       />
+        <result property="universityName"      column="university_name"        />
+        <result property="aliases"             column="aliases"                />
+        <result property="province"            column="province"               />
+        <result property="city"                column="city"                   />
+        <result property="isC9"                column="is_c9"                  />
+        <result property="is985"               column="is_985"                 />
+        <result property="is211"               column="is_211"                 />
+        <result property="isDoubleFirstClass"  column="is_double_first_class"  />
+        <result property="tier"                column="tier"                   />
+        <result property="campusType"          column="campus_type"            />
+        <result property="source"              column="source"                 />
+        <result property="note"                column="note"                   />
+        <result property="status"              column="status"                 />
+        <result property="createBy"            column="create_by"              />
+        <result property="createTime"          column="create_time"            />
+        <result property="updateBy"            column="update_by"              />
+        <result property="updateTime"          column="update_time"            />
+        <result property="remark"              column="remark"                 />
+    </resultMap>
+
+    <sql id="selectAbrCnUniversityVo">
+        select cn_university_id, university_name, aliases, province, city, is_c9, is_985, is_211, is_double_first_class,
+               tier, campus_type, source, note, status, create_by, create_time, update_by, update_time, remark
+        from abr_cn_university
+    </sql>
+
+    <select id="selectAbrCnUniversityList" parameterType="AbrCnUniversity" resultMap="AbrCnUniversityResult">
+        <include refid="selectAbrCnUniversityVo"/>
+        <where>
+            <if test="universityName != null and universityName != ''">
+                AND (university_name like concat('%', #{universityName}, '%') or aliases ilike concat('%', #{universityName}, '%'))
+            </if>
+            <if test="province != null and province != ''">
+                AND province = #{province}
+            </if>
+            <if test="tier != null and tier != ''">
+                AND tier = #{tier}
+            </if>
+            <if test="campusType != null and campusType != ''">
+                AND campus_type = #{campusType}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        order by case tier when 'c9' then 1 when '985' then 2 when '211' then 3 when 'double_first_class' then 4 else 5 end,
+                 campus_type, cn_university_id
+    </select>
+
+    <select id="searchAbrCnUniversity" resultMap="AbrCnUniversityResult">
+        <include refid="selectAbrCnUniversityVo"/>
+        where status = '0'
+          and (university_name like concat('%', #{keyword}, '%') or aliases ilike concat('%', #{keyword}, '%'))
+        order by case
+                   when university_name = #{keyword} then 0
+                   when position(lower(concat('|', #{keyword}, '|')) in lower(concat('|', aliases, '|'))) &gt; 0 then 1
+                   when university_name like concat(#{keyword}, '%') then 2
+                   else 3
+                 end,
+                 campus_type, length(university_name), cn_university_id
+        limit #{limit}
+    </select>
+
+    <select id="selectAbrCnUniversityById" parameterType="Long" resultMap="AbrCnUniversityResult">
+        <include refid="selectAbrCnUniversityVo"/>
+        where cn_university_id = #{cnUniversityId}
+    </select>
+
+    <select id="checkAbrCnUniversityUnique" parameterType="String" resultMap="AbrCnUniversityResult">
+        <include refid="selectAbrCnUniversityVo"/>
+        where university_name = #{universityName} limit 1
+    </select>
+
+    <insert id="insertAbrCnUniversity" parameterType="AbrCnUniversity" useGeneratedKeys="true" keyProperty="cnUniversityId" keyColumn="cn_university_id">
+        insert into abr_cn_university (university_name, aliases, province, city, is_c9, is_985, is_211, is_double_first_class,
+                                       tier, campus_type, source, note, status, create_by, create_time, remark)
+        values (#{universityName}, coalesce(#{aliases}, ''), coalesce(#{province}, ''), coalesce(#{city}, ''),
+                coalesce(#{isC9}, 'N'), coalesce(#{is985}, 'N'), coalesce(#{is211}, 'N'), coalesce(#{isDoubleFirstClass}, 'N'),
+                #{tier}, coalesce(#{campusType}, '0'), coalesce(#{source}, ''), coalesce(#{note}, ''), coalesce(#{status}, '0'),
+                #{createBy}, now(), #{remark})
+    </insert>
+
+    <update id="updateAbrCnUniversity" parameterType="AbrCnUniversity">
+        update abr_cn_university
+        set university_name       = #{universityName},
+            aliases               = coalesce(#{aliases}, ''),
+            province              = coalesce(#{province}, ''),
+            city                  = coalesce(#{city}, ''),
+            is_c9                 = coalesce(#{isC9}, 'N'),
+            is_985                = coalesce(#{is985}, 'N'),
+            is_211                = coalesce(#{is211}, 'N'),
+            is_double_first_class = coalesce(#{isDoubleFirstClass}, 'N'),
+            tier                  = #{tier},
+            campus_type           = coalesce(#{campusType}, '0'),
+            source                = coalesce(#{source}, ''),
+            note                  = coalesce(#{note}, ''),
+            status                = coalesce(#{status}, '0'),
+            remark                = #{remark},
+            update_by             = #{updateBy},
+            update_time           = now()
+        where cn_university_id = #{cnUniversityId}
+    </update>
+
+    <delete id="deleteAbrCnUniversityByIds" parameterType="Long">
+        delete from abr_cn_university where cn_university_id in
+        <foreach collection="array" item="cnUniversityId" open="(" separator="," close=")">
+            #{cnUniversityId}
+        </foreach>
+    </delete>
+
+</mapper>

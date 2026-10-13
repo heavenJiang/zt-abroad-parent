@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrSchoolMapper">
+
+    <resultMap type="AbrSchool" id="AbrSchoolResult">
+        <id     property="schoolId"       column="school_id"       />
+        <result property="schoolName"     column="school_name"     />
+        <result property="schoolNameEn"   column="school_name_en"  />
+        <result property="country"        column="country"         />
+        <result property="city"           column="city"            />
+        <result property="rankings"       column="rankings"        />
+        <result property="moeRecognized"  column="moe_recognized"  />
+        <result property="website"        column="website"         />
+        <result property="status"         column="status"          />
+        <result property="delFlag"        column="del_flag"        />
+        <result property="programCount"   column="program_count"   />
+        <result property="createBy"       column="create_by"       />
+        <result property="createTime"     column="create_time"     />
+        <result property="updateBy"       column="update_by"       />
+        <result property="updateTime"     column="update_time"     />
+        <result property="remark"         column="remark"          />
+    </resultMap>
+
+    <sql id="selectAbrSchoolVo">
+        select s.school_id, s.school_name, s.school_name_en, s.country, s.city, s.rankings, s.moe_recognized, s.website,
+               s.status, s.del_flag, s.create_by, s.create_time, s.update_by, s.update_time, s.remark,
+               (select count(*) from abr_program p where p.school_id = s.school_id and p.del_flag = '0') as program_count
+        from abr_school s
+    </sql>
+
+    <select id="selectAbrSchoolList" parameterType="AbrSchool" resultMap="AbrSchoolResult">
+        <include refid="selectAbrSchoolVo"/>
+        where s.del_flag = '0'
+        <if test="schoolName != null and schoolName != ''">
+            AND (s.school_name like concat('%', #{schoolName}, '%') or s.school_name_en ilike concat('%', #{schoolName}, '%'))
+        </if>
+        <if test="country != null and country != ''">
+            AND s.country = #{country}
+        </if>
+        <if test="status != null and status != ''">
+            AND s.status = #{status}
+        </if>
+        order by s.country, s.school_name_en
+    </select>
+
+    <select id="selectAbrSchoolById" parameterType="Long" resultMap="AbrSchoolResult">
+        <include refid="selectAbrSchoolVo"/>
+        where s.school_id = #{schoolId} and s.del_flag = '0'
+    </select>
+
+    <select id="checkAbrSchoolUnique" parameterType="AbrSchool" resultMap="AbrSchoolResult">
+        <include refid="selectAbrSchoolVo"/>
+        where s.country = #{country} and s.school_name_en = #{schoolNameEn} and s.del_flag = '0' limit 1
+    </select>
+
+    <insert id="insertAbrSchool" parameterType="AbrSchool" useGeneratedKeys="true" keyProperty="schoolId" keyColumn="school_id">
+        insert into abr_school (school_name, school_name_en, country, city, rankings, moe_recognized, website, status, create_by, create_time, remark)
+        values (#{schoolName}, #{schoolNameEn}, #{country}, coalesce(#{city}, ''), coalesce(cast(#{rankings} as jsonb), '[]'::jsonb),
+                coalesce(#{moeRecognized}, 'Y'), coalesce(#{website}, ''), coalesce(#{status}, '0'), #{createBy}, now(), #{remark})
+    </insert>
+
+    <update id="updateAbrSchool" parameterType="AbrSchool">
+        update abr_school
+        set school_name    = #{schoolName},
+            school_name_en = #{schoolNameEn},
+            country        = #{country},
+            city           = coalesce(#{city}, ''),
+            rankings       = coalesce(cast(#{rankings} as jsonb), '[]'::jsonb),
+            moe_recognized = coalesce(#{moeRecognized}, 'Y'),
+            website        = coalesce(#{website}, ''),
+            status         = coalesce(#{status}, '0'),
+            remark         = #{remark},
+            update_by      = #{updateBy},
+            update_time    = now()
+        where school_id = #{schoolId} and del_flag = '0'
+    </update>
+
+    <update id="deleteAbrSchoolByIds">
+        update abr_school set del_flag = '2', update_by = #{updateBy}, update_time = now()
+        where del_flag = '0' and school_id in
+        <foreach collection="schoolIds" item="schoolId" open="(" separator="," close=")">
+            #{schoolId}
+        </foreach>
+    </update>
+
+</mapper>

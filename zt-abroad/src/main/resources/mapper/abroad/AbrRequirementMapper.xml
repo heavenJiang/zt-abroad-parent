@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrRequirementMapper">
+
+    <resultMap type="AbrRequirement" id="AbrRequirementResult">
+        <id     property="requirementId"          column="requirement_id"          />
+        <result property="programId"              column="program_id"              />
+        <result property="season"                 column="season"                  />
+        <result property="minGpa"                 column="min_gpa"                 />
+        <result property="tiersNotAccepted"       column="tiers_not_accepted"      />
+        <result property="ieltsOverall"           column="ielts_overall"           />
+        <result property="ieltsMinSub"            column="ielts_min_sub"           />
+        <result property="otherLanguage"          column="other_language"          />
+        <result property="testRequirement"        column="test_requirement"        />
+        <result property="testDetail"             column="test_detail"             />
+        <result property="prerequisites"          column="prerequisites"           />
+        <result property="prerequisitesRequired"  column="prerequisites_required"  />
+        <result property="workYears"              column="work_years"              />
+        <result property="acceptCrossMajor"       column="accept_cross_major"      />
+        <result property="deadlines"              column="deadlines"               />
+        <result property="status"                 column="status"                  />
+        <result property="delFlag"                column="del_flag"                />
+        <result property="createBy"               column="create_by"               />
+        <result property="createTime"             column="create_time"             />
+        <result property="updateBy"               column="update_by"               />
+        <result property="updateTime"             column="update_time"             />
+        <result property="remark"                 column="remark"                  />
+    </resultMap>
+
+    <sql id="selectAbrRequirementVo">
+        select requirement_id, program_id, season, min_gpa, tiers_not_accepted, ielts_overall, ielts_min_sub, other_language,
+               test_requirement, test_detail, prerequisites, prerequisites_required, work_years, accept_cross_major, deadlines,
+               status, del_flag, create_by, create_time, update_by, update_time, remark
+        from abr_requirement
+    </sql>
+
+    <select id="selectAbrRequirementByProgramId" parameterType="Long" resultMap="AbrRequirementResult">
+        <include refid="selectAbrRequirementVo"/>
+        where program_id = #{programId} and del_flag = '0'
+        order by season desc
+    </select>
+
+    <select id="selectAbrRequirementById" parameterType="Long" resultMap="AbrRequirementResult">
+        <include refid="selectAbrRequirementVo"/>
+        where requirement_id = #{requirementId} and del_flag = '0'
+    </select>
+
+    <select id="checkAbrRequirementUnique" parameterType="AbrRequirement" resultMap="AbrRequirementResult">
+        <include refid="selectAbrRequirementVo"/>
+        where program_id = #{programId} and season = #{season} and del_flag = '0' limit 1
+    </select>
+
+    <insert id="insertAbrRequirement" parameterType="AbrRequirement" useGeneratedKeys="true" keyProperty="requirementId" keyColumn="requirement_id">
+        insert into abr_requirement (program_id, season, min_gpa, tiers_not_accepted, ielts_overall, ielts_min_sub, other_language,
+                                     test_requirement, test_detail, prerequisites, prerequisites_required, work_years,
+                                     accept_cross_major, deadlines, status, create_by, create_time, remark)
+        values (#{programId}, #{season}, cast(#{minGpa} as jsonb), coalesce(#{tiersNotAccepted}, ''), #{ieltsOverall}, #{ieltsMinSub},
+                cast(#{otherLanguage} as jsonb), coalesce(#{testRequirement}, 'none'), cast(#{testDetail} as jsonb),
+                coalesce(#{prerequisites}, ''), coalesce(#{prerequisitesRequired}, 'N'), #{workYears},
+                coalesce(#{acceptCrossMajor}, '2'), cast(#{deadlines} as jsonb), coalesce(#{status}, '0'), #{createBy}, now(), #{remark})
+    </insert>
+
+    <update id="updateAbrRequirement" parameterType="AbrRequirement">
+        update abr_requirement
+        set season                 = #{season},
+            min_gpa                = cast(#{minGpa} as jsonb),
+            tiers_not_accepted     = coalesce(#{tiersNotAccepted}, ''),
+            ielts_overall          = #{ieltsOverall},
+            ielts_min_sub          = #{ieltsMinSub},
+            other_language         = cast(#{otherLanguage} as jsonb),
+            test_requirement       = coalesce(#{testRequirement}, 'none'),
+            test_detail            = cast(#{testDetail} as jsonb),
+            prerequisites          = coalesce(#{prerequisites}, ''),
+            prerequisites_required = coalesce(#{prerequisitesRequired}, 'N'),
+            work_years             = #{workYears},
+            accept_cross_major     = coalesce(#{acceptCrossMajor}, '2'),
+            deadlines              = cast(#{deadlines} as jsonb),
+            status                 = coalesce(#{status}, '0'),
+            remark                 = #{remark},
+            update_by              = #{updateBy},
+            update_time            = now()
+        where requirement_id = #{requirementId} and del_flag = '0'
+    </update>
+
+    <update id="deleteAbrRequirementByIds">
+        update abr_requirement set del_flag = '2', update_by = #{updateBy}, update_time = now()
+        where del_flag = '0' and requirement_id in
+        <foreach collection="requirementIds" item="requirementId" open="(" separator="," close=")">
+            #{requirementId}
+        </foreach>
+    </update>
+
+    <update id="deleteAbrRequirementByProgramIds">
+        update abr_requirement set del_flag = '2', update_by = #{updateBy}, update_time = now()
+        where del_flag = '0' and program_id in
+        <foreach collection="programIds" item="programId" open="(" separator="," close=")">
+            #{programId}
+        </foreach>
+    </update>
+
+</mapper>
