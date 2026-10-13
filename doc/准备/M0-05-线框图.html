@@ -1,0 +1,983 @@
+<meta charset="utf-8">
+<title>M0-05 线框图</title>
+<style>
+/* 布局：单栏说明文档，宽度上限 1160px；每张线框图 = 标题 + 框体（手机 / 桌面 / 侧边栏）+ 编号注释网格 */
+:root {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --fg: #1f2329;
+  --muted: #69707b;
+  --line: #cfd3da;
+  --line-strong: #8d949f;
+  --box: #eceef1;
+  --box-2: #dcdfe4;
+  --ink: #3a4049;
+  --ink-fg: #ffffff;
+  --dim: rgba(31, 35, 41, 0.08);
+  --mark: #3559c7;
+  --mark-fg: #ffffff;
+  --font-ui: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171b;
+    --surface: #1c2026;
+    --fg: #e5e7ea;
+    --muted: #9aa1ab;
+    --line: #3d434c;
+    --line-strong: #6a717c;
+    --box: #262b32;
+    --box-2: #323841;
+    --ink: #cfd4da;
+    --ink-fg: #14171b;
+    --dim: rgba(0, 0, 0, 0.35);
+    --mark: #7f9cf2;
+    --mark-fg: #10131a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14171b;
+  --surface: #1c2026;
+  --fg: #e5e7ea;
+  --muted: #9aa1ab;
+  --line: #3d434c;
+  --line-strong: #6a717c;
+  --box: #262b32;
+  --box-2: #323841;
+  --ink: #cfd4da;
+  --ink-fg: #14171b;
+  --dim: rgba(0, 0, 0, 0.35);
+  --mark: #7f9cf2;
+  --mark-fg: #10131a;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.page {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding-inline: 16px;
+  padding-block: 32px 72px;
+}
+h1, h2, h3 { text-wrap: balance; line-height: 1.3; }
+h1 { font-size: 26px; margin: 0 0 8px; }
+h2 { font-size: 20px; margin: 0; }
+h3 { font-size: 15px; margin: 0 0 8px; }
+p { margin: 0 0 10px; max-width: 70ch; }
+code, .mono { font-family: var(--font-mono); font-size: 12px; }
+a { color: var(--mark); }
+a:focus-visible, .toc a:focus-visible { outline: 2px solid var(--mark); outline-offset: 2px; }
+
+.eyebrow { font-size: 12px; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; }
+.intro { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); margin-top: 20px; }
+.intro > div { min-width: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+.legend { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.legend li { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.toc { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); }
+.toc a { display: flex; gap: 8px; align-items: baseline; text-decoration: none; color: var(--fg); padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); }
+.toc a:hover { border-color: var(--line-strong); }
+.toc .no { font-family: var(--font-mono); color: var(--muted); font-size: 12px; }
+.toc .end { color: var(--muted); font-size: 12px; margin-left: auto; }
+
+section.wf { border-top: 1px solid var(--line); margin-top: 40px; padding-top: 28px; }
+.wf-head { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; margin-bottom: 6px; }
+.wf-head .no { font-family: var(--font-mono); color: var(--muted); font-size: 13px; }
+.wf-sub { color: var(--muted); margin-bottom: 16px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: 12px; border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; color: var(--muted); background: var(--surface); }
+.stage { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+.stage > figure { margin: 0; min-width: 0; flex: 0 1 auto; max-width: 100%; }
+.stage > figure.full { flex: 1 1 100%; }
+figcaption { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.scroll { overflow-x: auto; max-width: 100%; padding-bottom: 6px; }
+
+/* 标记与注释 */
+.m {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--mark); color: var(--mark-fg);
+  font: 700 11px/1 var(--font-ui); font-style: normal;
+  flex: none; box-shadow: 0 0 0 2px var(--surface);
+}
+.rel { position: relative; }
+.rel > .m { position: absolute; top: -7px; right: -5px; z-index: 2; }
+.notes { list-style: none; margin: 20px 0 0; padding: 0; display: grid; gap: 10px 24px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }
+.notes li { display: flex; gap: 10px; align-items: flex-start; min-width: 0; }
+.notes li > div { min-width: 0; overflow-wrap: anywhere; }
+.notes .src { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.notes .src code { font-size: 11.5px; }
+
+/* 线框通用元素 */
+.ai { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; line-height: 1; padding: 3px 6px; border: 1px dashed var(--line-strong); border-radius: 4px; color: var(--muted); background: var(--surface); white-space: nowrap; }
+.ai::before { content: "✦"; font-size: 9px; }
+.aib { border: 1px dashed var(--line-strong); border-radius: 8px; padding: 10px; background: var(--box); }
+.box { background: var(--box); border-radius: 6px; padding: 10px; }
+.box2 { background: var(--box-2); border-radius: 6px; padding: 10px; }
+.out { border: 1px solid var(--line); border-radius: 6px; padding: 10px; background: var(--surface); }
+.ln { height: 8px; border-radius: 4px; background: var(--box-2); }
+.ln.s { width: 40%; } .ln.m2 { width: 65%; } .ln.l { width: 88%; }
+.stack { display: flex; flex-direction: column; gap: 10px; }
+.stack.t { gap: 6px; }
+.row { display: flex; gap: 8px; align-items: center; min-width: 0; }
+.row > * { min-width: 0; }
+.row.wrap { flex-wrap: wrap; }
+.sp { flex: 1; }
+.small { font-size: 12px; }
+.xs { font-size: 11px; }
+.mut { color: var(--muted); }
+.b { font-weight: 700; }
+.btn { display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line-strong); border-radius: 6px; padding: 5px 10px; font-size: 12px; background: var(--surface); color: var(--fg); white-space: nowrap; }
+.btn.pri { background: var(--ink); color: var(--ink-fg); border-color: var(--ink); }
+.btn.big { padding: 11px 14px; font-size: 15px; border-radius: 22px; width: 100%; }
+.btn.lnk { border: 0; padding: 0; background: none; color: var(--fg); text-decoration: underline; }
+.btn.dis { opacity: 0.45; }
+.chip { display: inline-flex; align-items: center; font-size: 11px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface); white-space: nowrap; }
+.chip.on { background: var(--ink); color: var(--ink-fg); border-color: var(--ink); }
+.chip.fill { background: var(--box-2); border-color: var(--box-2); }
+.inp { border: 1px solid var(--line-strong); border-radius: 6px; padding: 6px 8px; font-size: 12px; background: var(--surface); color: var(--fg); min-height: 30px; display: flex; align-items: center; gap: 6px; }
+.inp .ph { color: var(--muted); }
+.lbl { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+.qr { width: 64px; height: 64px; flex: none; border: 2px solid var(--ink); border-radius: 4px;
+  background:
+    linear-gradient(var(--ink), var(--ink)) 6px 6px / 14px 14px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) right 6px top 6px / 14px 14px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 6px bottom 6px / 14px 14px no-repeat,
+    repeating-linear-gradient(45deg, var(--box-2) 0 4px, var(--surface) 4px 8px);
+}
+.qr.sm { width: 52px; height: 52px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink); flex: none; display: inline-block; }
+.dot.half { background: linear-gradient(90deg, var(--ink) 50%, var(--box-2) 50%); }
+.dot.o { background: var(--surface); border: 1.5px solid var(--ink); }
+.seg { display: flex; border: 1px solid var(--line-strong); border-radius: 6px; overflow: hidden; }
+.seg span { flex: 1; text-align: center; font-size: 12px; padding: 5px 0; border-right: 1px solid var(--line-strong); }
+.seg span:last-child { border-right: 0; }
+.seg span.on { background: var(--ink); color: var(--ink-fg); }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { font-size: 12px; padding: 4px 10px; border: 1px solid var(--line-strong); border-radius: 16px; background: var(--surface); }
+.pill.on { background: var(--ink); color: var(--ink-fg); border-color: var(--ink); }
+
+/* 档位：冲 实底，稳 灰底，保 描边 */
+.tier { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 4px; font-size: 12px; font-weight: 700; flex: none; }
+.tier.c { background: var(--ink); color: var(--ink-fg); }
+.tier.w { background: var(--box-2); color: var(--fg); }
+.tier.b { border: 1.5px solid var(--ink); color: var(--fg); background: var(--surface); }
+
+/* 手机框 */
+.phone { width: 375px; max-width: 100%; border: 2px solid var(--line-strong); border-radius: 30px; padding: 10px; background: var(--surface); }
+.scr { border: 1px solid var(--line); border-radius: 20px; overflow: hidden; background: var(--bg); }
+.sbar { display: flex; justify-content: space-between; font-size: 11px; padding: 6px 16px 2px; color: var(--muted); font-family: var(--font-mono); }
+.mpbar { display: flex; align-items: center; gap: 8px; padding: 6px 10px 8px 14px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.mpbar .t { flex: 1; text-align: center; font-weight: 600; font-size: 14px; padding-left: 60px; }
+.cap { display: flex; border: 1px solid var(--line-strong); border-radius: 14px; font-size: 12px; line-height: 1; overflow: hidden; flex: none; }
+.cap span { padding: 5px 9px; }
+.cap span + span { border-left: 1px solid var(--line-strong); }
+.scr .body { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.scr .foot { padding: 10px 14px 14px; background: var(--surface); border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+
+/* 雷达图：两个六边形 clip-path，灰底为同层次申请者，深色为本人 */
+.radar { position: relative; width: 100%; max-width: 300px; height: 210px; margin: 0 auto; }
+.radar .hx { position: absolute; left: 50%; top: 50%; width: 150px; height: 150px; transform: translate(-50%, -50%); }
+.hx.g1 { background: var(--box); clip-path: polygon(50% 0, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%); }
+.hx.g2 { background: var(--box-2); clip-path: polygon(50% 17.5%, 78.1% 33.75%, 78.1% 66.25%, 50% 82.5%, 21.9% 66.25%, 21.9% 33.75%); }
+.hx.me { background: var(--ink); opacity: 0.55; clip-path: polygon(50% 10%, 82.5% 31.25%, 76% 65%, 50% 75%, 34.8% 58.75%, 26.2% 36.25%); }
+.radar .lab { position: absolute; font-size: 11px; color: var(--muted); white-space: nowrap; transform: translate(-50%, -50%); }
+
+/* 分享长图 */
+.poster { background: var(--surface); border: 1px solid var(--line-strong); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.poster .hero { text-align: center; }
+.poster .hero .big { font-size: 20px; font-weight: 800; }
+.tierrow { display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: start; }
+
+/* 桌面框（RuoYi-Vue3 布局） */
+.desk { width: 1120px; border: 2px solid var(--line-strong); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.chrome { display: flex; align-items: center; gap: 8px; padding: 7px 12px; background: var(--box); border-bottom: 1px solid var(--line); }
+.chrome i { width: 10px; height: 10px; border-radius: 50%; background: var(--box-2); display: inline-block; }
+.chrome .url { flex: 1; max-width: 460px; margin-left: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; font-size: 11px; padding: 2px 10px; color: var(--muted); font-family: var(--font-mono); }
+.app { display: grid; grid-template-columns: 196px 1fr; min-height: 640px; }
+.side { background: var(--ink); color: var(--ink-fg); padding: 10px 0; font-size: 13px; }
+.side .logo { padding: 6px 16px 14px; font-weight: 700; display: flex; gap: 8px; align-items: center; }
+.side .logo i { width: 22px; height: 22px; border-radius: 4px; background: var(--ink-fg); opacity: 0.35; display: inline-block; }
+.side .it { padding: 8px 16px; opacity: 0.85; display: flex; justify-content: space-between; }
+.side .it.on { opacity: 1; background: rgba(127, 127, 127, 0.28); font-weight: 600; border-left: 3px solid var(--ink-fg); padding-left: 13px; }
+.side .grp { padding: 10px 16px 4px; font-size: 11px; opacity: 0.55; letter-spacing: 0.06em; }
+.side .sub { padding: 6px 16px 6px 30px; opacity: 0.75; font-size: 12.5px; }
+.side .sub.on { opacity: 1; font-weight: 600; background: rgba(127, 127, 127, 0.28); }
+.main { display: flex; flex-direction: column; min-width: 0; background: var(--bg); }
+.topbar { display: flex; align-items: center; gap: 12px; padding: 0 16px; height: 46px; background: var(--surface); border-bottom: 1px solid var(--line); font-size: 13px; }
+.tagsv { display: flex; gap: 6px; padding: 5px 12px; background: var(--surface); border-bottom: 1px solid var(--line); font-size: 11.5px; }
+.tagsv span { border: 1px solid var(--line); padding: 1px 8px; border-radius: 2px; }
+.tagsv span.on { background: var(--ink); color: var(--ink-fg); border-color: var(--ink); }
+.content { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 12px 14px; }
+.card .ct { font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.kpi .v { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.kpi .k { font-size: 12px; color: var(--muted); }
+table.t { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+table.t th { text-align: left; font-weight: 600; background: var(--box); padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.t td { padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; white-space: nowrap; }
+table.t tr.hl td { background: var(--box); }
+.flt { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: 12px; }
+.flt .f { display: flex; align-items: center; gap: 6px; }
+.flt .inp { min-width: 120px; }
+.pager { display: flex; justify-content: flex-end; gap: 6px; font-size: 12px; align-items: center; color: var(--muted); padding-top: 10px; }
+.pager span { border: 1px solid var(--line); padding: 1px 8px; border-radius: 3px; }
+.pager span.on { background: var(--ink); color: var(--ink-fg); border-color: var(--ink); }
+.bar { height: 14px; background: var(--box-2); border-radius: 2px; }
+.bar > i { display: block; height: 100%; background: var(--ink); border-radius: 2px; }
+.sla { font-weight: 700; }
+.sla.over { background: var(--ink); color: var(--ink-fg); padding: 1px 6px; border-radius: 3px; }
+.sla.soon { border: 1.5px solid var(--ink); padding: 0 5px; border-radius: 3px; }
+.drawer-wrap { display: grid; grid-template-columns: 1fr 560px; min-height: 760px; }
+.dimmed { background: var(--dim); padding: 14px; position: relative; }
+.dimmed .card { opacity: 0.45; }
+.drawer { background: var(--surface); border-left: 1px solid var(--line-strong); box-shadow: -8px 0 18px var(--dim); display: flex; flex-direction: column; }
+.drawer .dh { padding: 14px 16px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+.drawer .db { padding: 14px 16px; display: flex; flex-direction: column; gap: 14px; }
+.sect-t { font-size: 12.5px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.tl { list-style: none; margin: 0; padding: 0 0 0 14px; border-left: 2px solid var(--line); display: flex; flex-direction: column; gap: 8px; font-size: 12px; }
+.tl li { position: relative; }
+.tl li::before { content: ""; position: absolute; left: -19px; top: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--surface); border: 2px solid var(--ink); }
+.kv { display: grid; grid-template-columns: 76px 1fr; gap: 4px 8px; font-size: 12px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; }
+
+/* 项目编辑 */
+.edit-grid { display: grid; grid-template-columns: 1fr 380px; gap: 12px; align-items: start; }
+.frow { display: grid; grid-template-columns: 118px 1fr 92px; gap: 8px; align-items: center; padding: 7px 0; border-bottom: 1px dashed var(--line); font-size: 12px; }
+.frow.act { background: var(--box); margin-inline: -8px; padding-inline: 8px; border-radius: 4px; }
+.frow .st { justify-self: end; }
+.src-line { font-size: 11px; color: var(--muted); font-family: var(--font-mono); grid-column: 2 / 4; }
+.quote { border-left: 3px solid var(--line-strong); padding: 6px 10px; background: var(--box); font-size: 12px; font-style: italic; }
+.quote.on { border-left-color: var(--ink); background: var(--box-2); }
+.sticky-act { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface); border-top: 1px solid var(--line); }
+
+/* 企微侧边栏 */
+.wecom { width: 360px; max-width: 100%; border: 2px solid var(--line-strong); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.wecom .wh { background: var(--box); padding: 8px 12px; font-size: 12px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--line); }
+.wecom .wb { padding: 12px; display: flex; flex-direction: column; gap: 12px; background: var(--bg); }
+
+/* 待确认问题 */
+.qs { counter-reset: q; list-style: none; padding: 0; margin: 16px 0 0; display: grid; gap: 10px; }
+.qs li { overflow-wrap: anywhere; counter-increment: q; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px 10px 48px; position: relative; }
+.qs li::before { content: "Q" counter(q); position: absolute; left: 12px; top: 10px; font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--mark); }
+.qs .def { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+.qs .pg { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 6px; margin-left: 6px; white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="page">
+
+<header>
+  <div class="eyebrow">任务卡 M0-05 · 待创始人确认 · 2026-10-13</div>
+  <h1>留学智能体平台 1a · ★ 页面低保真线框图</h1>
+  <p>本页把《模块拆分》页面清单中带 ★ 的 8 类页面画成灰度线框，供创始人逐页确认布局、内容和交互。线框只定「放什么、放哪里、点了会怎样」，不定颜色和视觉风格；确认后 M4（学生端）、M5（线索与企微）、M2（院校库）任务卡按此开发。示例中的学校、人名、数字均为占位，不代表真实数据。</p>
+  <div class="intro">
+    <div class="panel">
+      <h3>图例</h3>
+      <ul class="legend">
+        <li><span class="m">1</span><span>编号标记，对应图下方注释的同号条目</span></li>
+        <li><span class="ai">AI 生成</span><span>该区域内容由 AI 网关生成（虚线框），失败时有兜底</span></li>
+        <li><span class="tier c">冲</span><span class="tier w">稳</span><span class="tier b">保</span><span>冲刺 / 主攻 / 保底档；学生端只显示档位，不显示任何百分比</span></li>
+        <li><span class="ln" style="width:60px"></span><span>灰条 = 占位文字，长度只示意</span></li>
+        <li><span class="sla over">已超时</span><span class="sla soon">即将超时</span><span>SLA 状态：实底 = 已超时，描边 = 2 小时内到期（颜色由视觉稿定，并配文字）</span></li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>依据文档</h3>
+      <p class="small">《研发 / 04-模块拆分》页面清单、功能点验收标准、接口清单；《产品 / 00-产品设计》测评报告与线索转化、测评与报告体验、获客闭环、选校算法 §5–§6、CRM、上线与使用便捷、异常与边界场景；《产品 / 03-顾问工作台设计》；《产品 / 02-冷启动与种子用户》；《研发 / 00-RuoYi 落地对照》（管理端接口按其改为 <code>/abroad/&lt;资源&gt;</code>，表前缀统一 <code>abr_</code>）。</p>
+      <p class="small mut">问卷题目以 M0-04 问卷 JSON 定稿为准；本页按页面清单的 5 步画出。</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:24px">目录</h3>
+  <ol class="toc">
+    <li><a href="#p1"><span class="no">01</span>落地页<span class="end">学生端</span></a></li>
+    <li><a href="#p2"><span class="no">02</span>问卷步骤页 × 5<span class="end">学生端</span></a></li>
+    <li><a href="#p3"><span class="no">03</span>报告页<span class="end">学生端</span></a></li>
+    <li><a href="#p4"><span class="no">04</span>分享长图<span class="end">学生端</span></a></li>
+    <li><a href="#p5"><span class="no">05</span>首页<span class="end">管理端</span></a></li>
+    <li><a href="#p6"><span class="no">06</span>线索列表 + 详情抽屉<span class="end">管理端</span></a></li>
+    <li><a href="#p7"><span class="no">07</span>项目编辑（含 AI 预填）<span class="end">管理端</span></a></li>
+    <li><a href="#p8"><span class="no">08</span>客户信息<span class="end">企微侧边栏</span></a></li>
+    <li><a href="#qa"><span class="no">Q</span>需要创始人确认的问题<span class="end">20 条</span></a></li>
+  </ol>
+</header>
+
+<!-- ============ 01 落地页 ============ -->
+<section class="wf" id="p1">
+  <div class="wf-head"><span class="no">01</span><h2>★ 落地页</h2>
+    <div class="tags"><span class="tag">学生端 · 小程序 / H5</span><span class="tag">375 宽</span><span class="tag">开发卡 M4-01</span></div></div>
+  <p class="wf-sub">学生从内容平台、海报、讲座二维码进入的第一屏。只做一件事：让人点「开始免费测评」。</p>
+  <div class="stage">
+    <figure>
+      <figcaption>首次进入（有未完成测评时见注释 6）</figcaption>
+      <div class="phone"><div class="scr">
+        <div class="sbar"><span>9:41</span><span>●●● 5G ▮</span></div>
+        <div class="mpbar rel"><i class="m">1</i><span class="small b">XX 留学工作室</span><span class="t"></span><span class="cap"><span>•••</span><span>◎</span></span></div>
+        <div class="body">
+          <div class="rel stack t" style="padding-top:14px"><i class="m">2</i>
+            <div style="font-size:24px;font-weight:800;line-height:1.3">3 分钟测出<br>你能申哪些学校</div>
+            <div class="small mut">英国 · 澳洲 · 新加坡 授课型硕士 ｜ 免费 ｜ 答题不用登录</div>
+          </div>
+          <div class="rel row small" style="gap:6px"><i class="m">3</i><span class="dot"></span><span>已有 <b>1,286</b> 位同学完成测评</span></div>
+          <div class="rel box stack t"><i class="m">4</i>
+            <div class="small b">测完你会得到</div>
+            <div class="row"><span class="tier c">冲</span><span class="tier w">稳</span><span class="tier b">保</span><span class="small">三档代表学校，每所附一句理由</span></div>
+            <div class="row small"><span class="chip fill">画像</span><span>六维竞争力雷达图，和同层次申请者比</span></div>
+            <div class="row small"><span class="chip fill">短板</span><span>最关键的 1–2 个短板，补上能多申哪一档</span></div>
+            <div class="out stack t" style="margin-top:4px"><div class="xs mut">报告样例（示例数据，模糊处理）</div><div class="ln l"></div><div class="ln m2"></div><div class="row"><span class="tier c">冲</span><div class="ln m2"></div></div><div class="row"><span class="tier w">稳</span><div class="ln l"></div></div></div>
+          </div>
+          <div class="rel row small" style="justify-content:space-between;gap:4px"><i class="m">5</i>
+            <div class="stack t" style="align-items:center;flex:1"><span class="chip">1</span><span class="xs">答 5 步问题</span></div>
+            <span class="mut">›</span>
+            <div class="stack t" style="align-items:center;flex:1"><span class="chip">2</span><span class="xs">微信登录</span></div>
+            <span class="mut">›</span>
+            <div class="stack t" style="align-items:center;flex:1"><span class="chip">3</span><span class="xs">10 秒出报告</span></div>
+          </div>
+        </div>
+        <div class="foot">
+          <div class="rel"><i class="m">6</i><span class="btn pri big">开始免费测评</span></div>
+          <div class="rel xs mut" style="text-align:center"><i class="m">7</i>答题过程不需要登录，生成报告前用微信登录；不强制留手机号。<br>开始即表示阅读《隐私政策》《用户协议》 · 结果仅供参考，不代表录取承诺</div>
+        </div>
+      </div></div>
+    </figure>
+  </div>
+  <ol class="notes">
+    <li><span class="m">1</span><div><b>小程序导航栏</b>：工作室名称与 Logo 取品牌配置（<code>sys_config</code>，初始化向导第 1 步填写）。H5 版无右侧胶囊。<span class="src">数据：品牌参数随 <code>GET /app/api/assessment/questionnaire/current</code> 一并返回（待确认，见 Q18）</span></div></li>
+    <li><span class="m">2</span><div><b>一句话价值</b>：主标题沿用产品文档「3 分钟测出你能申哪些学校」；副标题写明冷启动切入人群和「免费、不用登录」。</div></li>
+    <li><span class="m">3</span><div><b>真实测评人数</b>：只显示真实完成数，不造数；人数少时整行隐藏。<span class="src">数据：<code>abr_assessment</code> 中已完成的记录数（口径与阈值见 Q1）</span></div></li>
+    <li><span class="m">4</span><div><b>测完得到什么</b>：对应免费报告的三项内容；样例图用示例数据并模糊处理，只展示档位不展示百分比。</div></li>
+    <li><span class="m">5</span><div><b>三步流程</b>：提前告知「登录只在最后一步」，降低流失。</div></li>
+    <li><span class="m">6</span><div><b>主按钮</b>：点击进入「隐私同意」页，同意后创建测评再进入问卷第 1 步。若本机有未完成测评，按钮变为「继续上次测评（第 3 / 5 步）」，下方加小字「重新开始」。<span class="src">接口：<code>POST /app/api/assessment</code>（带渠道码、请求 ID，在隐私同意页调用）</span></div></li>
+    <li><span class="m">7</span><div><b>隐私说明</b>：一句话说明登录与手机号的用法；两个协议可点开全文。底部固定免责说明。</div></li>
+    <li><span class="m">8</span><div><b>渠道码（不可见）</b>：从链接参数或小程序码 scene 读取，前端暂存，创建测评时带上，用于渠道归因与分享来源统计。<span class="src">表：<code>abr_channel</code>、<code>abr_touch</code></span></div></li>
+  </ol>
+</section>
+
+<!-- ============ 02 问卷步骤页 ============ -->
+<section class="wf" id="p2">
+  <div class="wf-head"><span class="no">02</span><h2>★ 问卷步骤页 × 5</h2>
+    <div class="tags"><span class="tag">学生端</span><span class="tag">375 宽</span><span class="tag">开发卡 M4-01、M4-02</span></div></div>
+  <p class="wf-sub">5 步：目标 / 学术 / 语言与标化 / 经历 / 偏好。每屏不超过 4 题，顶部进度条，每步自动保存。上面是 5 步的题目条带，下面放大画「学术」和「经历」两步（交互最多的两步）。</p>
+
+  <div class="rel" style="display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr))"><i class="m">1</i>
+    <div class="out stack t"><div class="row"><span class="chip on">1</span><b class="small">目标</b><span class="sp"></span><span class="xs mut">约 30 秒</span></div>
+      <div class="xs">国家 / 地区（可多选）</div><div class="pills"><span class="pill on">英国</span><span class="pill">澳洲</span><span class="pill on">新加坡</span><span class="pill">…</span></div>
+      <div class="xs">学位 · 专业方向 · 入学年份</div><div class="pills"><span class="pill on">硕士</span><span class="pill on">商科</span><span class="pill on">2027 秋</span></div></div>
+    <div class="out stack t"><div class="row"><span class="chip on">2</span><b class="small">学术</b></div>
+      <div class="xs">本科学校（自动带出层次）</div><div class="ln l"></div><div class="xs">专业 · 均分 · 排名（可跳过）</div><div class="ln m2"></div><div class="ln s"></div></div>
+    <div class="out stack t"><div class="row"><span class="chip on">3</span><b class="small">语言与标化</b></div>
+      <div class="xs">雅思 / 托福 / 多邻国</div><div class="seg"><span class="on">已考</span><span>未考</span><span>预估分</span></div><div class="xs">GRE / GMAT（选填）</div><div class="ln s"></div><div class="xs mut">未考不影响出报告</div></div>
+    <div class="out stack t"><div class="row"><span class="chip on">4</span><b class="small">经历</b></div>
+      <div class="btn" style="width:100%">↑ 上传简历自动填写</div><div class="xs">科研 · 实习 · 竞赛：有无、数量、是否相关</div><div class="ln l"></div><div class="ln m2"></div></div>
+    <div class="out stack t"><div class="row"><span class="chip on">5</span><b class="small">偏好</b><span class="sp"></span><span class="xs mut">可跳过</span></div>
+      <div class="xs">预算区间 · 排名还是就业优先 · 城市</div><div class="ln l"></div><div class="ln s"></div><div class="btn pri" style="width:100%">生成我的报告</div></div>
+  </div>
+
+  <div class="stage" style="margin-top:24px">
+    <figure>
+      <figcaption>第 2 步 · 学术</figcaption>
+      <div class="phone"><div class="scr">
+        <div class="sbar"><span>9:42</span><span>●●● 5G ▮</span></div>
+        <div class="mpbar"><span class="small">‹</span><span class="t">选校测评</span><span class="cap"><span>•••</span><span>◎</span></span></div>
+        <div class="rel" style="background:var(--surface);padding:10px 14px;border-bottom:1px solid var(--line)"><i class="m">2</i>
+          <div class="row small"><b>第 2 步 / 共 5 步 · 学术</b><span class="sp"></span><span class="xs mut">✓ 已自动保存</span></div>
+          <div class="row" style="gap:4px;margin-top:6px"><div class="bar" style="flex:1"><i style="width:100%"></i></div><div class="bar" style="flex:1"><i style="width:50%"></i></div><div class="bar" style="flex:1"></div><div class="bar" style="flex:1"></div><div class="bar" style="flex:1"></div></div>
+        </div>
+        <div class="body">
+          <div class="rel"><i class="m">3</i>
+            <div class="lbl">本科学校</div>
+            <div class="inp">西南财<span class="ph">|</span></div>
+            <div class="out stack t" style="margin-top:4px;padding:6px 8px">
+              <div class="row small"><b>西南财经大学</b><span class="sp"></span><span class="chip fill">211 · 双一流</span></div>
+              <div class="row small"><span>西南科技大学</span><span class="sp"></span><span class="chip fill">双非</span></div>
+              <div class="xs mut">找不到我的学校 › 手动选择学校层次</div>
+            </div>
+          </div>
+          <div><div class="lbl">本科专业</div><div class="inp">金融学</div></div>
+          <div class="rel"><i class="m">4</i>
+            <div class="lbl">均分 / GPA</div>
+            <div class="row"><div class="seg" style="width:130px"><span class="on">百分制</span><span>4 分制</span></div><div class="inp" style="flex:1">85.6</div></div>
+            <div class="xs mut" style="margin-top:4px">选 4 分制时自动换算为百分制，并显示换算结果供核对</div>
+          </div>
+          <div class="rel"><i class="m">5</i>
+            <div class="row"><div class="lbl">专业排名</div><span class="sp"></span><span class="xs mut">选填 · 可跳过</span></div>
+            <div class="pills"><span class="pill">前 10%</span><span class="pill on">前 30%</span><span class="pill">其他</span><span class="pill">不清楚</span></div>
+          </div>
+        </div>
+        <div class="foot rel"><i class="m">6</i><div class="row"><span class="btn" style="flex:1;padding:10px">上一步</span><span class="btn pri" style="flex:2;padding:10px">下一步</span></div></div>
+      </div></div>
+    </figure>
+
+    <figure>
+      <figcaption>第 4 步 · 经历（简历已解析）</figcaption>
+      <div class="phone"><div class="scr">
+        <div class="sbar"><span>9:44</span><span>●●● 5G ▮</span></div>
+        <div class="mpbar"><span class="small">‹</span><span class="t">选校测评</span><span class="cap"><span>•••</span><span>◎</span></span></div>
+        <div style="background:var(--surface);padding:10px 14px;border-bottom:1px solid var(--line)">
+          <div class="row small"><b>第 4 步 / 共 5 步 · 经历</b><span class="sp"></span><span class="xs mut">✓ 已自动保存</span></div>
+          <div class="row" style="gap:4px;margin-top:6px"><div class="bar" style="flex:1"><i style="width:100%"></i></div><div class="bar" style="flex:1"><i style="width:100%"></i></div><div class="bar" style="flex:1"><i style="width:100%"></i></div><div class="bar" style="flex:1"><i style="width:50%"></i></div><div class="bar" style="flex:1"></div></div>
+        </div>
+        <div class="body">
+          <div class="rel aib stack t"><i class="m">7</i>
+            <div class="row"><b class="small">简历_张同学.pdf</b><span class="sp"></span><span class="ai">AI 识别</span></div>
+            <div class="small">已帮你填好 5 项，带「识别」标记的请核对</div>
+            <div class="row xs mut"><span>重新上传</span><span>·</span><span>不用简历，手动填</span></div>
+          </div>
+          <div class="rel"><i class="m">8</i>
+            <div class="row"><div class="lbl">实习 / 工作</div><span class="sp"></span><span class="chip">识别</span></div>
+            <div class="out stack t" style="padding:8px">
+              <div class="row small"><span>券商研究所 · 行业研究实习</span><span class="sp"></span><span class="xs mut">4 个月</span></div>
+              <div class="row xs"><span class="mut">和目标专业相关？</span><span class="pill on" style="padding:1px 8px">相关</span><span class="pill" style="padding:1px 8px">不相关</span></div>
+            </div>
+            <div class="xs mut" style="margin-top:4px">＋ 再加一段</div>
+          </div>
+          <div><div class="row"><div class="lbl">科研</div><span class="sp"></span><span class="chip">识别</span></div>
+            <div class="pills"><span class="pill">无</span><span class="pill on">课题组</span><span class="pill">会议论文</span><span class="pill">核心期刊</span></div></div>
+          <div><div class="lbl">竞赛 / 项目 / 证书</div>
+            <div class="pills"><span class="pill">无</span><span class="pill">国际</span><span class="pill">国家</span><span class="pill on">省级</span><span class="pill">校级</span></div></div>
+        </div>
+        <div class="foot"><div class="row"><span class="btn" style="flex:1;padding:10px">上一步</span><span class="btn pri" style="flex:2;padding:10px">下一步</span></div></div>
+      </div></div>
+    </figure>
+  </div>
+
+  <ol class="notes">
+    <li><span class="m">1</span><div><b>5 步题目条带</b>：每步的题目、选项、校验和跳过规则来自问卷 JSON，改题不发版。第 5 步按钮为「生成我的报告」，点击后进入「登录授权」页（微信一键登录，这是唯一的留资门槛），登录成功后提交。<span class="src">接口：<code>GET /app/api/assessment/questionnaire/current</code>；<code>POST /app/api/auth/wechat</code>；<code>POST /app/api/assessment/{id}/submit</code></span></div></li>
+    <li><span class="m">2</span><div><b>进度与保存状态</b>：「第 N 步 / 共 5 步」+ 分段进度条；每次答题变化后自动保存，显示「已自动保存」。关闭后再打开回到上次的步骤和题目。<span class="src">接口：<code>PUT /app/api/assessment/{id}/answers</code>（分步保存）；表 <code>abr_assessment.answers</code></span></div></li>
+    <li><span class="m">3</span><div><b>本科学校联想</b>：输入 2 个字起模糊搜索（支持简称，如「西财」），候选项右侧带出层次；学生不需要知道自己学校是不是「双一流」。搜不到时手动选层次。<span class="src">接口：<code>GET /app/api/cn-university/search</code>；表 <code>abr_cn_university</code></span></div></li>
+    <li><span class="m">4</span><div><b>均分</b>：百分制 / 4 分制切换，4 分制自动换算并显示结果，学生核对后保存。换算规则在归一化模块（有单元测试），前端只显示。</div></li>
+    <li><span class="m">5</span><div><b>可跳过题</b>：排名、标化、偏好可跳过；跳过的题在报告中提示「补充排名可让结果更准」。</div></li>
+    <li><span class="m">6</span><div><b>上一步 / 下一步</b>：下一步前做本步校验（必填、范围），错误提示在题目下方。第 1 步的「上一步」回到落地页。</div></li>
+    <li><span class="m">7</span><div><b>上传简历</b>：支持 PDF / 图片，上传后显示「识别中…」并轮询结果；成功后预填学校、专业、均分和经历条目。识别失败只提示「没识别出来，手动填也只要 1 分钟」，不阻断答题。<span class="src">接口：<code>POST /app/api/assessment/{id}/resume</code>，<code>GET /app/api/assessment/{id}/resume-parse</code>（轮询）；Agent <code>resume_parser</code>，学生确认后才写入答案</span></div></li>
+    <li><span class="m">8</span><div><b>AI 预填字段</b>：带「识别」标记，学生改动后标记消失；每段经历都可删、可增。第 2 步的学校与均分若由简历预填，同样带标记。</div></li>
+  </ol>
+</section>
+
+<!-- ============ 03 报告页 ============ -->
+<section class="wf" id="p3">
+  <div class="wf-head"><span class="no">03</span><h2>★ 报告页</h2>
+    <div class="tags"><span class="tag">学生端</span><span class="tag">375 宽 · 长页</span><span class="tag">开发卡 M4-04、M4-05</span></div></div>
+  <p class="wf-sub">按产品文档「报告页结构」从上到下 7 个区块。结构化结果（档位、学校）2 秒内先出；AI 解读文字异步补上，失败时用模板文字。</p>
+  <div class="stage">
+    <figure>
+      <figcaption>报告已出、AI 解读已补齐的状态</figcaption>
+      <div class="phone"><div class="scr">
+        <div class="sbar"><span>9:47</span><span>●●● 5G ▮</span></div>
+        <div class="mpbar"><span class="small">‹</span><span class="t">我的选校报告</span><span class="cap"><span>•••</span><span>◎</span></span></div>
+        <div class="body">
+          <div class="xs mut">2026-10-13 · 英国 / 新加坡 · 商科硕士 · 2027 秋入学</div>
+
+          <div class="rel aib stack t"><i class="m">1</i>
+            <div class="row"><span class="xs mut">一句话定位</span><span class="sp"></span><span class="ai">AI 生成</span></div>
+            <div style="font-size:16px;font-weight:700;line-height:1.45">你在英国商科硕士申请者中属于中上水平，主攻档有 6 所可选</div>
+          </div>
+
+          <div class="rel out"><i class="m">2</i>
+            <div class="small b">竞争力画像</div>
+            <div class="radar">
+              <div class="hx g1"></div><div class="hx g2"></div><div class="hx me"></div>
+              <span class="lab" style="left:50%;top:6%">院校层次</span>
+              <span class="lab" style="left:84%;top:28%">均分</span>
+              <span class="lab" style="left:84%;top:72%">专业相关</span>
+              <span class="lab" style="left:50%;top:94%">语言</span>
+              <span class="lab" style="left:16%;top:72%">科研</span>
+              <span class="lab" style="left:16%;top:28%">实习</span>
+            </div>
+            <div class="row xs mut" style="justify-content:center;gap:14px"><span class="row" style="gap:4px"><span class="dot" style="opacity:.55"></span>你</span><span class="row" style="gap:4px"><span class="dot" style="background:var(--box-2)"></span>同层次申请者</span></div>
+            <div class="xs mut" style="margin-top:6px">补充「专业排名」可让结果更准 ›</div>
+          </div>
+
+          <div class="rel out stack"><i class="m">3</i>
+            <div class="row"><span class="small b">选校结果</span><span class="sp"></span><span class="xs mut">每档展示代表校</span></div>
+            <div class="stack t">
+              <div class="row"><span class="tier c">冲</span><b class="small">冲刺 · 2 所</b></div>
+              <div class="box stack t" style="padding:8px"><div class="small b">伦敦大学学院 UCL · MSc Finance</div><div class="row xs"><span class="ai">AI 生成</span><span>院校层次达标，均分距要求还差一点，相关实习可加分</span></div></div>
+              <div class="box stack t" style="padding:8px"><div class="small b">伦敦政治经济学院 LSE · MSc Finance</div><div class="ln m2"></div></div>
+            </div>
+            <div class="stack t">
+              <div class="row"><span class="tier w">稳</span><b class="small">主攻 · 6 所</b><span class="sp"></span><span class="xs mut">展示 3 所</span></div>
+              <div class="box stack t" style="padding:8px"><div class="small b">曼彻斯特大学 · MSc Finance</div><div class="row xs"><span class="ai">AI 生成</span><span>你的院校层次和均分都在该项目的常见录取范围内</span></div></div>
+              <div class="box" style="padding:8px"><div class="small b">布里斯托大学 · MSc Finance</div></div>
+              <div class="box" style="padding:8px"><div class="small b">新加坡管理大学 · MSc in Finance</div></div>
+            </div>
+            <div class="stack t">
+              <div class="row"><span class="tier b">保</span><b class="small">保底 · 3 所</b><span class="sp"></span><span class="xs mut">展示 2 所</span></div>
+              <div class="box" style="padding:8px"><div class="small b">利兹大学 · MSc Finance and Investment</div></div>
+              <div class="box" style="padding:8px"><div class="small b">谢菲尔德大学 · MSc Finance</div></div>
+            </div>
+            <div class="out row xs" style="border-style:dashed"><span>邀请 2 位同学完成测评，每档多看 2 所</span><span class="sp"></span><span class="btn">去邀请</span></div>
+          </div>
+
+          <div class="rel out stack t"><i class="m">4</i>
+            <div class="row"><span class="small b">最关键的短板</span><span class="sp"></span><span class="ai">AI 生成</span></div>
+            <div class="box small" style="padding:8px"><b>1. 相关实习偏少</b><br>再有一段 3 个月以上的金融相关实习，UCL 有望从「冲刺」进入「主攻」。</div>
+            <div class="box small" style="padding:8px"><b>2. 雅思还没考</b><br>考到项目要求后，下方 2 个「补足后可申」的项目可以进入正式选校。</div>
+          </div>
+
+          <div class="rel out stack t"><i class="m">5</i>
+            <div class="small b">补足后可申</div>
+            <div class="row small"><span>爱丁堡大学 · MSc Finance</span><span class="sp"></span><span class="chip">需雅思成绩</span></div>
+            <div class="row small"><span>华威大学 · MSc Finance</span><span class="sp"></span><span class="chip">需先修数学课</span></div>
+          </div>
+
+          <div class="rel out stack"><i class="m">6</i>
+            <div class="small b">下一步</div>
+            <span class="btn pri big">预约免费 20 分钟顾问解读</span>
+            <div class="row"><div class="qr sm"></div><div class="stack t small"><b>王老师 · 你的选校顾问</b><span class="xs mut">长按识别，添加企业微信</span></div></div>
+            <span class="btn" style="padding:9px">生成分享长图</span>
+          </div>
+
+          <div class="rel xs mut stack t" style="padding:4px 2px 8px"><i class="m">7</i>
+            <div><b>数据说明</b>：院校要求来自各校官网，最近核对 2026-09；以学校官网最新公布为准。</div>
+            <div>选校档位由规则引擎计算，解读文字由 AI 生成。结果仅供参考，不代表录取承诺。</div>
+          </div>
+        </div>
+      </div></div>
+    </figure>
+  </div>
+  <ol class="notes">
+    <li><span class="m">1</span><div><b>一句话定位</b>：报告首屏结论。AI 解读未返回时，先显示模板句（「你有 6 所主攻档项目可选」），返回后替换并带「AI 生成」标识。<span class="src">接口：<code>GET /app/api/assessment/{id}/report</code>（含 AI 解读状态，页面轮询至完成或失败）；Agent <code>report_explainer</code>，失败用模板文字</span></div></li>
+    <li><span class="m">2</span><div><b>竞争力画像</b>：六维雷达图，深色为本人，灰色为同层次申请者；不标分值。跳过的题在此提示补充，点击回到对应问卷步骤。<span class="src">数据：<code>abr_profile</code> 归一化子分；六维选哪六个、对比基线从哪来见 Q3</span></div></li>
+    <li><span class="m">3</span><div><b>选校结果</b>：冲刺 / 主攻 / 保底各展示 2–3 所代表校，每所一句理由（AI 生成）。只显示档位，任何位置都不出现百分比或「录取率」字样。分享解锁条为预留位，1a 是否做见 Q5。<span class="src">数据：<code>abr_assessment_result</code>（档位、差距 jsonb、引擎版本）；学校名取 <code>abr_school</code> / <code>abr_program</code></span></div></li>
+    <li><span class="m">4</span><div><b>最关键的 1–2 个短板</b>：来自引擎的差距反算（只在语言、标化、科研、实习这些还能改变的维度里找），AI 改写成人话，并说明补上后能进入哪一档。</div></li>
+    <li><span class="m">5</span><div><b>补足后可申</b>：未通过硬门槛（语言、先修课等）的项目单列，标出缺什么；未考语言时这里最常出现。</div></li>
+    <li><span class="m">6</span><div><b>下一步</b>：主按钮进入「预约 / 加顾问」页选时段；顾问二维码为负责顾问的企微「联系我」码，学生添加后自动关联到客户；分享按钮生成长图。<span class="src">接口：<code>POST /app/api/booking</code>；<code>GET /app/api/assessment/{id}/advisor</code>；<code>POST /app/api/assessment/{id}/share-image</code></span></div></li>
+    <li><span class="m">7</span><div><b>数据说明与免责</b>：院校信息来源与最近核对日期、「结果仅供参考，不代表录取承诺」、AI 生成说明。固定在报告末尾。</div></li>
+    <li><span class="m">8</span><div><b>加载与失败（未画）</b>：提交后显示「正在计算」骨架屏，目标 2 秒内出结构化结果；引擎失败时提示重试，不出空报告。报告链接只对本人有效。</div></li>
+  </ol>
+</section>
+
+<!-- ============ 04 分享长图 ============ -->
+<section class="wf" id="p4">
+  <div class="wf-head"><span class="no">04</span><h2>★ 分享长图</h2>
+    <div class="tags"><span class="tag">学生端</span><span class="tag">375 宽预览</span><span class="tag">开发卡 M4-06</span></div></div>
+  <p class="wf-sub">服务端生成的一张竖版图片，学生保存到相册或发给朋友。默认保护隐私：只有档位和学校，不含姓名、本科学校、具体均分。</p>
+  <div class="stage">
+    <figure>
+      <figcaption>长图预览页</figcaption>
+      <div class="phone"><div class="scr">
+        <div class="sbar"><span>9:50</span><span>●●● 5G ▮</span></div>
+        <div class="mpbar"><span class="small">‹</span><span class="t">分享长图</span><span class="cap"><span>•••</span><span>◎</span></span></div>
+        <div class="body">
+          <div class="poster rel"><i class="m">1</i>
+            <div class="row xs mut"><span class="b" style="color:var(--fg)">XX 留学工作室</span><span class="sp"></span><span>选校测评</span></div>
+            <div class="hero rel"><i class="m">2</i>
+              <div class="xs mut">一位 2027 秋入学的同学测出</div>
+              <div class="big">英国商科硕士 · 主攻档 6 所</div>
+            </div>
+            <div class="rel stack"><i class="m">3</i>
+              <div class="tierrow"><span class="tier c">冲</span><div class="small">伦敦大学学院 UCL<br>伦敦政治经济学院 LSE</div></div>
+              <div class="tierrow"><span class="tier w">稳</span><div class="small">曼彻斯特大学<br>布里斯托大学<br>新加坡管理大学</div></div>
+              <div class="tierrow"><span class="tier b">保</span><div class="small">利兹大学<br>谢菲尔德大学</div></div>
+            </div>
+            <div class="row rel" style="border-top:1px dashed var(--line);padding-top:10px"><i class="m">4</i>
+              <div class="qr"></div>
+              <div class="stack t"><b class="small">扫码测测你能申哪些学校</b><span class="xs mut">3 分钟 · 免费 · 不用先登录</span></div>
+            </div>
+            <div class="xs mut" style="text-align:center">结果仅供参考，不代表录取承诺</div>
+          </div>
+          <div class="rel out stack t"><i class="m">5</i>
+            <div class="small b">图上显示更多（默认不显示）</div>
+            <div class="row small"><span class="chip">□</span><span>我的昵称</span></div>
+            <div class="row small"><span class="chip">□</span><span>本科院校层次（如「211」，不写校名）</span></div>
+            <div class="row small"><span class="chip">□</span><span>均分区间（如「85–89」）</span></div>
+          </div>
+        </div>
+        <div class="foot rel"><i class="m">6</i><div class="row"><span class="btn" style="flex:1;padding:10px">发给朋友</span><span class="btn pri" style="flex:1;padding:10px">保存到相册</span></div></div>
+      </div></div>
+    </figure>
+  </div>
+  <ol class="notes">
+    <li><span class="m">1</span><div><b>长图整体</b>：服务端按模板渲染为图片（品牌名、Logo 取品牌配置），前端只展示与保存。<span class="src">接口：<code>POST /app/api/assessment/{id}/share-image</code>；图片地址存 <code>abr_report</code>，私有桶短时链接</span></div></li>
+    <li><span class="m">2</span><div><b>结论标题</b>：用档位数量表达，不出现姓名、学校、均分，也不出现百分比。</div></li>
+    <li><span class="m">3</span><div><b>代表学校</b>：与报告页展示的代表校一致，只列校名不列理由。</div></li>
+    <li><span class="m">4</span><div><b>二维码</b>：工作室测评二维码，带渠道码和分享人标识，新用户扫码测评后可归因到这次分享（用于老带新、分享解锁统计）。<span class="src">表：<code>abr_channel</code>、<code>abr_touch</code>；渠道码生成方式见 Q6</span></div></li>
+    <li><span class="m">5</span><div><b>可选显示项</b>：默认全部不勾选；勾选后重新生成图片。可选哪些项见 Q7。</div></li>
+    <li><span class="m">6</span><div><b>保存 / 发给朋友</b>：小程序内调用保存到相册（首次需授权）；「发给朋友」走小程序转发卡片，卡片同样不含个人信息。</div></li>
+  </ol>
+</section>
+
+<!-- ============ 05 管理端首页 ============ -->
+<section class="wf" id="p5">
+  <div class="wf-head"><span class="no">05</span><h2>★ 首页（今日工作台简版）</h2>
+    <div class="tags"><span class="tag">管理端 · RuoYi-Vue3 + Element Plus</span><span class="tag">桌面 1120 宽</span><span class="tag">开发卡 M5</span></div></div>
+  <p class="wf-sub">只回答「我今天先做什么」：今日新线索、SLA 预警、本周统计。顾问看自己的，负责人看全部。窄屏下框体可横向滚动。</p>
+  <div class="stage">
+    <figure class="full">
+      <figcaption>顾问「王老师」登录后的首页</figcaption>
+      <div class="scroll"><div class="desk">
+        <div class="chrome"><i></i><i></i><i></i><span class="url">abroad.example.com/index</span></div>
+        <div class="app">
+          <nav class="side rel"><i class="m">1</i>
+            <div class="logo"><i></i>XX 留学工作室</div>
+            <div class="it on">首页</div>
+            <div class="grp">线索</div>
+            <div class="sub">线索列表</div><div class="sub">渠道码</div><div class="sub">统计</div>
+            <div class="grp">院校库</div>
+            <div class="sub">院校</div><div class="sub">项目</div><div class="sub">批量导入</div><div class="sub">国内高校</div>
+            <div class="grp">测评与引擎（负责人）</div>
+            <div class="sub">问卷版本</div><div class="sub">引擎配置</div><div class="sub">参考线</div><div class="sub">引擎测试台</div>
+            <div class="grp">系统（负责人）</div>
+            <div class="sub">AI 调用日志</div><div class="sub">员工与角色</div><div class="sub">审计日志</div>
+          </nav>
+          <div class="main">
+            <div class="topbar rel"><i class="m">2</i><span>☰</span><span class="mut">首页</span><span class="sp"></span><span class="inp" style="width:220px"><span class="ph">搜索学生姓名 / 手机后 4 位</span></span><span>消息 3</span><span class="row" style="gap:6px"><span class="dot o" style="width:22px;height:22px"></span>王老师 · 顾问</span></div>
+            <div class="tagsv"><span class="on">首页</span><span>线索列表</span></div>
+            <div class="content">
+              <div class="kpis rel"><i class="m">3</i>
+                <div class="card kpi"><div class="k">今日新线索</div><div class="v">7</div><div class="xs mut">A 3 · B 2 · C 2</div></div>
+                <div class="card kpi" style="border:2px solid var(--ink)"><div class="k">SLA 预警</div><div class="v">2</div><div class="xs mut">已超时 1 · 即将超时 1</div></div>
+                <div class="card kpi"><div class="k">今日待联系</div><div class="v">5</div><div class="xs mut">按「下次联系时间」</div></div>
+                <div class="card kpi"><div class="k">本周签约</div><div class="v">1</div><div class="xs mut">上周 0</div></div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 340px;gap:12px;align-items:start">
+                <div class="card rel"><i class="m">4</i>
+                  <div class="ct">今日待办 <span class="xs mut">按风险排序：已超时 › 即将超时 › 今日待联系 › 今日新线索</span></div>
+                  <table class="t">
+                    <thead><tr><th>状态</th><th>学生</th><th>意向</th><th>目标</th><th>来源</th><th>事项</th><th></th></tr></thead>
+                    <tbody>
+                      <tr><td><span class="sla over">已超时 25 分</span></td><td>张同学</td><td><b>A</b></td><td>英国 · 商科硕士</td><td>小红书 · 双非85分选校</td><td>首次联系</td><td><span class="btn pri">联系</span></td></tr>
+                      <tr><td><span class="sla soon">1 时 20 分后</span></td><td>李同学</td><td><b>A</b></td><td>新加坡 · 计算机硕士</td><td>讲座 · 某大学</td><td>首次联系</td><td><span class="btn pri">联系</span></td></tr>
+                      <tr><td><span class="dot o"></span> 今天 15:00</td><td>陈同学</td><td>B</td><td>澳洲 · 会计硕士</td><td>视频号直播</td><td>约首访时间</td><td><span class="btn">记跟进</span></td></tr>
+                      <tr><td><span class="dot o"></span> 今天 17:30</td><td>刘同学</td><td>B</td><td>英国 · 传媒硕士</td><td>老客户转介绍</td><td>发送方案</td><td><span class="btn">记跟进</span></td></tr>
+                      <tr><td><span class="chip fill">新</span></td><td>周同学</td><td>C</td><td>英国 · 教育硕士</td><td>公众号</td><td>完成测评 10:42</td><td><span class="btn">查看</span></td></tr>
+                    </tbody>
+                  </table>
+                  <div class="xs mut" style="margin-top:8px">点击行或按钮在右侧打开线索详情抽屉，不离开首页 · 共 9 条，查看全部 ›</div>
+                </div>
+                <div class="stack">
+                  <div class="card rel"><i class="m">5</i>
+                    <div class="ct">本周测评漏斗 <span class="sp"></span><span class="xs mut">10.12–10.18</span></div>
+                    <div class="stack t small">
+                      <div class="row"><span style="width:64px">开始测评</span><div class="bar" style="flex:1"><i style="width:100%"></i></div><span style="width:28px;text-align:right">68</span></div>
+                      <div class="row"><span style="width:64px">完成测评</span><div class="bar" style="flex:1"><i style="width:63%"></i></div><span style="width:28px;text-align:right">43</span></div>
+                      <div class="row"><span style="width:64px">新线索</span><div class="bar" style="flex:1"><i style="width:59%"></i></div><span style="width:28px;text-align:right">40</span></div>
+                      <div class="row"><span style="width:64px">签约</span><div class="bar" style="flex:1"><i style="width:2%"></i></div><span style="width:28px;text-align:right">1</span></div>
+                    </div>
+                  </div>
+                  <div class="card rel"><i class="m">6</i>
+                    <div class="ct">渠道排名（本周） <span class="sp"></span><span class="xs mut">完整统计 ›</span></div>
+                    <table class="t"><thead><tr><th>渠道</th><th>测评</th><th>线索</th><th>签约</th></tr></thead>
+                      <tbody><tr><td>小红书 · 王老师</td><td>21</td><td>19</td><td>1</td></tr><tr><td>视频号直播</td><td>9</td><td>9</td><td>0</td></tr><tr><td>讲座 · 某大学</td><td>8</td><td>7</td><td>0</td></tr></tbody></table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+    </figure>
+  </div>
+  <ol class="notes">
+    <li><span class="m">1</span><div><b>左侧菜单</b>：RuoYi 动态路由，按角色显示。顾问只看到首页、线索、院校库；负责人另有测评与引擎、系统。无权限的菜单直接隐藏，不置灰。<span class="src">数据：RuoYi <code>/getRouters</code>、<code>sys_menu</code>（权限 <code>abroad:资源:操作</code>）</span></div></li>
+    <li><span class="m">2</span><div><b>顶栏</b>：RuoYi 标准顶栏 + 全局搜索（姓名、手机后 4 位）、消息铃铛（新线索分配、SLA 提醒的站内通知）。</div></li>
+    <li><span class="m">3</span><div><b>数字卡</b>：今日新线索、SLA 预警、今日待联系、本周签约。点击卡片即筛选下方待办（如只看 SLA 预警）。SLA 预警卡有数时加粗边框。<span class="src">接口：<code>GET /abroad/lead/list</code>（按条件计数）、<code>GET /abroad/stats</code>（原 <code>/crm/stats</code>）</span></div></li>
+    <li><span class="m">4</span><div><b>今日待办</b>：已超时 › 即将超时（2 小时内）› 今日待联系 › 今日新线索；同级按意向度。每行一个最常用动作，点击打开第 06 页的详情抽屉。负责人视图多一列「负责人」，并显示「未分配」和「超时已升级」的线索。<span class="src">表：<code>abr_lead</code>（SLA 到期时间、下次跟进时间、意向度）</span></div></li>
+    <li><span class="m">5</span><div><b>本周漏斗</b>：开始测评 → 完成测评 → 新线索 → 签约，周一到周日按北京时间。<span class="src">接口：<code>GET /abroad/stats</code></span></div></li>
+    <li><span class="m">6</span><div><b>渠道排名</b>：本周前 3–5 个渠道的测评、线索、签约数；「完整统计」跳到统计页。顾问看到的也是全工作室数据还是只看自己，见 Q10。</div></li>
+  </ol>
+</section>
+
+<!-- ============ 06 线索列表 + 详情抽屉 ============ -->
+<section class="wf" id="p6">
+  <div class="wf-head"><span class="no">06</span><h2>★ 线索列表 + 详情抽屉</h2>
+    <div class="tags"><span class="tag">管理端</span><span class="tag">桌面 1120 宽</span><span class="tag">开发卡 M5</span></div></div>
+  <p class="wf-sub">A：列表（筛选、排序、行内操作）。B：点击任一行，右侧抽屉打开详情，列表保留在背后。</p>
+  <div class="stage">
+    <figure class="full">
+      <figcaption>A · 线索列表（负责人视图）</figcaption>
+      <div class="scroll"><div class="desk">
+        <div class="chrome"><i></i><i></i><i></i><span class="url">abroad.example.com/abroad/lead</span></div>
+        <div class="app" style="min-height:0">
+          <nav class="side"><div class="logo"><i></i>XX 留学工作室</div><div class="it">首页</div><div class="grp">线索</div><div class="sub on">线索列表</div><div class="sub">渠道码</div><div class="sub">统计</div><div class="grp">院校库</div><div class="sub">院校</div><div class="sub">项目</div></nav>
+          <div class="main">
+            <div class="topbar"><span>☰</span><span class="mut">线索 / 线索列表</span><span class="sp"></span><span>消息 3</span><span>李总 · 负责人</span></div>
+            <div class="content">
+              <div class="card rel"><i class="m">1</i>
+                <div class="flt">
+                  <div class="f">关键字 <span class="inp"><span class="ph">姓名 / 手机后 4 位</span></span></div>
+                  <div class="f">意向度 <span class="pill on">A</span><span class="pill">B</span><span class="pill">C</span></div>
+                  <div class="f">阶段 <span class="inp">全部 ▾</span></div>
+                  <div class="f">渠道 <span class="inp">全部 ▾</span></div>
+                  <div class="f">负责人 <span class="inp">全部 ▾</span></div>
+                  <div class="f">目标国家 <span class="inp">全部 ▾</span></div>
+                  <div class="f">创建时间 <span class="inp"><span class="ph">2026-10-01 ~ 2026-10-13</span></span></div>
+                  <span class="btn pri">搜索</span><span class="btn">重置</span>
+                </div>
+              </div>
+              <div class="card">
+                <div class="row rel" style="margin-bottom:10px"><i class="m">2</i><span class="pill on">全部 42</span><span class="pill">未分配 3</span><span class="pill">SLA 预警 2</span><span class="pill">我负责的 11</span><span class="sp"></span><span class="btn">批量分配</span><span class="btn">导出</span><span class="btn">列设置</span></div>
+                <div class="rel"><i class="m">3</i>
+                <table class="t">
+                  <thead><tr><th>□</th><th>姓名</th><th>意向度 ↓</th><th>阶段</th><th>目标</th><th>测评档位</th><th>渠道</th><th>负责人</th><th>最后跟进</th><th>下次联系</th><th>SLA 剩余 ↑</th><th>操作</th></tr></thead>
+                  <tbody>
+                    <tr class="hl"><td>□</td><td><b>张同学</b><br><span class="xs mut">138****5678</span></td><td><b>A</b></td><td>初联</td><td>英国 · 商科硕士 · 27 秋</td><td><span class="tier c" style="width:18px;height:18px;font-size:10px">冲</span> 2 <span class="tier w" style="width:18px;height:18px;font-size:10px">稳</span> 6 <span class="tier b" style="width:18px;height:18px;font-size:10px">保</span> 3</td><td>小红书</td><td>王老师</td><td>—</td><td>—</td><td><span class="sla over">已超时 25 分</span></td><td class="rel"><i class="m">4</i><span class="btn lnk">记跟进</span> · <span class="btn lnk">改阶段</span> · <span class="btn lnk">分配</span></td></tr>
+                    <tr><td>□</td><td><b>李同学</b><br><span class="xs mut">139****0021</span></td><td><b>A</b></td><td>初联</td><td>新加坡 · 计算机硕士</td><td>冲 1 · 稳 4 · 保 2</td><td>讲座</td><td>王老师</td><td>—</td><td>—</td><td><span class="sla soon">1 时 20 分</span></td><td><span class="btn lnk">记跟进</span> · <span class="btn lnk">改阶段</span> · <span class="btn lnk">分配</span></td></tr>
+                    <tr><td>□</td><td><b>赵同学</b><br><span class="xs mut">186****3390</span></td><td><b>A</b></td><td>初联</td><td>英国 · 法学硕士</td><td>冲 2 · 稳 3 · 保 2</td><td>公众号</td><td><span class="chip">未分配</span></td><td>—</td><td>—</td><td>1 时 55 分</td><td><span class="btn lnk">分配</span></td></tr>
+                    <tr><td>□</td><td><b>陈同学</b><br><span class="xs mut">135****7712</span></td><td>B</td><td>首访已约</td><td>澳洲 · 会计硕士</td><td>冲 2 · 稳 4 · 保 2</td><td>视频号</td><td>刘老师</td><td>10-12 电话</td><td>10-13 15:00</td><td>—</td><td><span class="btn lnk">记跟进</span> · <span class="btn lnk">改阶段</span></td></tr>
+                    <tr><td>□</td><td><b>周同学</b><br><span class="xs mut">177****2045</span></td><td>C</td><td>初联</td><td>英国 · 教育硕士</td><td>冲 1 · 稳 5 · 保 3</td><td>公众号</td><td>刘老师</td><td>—</td><td>10-15 10:00</td><td>—</td><td><span class="btn lnk">记跟进</span> · <span class="btn lnk">改阶段</span></td></tr>
+                  </tbody>
+                </table>
+                </div>
+                <div class="pager"><span>共 42 条</span><span>‹</span><span class="on">1</span><span>2</span><span>3</span><span>›</span><span>20 条/页 ▾</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+    </figure>
+
+    <figure class="full">
+      <figcaption>B · 点击「张同学」后打开的详情抽屉</figcaption>
+      <div class="scroll"><div class="desk">
+        <div class="chrome"><i></i><i></i><i></i><span class="url">abroad.example.com/abroad/lead?id=1024</span></div>
+        <div class="app">
+          <nav class="side"><div class="logo"><i></i>XX 留学工作室</div><div class="it">首页</div><div class="grp">线索</div><div class="sub on">线索列表</div><div class="sub">渠道码</div><div class="sub">统计</div></nav>
+          <div class="main">
+            <div class="topbar"><span>☰</span><span class="mut">线索 / 线索列表</span><span class="sp"></span><span>李总 · 负责人</span></div>
+            <div class="drawer-wrap">
+              <div class="dimmed"><div class="card stack t"><div class="ln l"></div><div class="ln m2"></div><div class="ln l"></div><div class="ln s"></div><div class="ln l"></div><div class="ln m2"></div></div></div>
+              <aside class="drawer">
+                <div class="dh rel"><i class="m">5</i>
+                  <div class="row"><b style="font-size:16px">张同学</b><span class="chip on">A</span><span class="xs mut">改意向度 ✎</span><span class="sp"></span><span class="mut">✕</span></div>
+                  <div class="row wrap small">
+                    <span>阶段</span><span class="inp" style="min-height:24px;padding:2px 8px">初联 ▾</span>
+                    <span>负责人</span><span class="inp" style="min-height:24px;padding:2px 8px">王老师 ▾</span>
+                    <span class="sla over">SLA 已超时 25 分</span>
+                  </div>
+                  <div class="row wrap xs mut"><span>来源：小红书 · 笔记「双非85分英国选校」</span><span>·</span><span>138****5678 <u>查看</u></span><span>·</span><span>企微：已添加</span></div>
+                  <div class="row" style="gap:6px"><span class="btn pri">记跟进</span><span class="btn">复制手机号</span><span class="btn">发送企微消息</span></div>
+                </div>
+                <div class="db">
+                  <div class="rel"><i class="m">6</i>
+                    <div class="sect-t">客户</div>
+                    <dl class="kv"><dt>入学时间</dt><dd>2027 秋</dd><dt>本科</dt><dd>西南财经大学 · 211 · 金融学</dd><dt>均分</dt><dd>85.6（百分制）· 专业前 30%</dd><dt>语言</dt><dd>雅思未考</dd><dt>经历</dt><dd>券商研究所实习 4 个月（相关）；课题组 1 项</dd><dt>测评次数</dt><dd>1 次 · 2026-10-13 10:02 完成</dd></dl>
+                  </div>
+                  <div class="rel"><i class="m">7</i>
+                    <div class="sect-t">测评结果 <span class="xs mut">引擎 v1.0 · 英国商科硕士</span><span class="sp"></span><span class="xs mut">看学生版报告 ›</span></div>
+                    <div class="stack t small">
+                      <div class="row"><span class="tier c">冲</span><span>UCL MSc Finance · LSE MSc Finance</span></div>
+                      <div class="row"><span class="tier w">稳</span><span>曼彻斯特 · 布里斯托 · SMU · 杜伦 · 格拉斯哥 · 伯明翰</span></div>
+                      <div class="row"><span class="tier b">保</span><span>利兹 · 谢菲尔德 · 南安普顿</span></div>
+                      <div class="row xs mut"><span>补足后可申：爱丁堡（缺雅思）、华威（缺先修数学）</span></div>
+                    </div>
+                  </div>
+                  <div class="rel aib stack t"><i class="m">8</i>
+                    <div class="row"><b class="small">AI 线索卡片</b><span class="ai">AI 生成</span><span class="sp"></span><span class="xs mut">仅内部可见</span></div>
+                    <div class="small"><b>背景摘要</b>：211 金融，均分中上，有一段相关实习，语言未考，目标英国商科。</div>
+                    <div class="small"><b>最可能的顾虑</b>：担心均分够不上 UCL；不确定何时考雅思。</div>
+                    <div class="small"><b>建议开场</b>：从报告里「UCL 冲刺」切入，说明补一段实习能进主攻档。</div>
+                  </div>
+                  <div class="rel"><i class="m">9</i>
+                    <div class="sect-t">跟进时间线</div>
+                    <ol class="tl">
+                      <li><b>10-13 10:02</b> 完成测评（小红书）· 意向度 A（规则计算）</li>
+                      <li><b>10-13 10:02</b> 系统分配给王老师 · 企微已通知</li>
+                      <li><b>10-13 10:40</b> 学生添加王老师企微</li>
+                      <li class="mut">尚无人工跟进记录</li>
+                    </ol>
+                  </div>
+                  <div class="rel out stack t"><i class="m">10</i>
+                    <div class="sect-t" style="margin:0">记跟进</div>
+                    <div class="row"><span class="pill on">电话</span><span class="pill">企微</span><span class="pill">面谈</span><span class="pill">其他</span></div>
+                    <div class="inp" style="min-height:54px;align-items:flex-start"><span class="ph">沟通内容…</span></div>
+                    <div class="row small"><span>下次联系</span><span class="inp" style="flex:1"><span class="ph">选择时间</span></span><span>阶段</span><span class="inp">不变 ▾</span></div>
+                    <div class="row"><span class="xs mut">阶段改为「流失」时必填流失原因</span><span class="sp"></span><span class="btn pri">保存</span></div>
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </div>
+      </div></div>
+    </figure>
+  </div>
+  <ol class="notes">
+    <li><span class="m">1</span><div><b>筛选</b>：关键字、意向度、阶段、渠道、负责人、目标国家、创建时间区间。顾问视图没有「负责人」筛选，只看分配给自己的线索。<span class="src">接口：<code>GET /abroad/lead/list</code>（原 <code>/crm/leads</code>）；顾问数据范围按负责人过滤</span></div></li>
+    <li><span class="m">2</span><div><b>快捷分组与工具栏</b>：全部 / 未分配 / SLA 预警 / 我负责的；批量分配、导出（仅负责人，导出留痕）、列设置。</div></li>
+    <li><span class="m">3</span><div><b>列表</b>：默认按意向度降序、再按 SLA 剩余升序；手机号脱敏。测评档位列只显示各档数量。完成测评后 10 秒内新线索出现在列表。<span class="src">表：<code>abr_lead</code>、<code>abr_customer</code>、<code>abr_assessment_result</code></span></div></li>
+    <li><span class="m">4</span><div><b>行内操作</b>：记跟进（打开抽屉并聚焦跟进表单）、改阶段（下拉，选「流失」弹必填原因）、分配（选顾问，分配后 1 分钟内企微通知）。<span class="src">接口：<code>PUT /abroad/lead/{id}/stage</code>、<code>/assign</code>、<code>/intent</code></span></div></li>
+    <li><span class="m">5</span><div><b>抽屉头部</b>：姓名、意向度（点 ✎ 手动修改，必须填原因）、阶段、负责人、SLA 状态、来源渠道与内容、手机号（点「查看」显示全文并记审计日志）、企微添加状态。<span class="src">接口：<code>GET /abroad/lead/{id}</code>；查看全文记 <code>sys_oper_log</code></span></div></li>
+    <li><span class="m">6</span><div><b>客户</b>：测评答案的结构化摘要（入学时间、本科、均分、语言、经历）与测评次数；重复测评归到同一客户，显示最近一次。</div></li>
+    <li><span class="m">7</span><div><b>测评结果</b>：完整档位清单（学生端只看代表校）与「补足后可申」；显示引擎版本，便于追溯。顾问端是否显示录取可能性或综合分见 Q9。</div></li>
+    <li><span class="m">8</span><div><b>AI 线索卡片</b>：背景摘要、最可能的顾虑、建议开场话题，只给内部看。生成失败时只显示基础信息并标注「卡片生成失败」。<span class="src">Agent <code>lead_card</code>，由 <code>AssessmentCompleted</code> 事件触发；调用记录 <code>abr_ai_call_log</code></span></div></li>
+    <li><span class="m">9</span><div><b>跟进时间线</b>：测评、分配、企微添加等系统事件与人工跟进按时间倒序合并显示。<span class="src">表：<code>abr_follow_up</code>、<code>abr_event</code></span></div></li>
+    <li><span class="m">10</span><div><b>记跟进</b>：方式、内容、下次联系时间、可顺带改阶段；保存后 SLA 计时停止，时间线即时刷新。<span class="src">接口：<code>POST /abroad/lead/{id}/follow-ups</code></span></div></li>
+  </ol>
+</section>
+
+<!-- ============ 07 项目编辑 ============ -->
+<section class="wf" id="p7">
+  <div class="wf-head"><span class="no">07</span><h2>★ 项目编辑（含 AI 预填）</h2>
+    <div class="tags"><span class="tag">管理端</span><span class="tag">桌面 1120 宽</span><span class="tag">开发卡 M2</span></div></div>
+  <p class="wf-sub">数据录入者粘贴官网链接，AI 预填字段并附原文引句；左侧字段、右侧引句对照，逐字段确认后才能保存。</p>
+  <div class="stage">
+    <figure class="full">
+      <figcaption>AI 预填完成，正在逐字段确认</figcaption>
+      <div class="scroll"><div class="desk">
+        <div class="chrome"><i></i><i></i><i></i><span class="url">abroad.example.com/abroad/program/edit/318</span></div>
+        <div class="app">
+          <nav class="side"><div class="logo"><i></i>XX 留学工作室</div><div class="it">首页</div><div class="grp">院校库</div><div class="sub">院校</div><div class="sub on">项目</div><div class="sub">批量导入</div><div class="sub">国内高校</div></nav>
+          <div class="main">
+            <div class="topbar"><span>☰</span><span class="mut">院校库 / 项目 / 编辑</span><span class="sp"></span><span>小林 · 数据录入</span></div>
+            <div class="content">
+              <div class="card rel"><i class="m">1</i>
+                <div class="row"><b>曼彻斯特大学 · MSc Finance</b><span class="chip">英国</span><span class="chip">硕士</span><span class="sp"></span><span class="xs mut">上次核对 2026-05-20（已超过 90 天）</span></div>
+                <div class="row" style="margin-top:10px"><span class="small">官网链接</span><span class="inp" style="flex:1"><span class="mono">https://www.manchester.ac.uk/study/masters/courses/list/…/msc-finance/</span></span><span class="btn pri">✦ AI 预填</span></div>
+                <div class="row xs mut" style="margin-top:6px"><span class="ai">AI 生成</span><span>已从 2 个页面抽取 14 个字段，用时 18 秒 · 9 个待确认 · 2 个页面未找到（已留空）</span></div>
+              </div>
+              <div class="row rel"><i class="m">2</i><span class="small">申请季</span><span class="pill">2026 秋</span><span class="pill on">2027 秋</span><span class="pill">＋ 新增申请季</span><span class="sp"></span><span class="pill on">全部 14</span><span class="pill">待确认 9</span><span class="pill">已确认 5</span></div>
+              <div class="edit-grid">
+                <div class="card rel"><i class="m">3</i>
+                  <div class="ct">基本信息</div>
+                  <div class="frow"><span>学位 / 学制</span><span class="inp">MSc · 1 年</span><span class="st chip">已确认</span></div>
+                  <div class="frow"><span>学费</span><span class="inp">£ 待填（按官网）</span><span class="st chip fill">AI · 待确认</span></div>
+                  <div class="frow"><span>授课语言</span><span class="inp">英语</span><span class="st chip">已确认</span></div>
+                  <div class="ct" style="margin-top:12px">申请要求 · 2027 秋</div>
+                  <div class="frow act"><span><b>均分要求</b><br><span class="xs mut">按院校层次</span></span>
+                    <span class="stack t"><span class="inp">985 / 211：待填　双非：待填</span><span class="row xs"><span class="btn">✓ 确认</span><span class="btn">修改</span><span class="btn">清空</span></span></span>
+                    <span class="st chip fill">AI · 待确认</span>
+                    <span class="src-line rel"><i class="m">4</i>来源 https://www.manchester.ac.uk/…/china/ · 抓取 2026-10-13</span></div>
+                  <div class="frow"><span><b>雅思</b></span><span class="inp">总分 待填 · 小分 待填</span><span class="st chip fill">AI · 待确认</span><span class="src-line">来源 …/msc-finance/#entry-requirements</span></div>
+                  <div class="frow"><span><b>截止日</b></span><span class="inp">滚动录取 · 截止 待填</span><span class="st chip fill">AI · 待确认</span><span class="src-line">来源 …/msc-finance/#application</span></div>
+                  <div class="frow"><span>先修课</span><span class="inp"><span class="ph">未找到</span></span><span class="st chip">待手填</span><span class="src-line">来源 必填（关键字段）</span></div>
+                  <div class="frow"><span>GMAT / GRE</span><span class="inp">不要求</span><span class="st chip">已修改</span></div>
+                </div>
+                <div class="card rel"><i class="m">5</i>
+                  <div class="ct">原文引句对照</div>
+                  <div class="stack">
+                    <div class="quote on"><div class="xs mut" style="font-style:normal">均分要求 · 当前字段</div>“We normally require a … from a … university with an overall average of …%.”<div class="xs mut" style="font-style:normal">…/china/ · 第 3 段</div></div>
+                    <div class="quote">“IELTS: … overall, with no less than … in each component.”<div class="xs mut" style="font-style:normal">雅思 · …/msc-finance/</div></div>
+                    <div class="quote">“Applications are considered on a rolling basis …”<div class="xs mut" style="font-style:normal">截止日 · …/msc-finance/</div></div>
+                    <div class="out xs mut">先修课：页面中没有找到可靠来源，AI 未填写。</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="sticky-act rel"><i class="m">6</i><span class="small mut">还有 9 个 AI 预填字段未确认，确认或清空后才能保存</span><span class="btn">取消</span><span class="btn pri dis">保存</span></div>
+          </div>
+        </div>
+      </div></div>
+    </figure>
+  </div>
+  <ol class="notes">
+    <li><span class="m">1</span><div><b>项目头与 AI 预填</b>：显示核对日期，超过 90 天提示。粘贴官网链接点「AI 预填」，30 秒内回填；进行中显示进度和已用秒数，可取消；抓取失败显示原因（页面打不开 / 需登录 / 未识别到字段），并提示手动录入。<span class="src">接口：<code>POST /abroad/program/ai-prefill</code>（原 <code>/catalog/programs/ai-prefill</code>）；Agent <code>catalog_extractor</code></span></div></li>
+    <li><span class="m">2</span><div><b>申请季切换与状态筛选</b>：每个项目按申请季分别录入要求；可只看「待确认」字段。</div></li>
+    <li><span class="m">3</span><div><b>左侧字段</b>：每个字段一行，右侧状态：AI · 待确认 / 已确认 / 已修改 / 待手填。点击一行高亮，右侧同步定位到对应引句。每个字段可「确认 / 修改 / 清空」。<span class="src">表：<code>abr_program</code>、<code>abr_requirement</code>；接口 <code>/abroad/program</code>、<code>/abroad/program/{id}/requirements</code></span></div></li>
+    <li><span class="m">4</span><div><b>字段来源</b>：均分、语言、截止日等关键字段必须有来源 URL 才能保存；AI 预填的字段自动带上来源和抓取时间，人工填写的需要自己贴链接。保存时写入核对人与核对日期。<span class="src">表：<code>abr_field_source</code>（来源 URL、原文引句、核对人、核对日期）</span></div></li>
+    <li><span class="m">5</span><div><b>原文引句对照</b>：每个预填值都附官网原句，当前字段高亮。找不到依据的字段明确显示「没有找到可靠来源」，AI 不猜。</div></li>
+    <li><span class="m">6</span><div><b>保存条</b>：所有 AI 预填字段都确认、修改或清空后，「保存」才可点；保存写入新版本并发出项目要求变更事件。</div></li>
+  </ol>
+</section>
+
+<!-- ============ 08 企微侧边栏 ============ -->
+<section class="wf" id="p8">
+  <div class="wf-head"><span class="no">08</span><h2>★ 客户信息（企微侧边栏）</h2>
+    <div class="tags"><span class="tag">企业微信聊天侧边栏</span><span class="tag">360 宽</span><span class="tag">开发卡 M5</span></div></div>
+  <p class="wf-sub">顾问在企业微信里和学生聊天时打开，自动识别当前客户：看测评摘要和线索卡片，不切系统就能记跟进。</p>
+  <div class="stage">
+    <figure>
+      <figcaption>A · 已关联客户</figcaption>
+      <div class="wecom">
+        <div class="wh"><span>与「Zoe 张」的聊天 · 客户信息</span><span>⟳</span></div>
+        <div class="wb">
+          <div class="rel out stack t"><i class="m">1</i>
+            <div class="row"><b>张同学</b><span class="xs mut">微信昵称 Zoe 张</span><span class="sp"></span><span class="chip on">A</span></div>
+            <div class="row wrap xs"><span class="chip">线索</span><span class="chip">初联</span><span class="mut">负责人 王老师 · 来源 小红书</span></div>
+            <div class="row xs"><span class="sla over">SLA 已超时 25 分</span></div>
+          </div>
+          <div class="rel out stack t"><i class="m">2</i>
+            <div class="row"><b class="small">测评摘要</b><span class="sp"></span><span class="xs mut">10-13 完成</span></div>
+            <div class="xs">英国 · 商科硕士 · 2027 秋 ｜ 211 金融 · 均分 85.6 · 雅思未考</div>
+            <div class="row small"><span class="tier c">冲</span><span>2</span><span class="tier w">稳</span><span>6</span><span class="tier b">保</span><span>3</span><span class="sp"></span><span class="xs mut">展开学校 ▾</span></div>
+            <div class="xs">短板：相关实习偏少；雅思未考</div>
+          </div>
+          <div class="rel aib stack t"><i class="m">3</i>
+            <div class="row"><b class="small">线索卡片</b><span class="ai">AI 生成</span></div>
+            <div class="xs"><b>顾虑</b>：担心均分够不上 UCL；不确定何时考雅思。</div>
+            <div class="xs"><b>开场</b>：从「UCL 冲刺」切入，说明补一段实习能进主攻档。</div>
+          </div>
+          <div class="rel out stack t"><i class="m">4</i>
+            <div class="row"><b class="small">记跟进</b><span class="sp"></span><span class="pill on" style="padding:1px 8px;font-size:11px">企微</span><span class="pill" style="padding:1px 8px;font-size:11px">电话</span></div>
+            <div class="inp" style="min-height:48px;align-items:flex-start"><span class="ph">沟通内容…</span></div>
+            <div class="row xs"><span>下次联系</span><span class="inp" style="flex:1;min-height:24px"><span class="ph">明天 10:00</span></span><span>阶段</span><span class="inp" style="min-height:24px">不变 ▾</span></div>
+            <span class="btn pri">保存跟进</span>
+          </div>
+          <div class="rel stack t"><i class="m">5</i>
+            <div class="xs b">最近跟进</div>
+            <div class="xs mut">10-13 10:40 学生添加企微</div>
+            <div class="xs mut">10-13 10:02 完成测评，系统分配</div>
+            <div class="xs"><u>在管理端打开完整详情 ›</u></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+    <figure>
+      <figcaption>B · 联系人未关联任何客户</figcaption>
+      <div class="wecom">
+        <div class="wh"><span>与「小雨」的聊天 · 客户信息</span><span>⟳</span></div>
+        <div class="wb">
+          <div class="rel out stack"><i class="m">6</i>
+            <b class="small">这个联系人还没有关联到客户</b>
+            <div class="xs mut">可能还没做测评，或用了另一个微信做测评。</div>
+            <span class="btn pri">发送测评链接</span>
+            <span class="btn">按手机号查找并关联</span>
+            <span class="btn">新建线索</span>
+          </div>
+        </div>
+      </div>
+    </figure>
+  </div>
+  <ol class="notes">
+    <li><span class="m">1</span><div><b>客户头部</b>：姓名、微信昵称、身份（线索 / 学生）、阶段、意向度、负责人、来源、SLA 状态。手机号默认不显示（见 Q17）。<span class="src">接口：<code>GET /wecom-sidebar/api/customer</code>（用企微 JS-SDK 取当前外部联系人，企微身份鉴权）；表 <code>abr_wecom_contact</code> → <code>abr_customer</code></span></div></li>
+    <li><span class="m">2</span><div><b>测评摘要</b>：目标、关键背景、各档数量（可展开看学校）、短板。多次测评显示最近一次。</div></li>
+    <li><span class="m">3</span><div><b>线索卡片</b>：与管理端抽屉同一份 <code>lead_card</code> 输出，只给顾问看；失败时整块隐藏。</div></li>
+    <li><span class="m">4</span><div><b>记跟进</b>：方式默认「企微」，可改阶段和下次联系时间；保存后同步到管理端时间线并停止 SLA 计时。<span class="src">接口：侧边栏记跟进接口未在清单中，见 Q16</span></div></li>
+    <li><span class="m">5</span><div><b>最近跟进与跳转</b>：最近 3 条；「在管理端打开」用浏览器打开第 06 页的抽屉。</div></li>
+    <li><span class="m">6</span><div><b>未关联状态</b>：发测评链接（带顾问专属渠道码）是 1a 的默认动作；「按手机号关联」「新建线索」是否 1a 做见 Q16。学生扫顾问「联系我」码添加时由回调自动关联，正常不会出现此状态。<span class="src">回调：<code>/callback/wecom</code>（客户添加顾问事件）</span></div></li>
+  </ol>
+</section>
+
+<!-- ============ 待确认问题 ============ -->
+<section class="wf" id="qa">
+  <div class="wf-head"><span class="no">Q</span><h2>需要创始人确认的问题</h2></div>
+  <p class="wf-sub">文档没有写明、线框图先按「默认」画的地方。请逐条回复「同意默认」或给出修改。</p>
+  <ol class="qs">
+    <li>落地页的「已有 N 位同学完成测评」按什么口径、多少人以上才显示？<span class="pg">01</span><span class="def">默认：完成测评的累计人数，满 100 人才显示，不足时整行隐藏；随问卷定义接口一起返回。</span></li>
+    <li>落地页是否放报告样例？用示例数据还是真实学生的脱敏报告？<span class="pg">01</span><span class="def">默认：放一张模糊处理的示例报告，标注「示例」，不用真实学生数据。</span></li>
+    <li>竞争力雷达图的六个维度是哪六个？「与同层次申请者对比」的基线从哪里来？<span class="pg">03</span><span class="def">默认：院校层次、均分、专业相关度、语言、科研、实习；冷启动期基线用顾问设定的同层次典型值，并在说明中注明。</span></li>
+    <li>短板里是否写出综合分差距（如「距主攻档差约 6 分」）？<span class="pg">03</span><span class="def">默认：不写分数，只写「补上后 XX 可从冲刺进入主攻」，避免被当成精确数字。</span></li>
+    <li>「分享解锁」（邀请 2 位同学完成测评，每档多看 2 所）1a 做不做？<span class="pg">03 · 04</span><span class="def">默认：1a 功能点里没有，线框只预留位置，1a 不做。</span></li>
+    <li>分享长图上的二维码怎么生成：工作室统一测评码加分享人参数，还是每次分享生成独立渠道码？<span class="pg">04</span><span class="def">默认：统一的「报告分享」渠道码 + 分享人测评 ID 参数，用于归因和老带新统计。</span></li>
+    <li>分享长图允许学生选择显示哪些额外信息？<span class="pg">04</span><span class="def">默认：只允许昵称、本科院校层次（不写校名）、均分区间；全部默认不勾选。</span></li>
+    <li>免费报告每档展示几所？是否告诉学生每档总数（如「主攻档 6 所，展示 3 所」）？<span class="pg">03</span><span class="def">默认：冲刺 2、主攻 3、保底 2，并显示各档总数。</span></li>
+    <li>顾问端（线索抽屉、侧边栏）是否显示录取可能性 P 或综合分？<span class="pg">06 · 08</span><span class="def">默认：不显示，顾问端和学生端一样只显示档位，避免顾问把数字转述给学生。</span></li>
+    <li>首页的本周漏斗和渠道排名，顾问看全工作室数据还是只看自己的线索？<span class="pg">05</span><span class="def">默认：顾问只看自己的，负责人看全部。</span></li>
+    <li>首页是否放 AI 助手面板和「AI 待确认」区？<span class="pg">05</span><span class="def">默认：1a 不放（1a 没有需要顾问审核后才发出的 AI 输出），二期再加。</span></li>
+    <li>线索抽屉里的「下一步建议」和「首访准备提纲」1a 做不做？<span class="pg">06</span><span class="def">默认：不做；1a 抽屉只有客户、测评、线索卡片、时间线、记跟进。</span></li>
+    <li>顾问能否查看手机号全文？<span class="pg">06</span><span class="def">默认：顾问可以查看自己负责线索的手机号全文，每次查看记审计日志；导出只有负责人能做。</span></li>
+    <li>手动改意向度的「原因」用下拉还是自由文本？<span class="pg">06</span><span class="def">默认：下拉（已沟通确认意向 / 入学时间变化 / 预算不匹配 / 其他）+ 选填备注。</span></li>
+    <li>AI 预填是页面里等待（最多 30 秒），还是提交后台完成后再通知？是否允许「批量确认所有未修改字段」？<span class="pg">07</span><span class="def">默认：页面内等待并显示进度；必须逐字段确认，不提供一键全部确认。</span></li>
+    <li>企微侧边栏的记跟进走什么接口？未关联客户时能否在侧边栏「按手机号关联」或「新建线索」？<span class="pg">08</span><span class="def">默认：新增 <code>/wecom-sidebar/api/follow-ups</code>（企微身份鉴权）；1a 只做「发送测评链接」，关联和新建放到 1b。</span></li>
+    <li>侧边栏是否显示学生手机号？<span class="pg">08</span><span class="def">默认：不显示，需要时到管理端查看（留痕）。</span></li>
+    <li>工作室名称、Logo、品牌色、二维码何时提供？线框里用「XX 留学工作室」占位。<span class="pg">全部</span><span class="def">默认：按初始化向导第 1 步配置在参数表中，开发期用占位图。</span></li>
+    <li>报告页预约按钮写「免费 20 分钟顾问解读」（产品文档），冷启动文档写的是创始体验官「免费 30 分钟解读」，以哪个为准？<span class="pg">03</span><span class="def">默认：报告页统一写 20 分钟；体验官的 30 分钟由顾问线下安排。</span></li>
+    <li>落地页副标题是否写明冷启动人群（英国、澳洲、新加坡授课型硕士）？其他国家或本科学生进来怎么办？<span class="pg">01 · 02</span><span class="def">默认：写明；第 1 步仍可选其他国家和学位，引擎未覆盖的组合在报告中提示「该方向暂由顾问人工评估」并引导预约。</span></li>
+  </ol>
+</section>
+
+</div>
