@@ -1,0 +1,78 @@
+# zt-abroad-parent 本地开发环境：PostgreSQL + Redis + 后端
+#
+#   docker compose up -d --build     构建并启动（首次会编译项目）
+#   docker compose logs -f abr-admin 查看后端日志
+#   docker compose down              停止并删除容器（数据保留在 abr-pgdata 卷中）
+#
+# 端口与容器名均与 zt-vision-parent 错开，两个项目可在同一台机器上同时运行：
+#   PostgreSQL 5433、Redis 6380、后端 8090
+#
+# 数据库首次启动（卷为空）时会自动执行 sql/ 下的初始化脚本；卷中已有数据时不会重复执行。
+# 留学业务的增量脚本（sql/abroad/）需手动执行，见 sql/abroad/README.md。
+
+# 固定 compose 项目名，与所在文件夹名称无关
+name: zt-abroad-parent
+
+services:
+  abr-postgres:
+    image: postgres:15
+    container_name: abr-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgre}
+      POSTGRES_DB: ${POSTGRES_DB:-abroad}
+      LANG: C.UTF-8
+      TZ: Asia/Shanghai
+    ports:
+      - "5433:5432"
+    volumes:
+      - abr-pgdata:/var/lib/postgresql/data
+      - ./sql/zt_20261008_postgre.sql:/docker-entrypoint-initdb.d/01_zt.sql:ro
+      - ./sql/quartz_postgre.sql:/docker-entrypoint-initdb.d/02_quartz.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-abroad}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  abr-redis:
+    image: redis:alpine
+    container_name: abr-redis
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  abr-admin:
+    build:
+      context: .
+      target: admin
+    image: zt-abroad-admin:latest
+    container_name: abr-admin
+    depends_on:
+      abr-postgres:
+        condition: service_healthy
+      abr-redis:
+        condition: service_healthy
+    environment:
+      # 覆盖 application*.yml 中的本地配置
+      SPRING_DATASOURCE_DRUID_MASTER_URL: jdbc:postgresql://abr-postgres:5432/${POSTGRES_DB:-abroad}?currentSchema=public
+      SPRING_DATASOURCE_DRUID_MASTER_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_DRUID_MASTER_PASSWORD: ${POSTGRES_PASSWORD:-postgre}
+      SPRING_DATA_REDIS_HOST: abr-redis
+      SPRING_DATA_REDIS_PORT: "6379"
+      ZT_PROFILE: /home/zt/uploadPath
+      TZ: Asia/Shanghai
+    ports:
+      - "8090:8090"
+    volumes:
+      - ${HOME}/zt-abroad:/home/zt
+    restart: unless-stopped
+
+volumes:
+  abr-pgdata:
