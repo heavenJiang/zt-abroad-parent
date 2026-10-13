@@ -1,0 +1,457 @@
+{
+  "schema": "abr-engine-config/1.0",
+  "config_code": "US_MASTER",
+  "country": "US",
+  "country_name": "美国",
+  "degree": "master",
+  "version": "US_MASTER-2026.10-draft.1",
+  "status": "draft",
+  "launch_batch": {
+    "value": 2,
+    "notes": "设计文档 §8「建议的上线顺序」：先英、澳、新，再美国研究生"
+  },
+  "prepared_by": "M0-06 AI 草拟",
+  "confirmed_by": null,
+  "confirmed_at": null,
+  "notes": "全部数字均为草案，不是任何真实院校的录取数据；顾问确认或修改后把 status 改为 confirmed 并填写 confirmed_by / confirmed_at。首批学位为授课型硕士（设计文档 §2 示意权重、《冷启动与种子用户》种子人群均为硕士）。",
+  "dimensions": {
+    "keys": [
+      "academic",
+      "major_relevance",
+      "test_scores",
+      "research",
+      "work_experience",
+      "other_soft",
+      "course_match"
+    ],
+    "labels": {
+      "academic": "院校层次 + GPA（含排名加分）",
+      "major_relevance": "专业相关度",
+      "test_scores": "标化（GRE / GMAT）",
+      "research": "科研",
+      "work_experience": "实习 / 工作",
+      "other_soft": "其他软背景（竞赛、项目、证书）",
+      "course_match": "课程匹配度（仅德国启用）"
+    },
+    "not_weighted": [
+      "language",
+      "preferences"
+    ],
+    "notes": "设计文档 §1 输入维度、§2 权重表六列；语言只做硬门槛（§2），偏好只用于排序（§1、§5）；course_match 为 §8 德国新增维度，其他国家权重为 0"
+  },
+  "weights": {
+    "default": {
+      "academic": 0.4,
+      "major_relevance": 0.15,
+      "test_scores": 0.1,
+      "research": 0.1,
+      "work_experience": 0.15,
+      "other_soft": 0.1,
+      "course_match": 0.0
+    },
+    "default_notes": "AI 草拟，需顾问确认（§2 只给了商科、理工两行；其余专业大类按 §8「软背景权重高」草拟）",
+    "by_field": {
+      "business": {
+        "academic": 0.35,
+        "major_relevance": 0.1,
+        "test_scores": 0.2,
+        "research": 0.05,
+        "work_experience": 0.25,
+        "other_soft": 0.05,
+        "course_match": 0.0,
+        "notes": "设计文档 §2「美国商科硕士」示意行"
+      },
+      "stem": {
+        "academic": 0.4,
+        "major_relevance": 0.15,
+        "test_scores": 0.1,
+        "research": 0.2,
+        "work_experience": 0.1,
+        "other_soft": 0.05,
+        "course_match": 0.0,
+        "notes": "设计文档 §2「美国理工科硕士」示意行"
+      }
+    },
+    "notes": "权重之和必须为 1；维度见 dimensions。语言不进权重、只做硬门槛（设计文档 §2）。by_field 覆盖 default，键为专业大类 target_field_group（见 README）。"
+  },
+  "scoring": {
+    "range": [
+      0,
+      100
+    ],
+    "clamp": true,
+    "notes": "每个维度把档案里的原始值映射到 0–100 子分 s_k；映射方式来自设计文档 §1，具体分值为 AI 草拟，需顾问确认",
+    "academic": {
+      "notes": "院校层次 + GPA 合为一个维度（设计文档 §2 权重表第一列）；GPA 先由归一化统一换算为百分制（§1）",
+      "formula": "clamp(tier_base[undergrad_tier] + gpa_slope * (gpa_percent - tier_reference_gpa[undergrad_tier]) + rank_bonus[class_rank])",
+      "tier_base": {
+        "c9": 90,
+        "985": 82,
+        "211": 72,
+        "double_first_class": 68,
+        "non_key": 55,
+        "overseas": 70
+      },
+      "tier_base_notes": "分档方式来自设计文档 §1；分值 AI 草拟，需顾问确认",
+      "tier_reference_gpa": {
+        "c9": 80,
+        "985": 82,
+        "211": 84,
+        "double_first_class": 85,
+        "non_key": 86,
+        "overseas": 75
+      },
+      "tier_reference_gpa_notes": "设计文档 §1「院校层次对应的门槛均分」，按本国中游项目口径；数值 AI 草拟，需顾问确认（各校认可名单以官网为准）",
+      "gpa_slope": 2.5,
+      "gpa_slope_notes": "每高出门槛均分 1 分加的子分；AI 草拟，需顾问确认",
+      "rank_bonus": {
+        "top10": 3,
+        "top30": 1,
+        "other": 0,
+        "null": 0
+      },
+      "rank_bonus_notes": "排名档来自设计文档 §1（前 10% / 30% / 其他，选填）；加分值 AI 草拟，需顾问确认",
+      "input": [
+        "undergrad_tier",
+        "gpa_percent",
+        "class_rank"
+      ],
+      "undergrad_tier_values_notes": "取值与问卷 seed/questionnaire 的 undergrad_tier 一致：c9 / 985 / 211 / double_first_class / non_key（双非）/ overseas（海本），对应 seed/cn-university 的 C9 / 985 / 211 / 双一流 / 双非；unknown（搜不到）按 non_key 计算（M0-04 约定）。海本 GPA 换算口径另定"
+    },
+    "major_relevance": {
+      "formula": "max(0, level_score[major_relevance] - prereq_penalty * min(missing_prereq_count, prereq_penalty_max_count))",
+      "level_score": {
+        "same": 100,
+        "related": 70,
+        "cross": 35
+      },
+      "prereq_penalty": 10,
+      "prereq_penalty_max_count": 3,
+      "notes": "三档与「缺先修课记风险项」来自设计文档 §1；分值与扣分 AI 草拟，需顾问确认。缺先修课同时输出风险提示",
+      "input": [
+        "major_relevance",
+        "missing_prereq_count"
+      ]
+    },
+    "test_scores": {
+      "formula": "按 std_test_type 取一种：gre → clamp(60 + gre_slope * (std_test_total - gre_reference))；gmat_focus → clamp(60 + gmat_slope * (std_test_total - gmat_focus_reference))；gmat_classic → clamp(60 + gmat_slope * (std_test_total - gmat_classic_reference))；未考 → missing_score",
+      "gre_reference": 320,
+      "gre_slope": 4.0,
+      "gmat_focus_reference": 645,
+      "gmat_classic_reference": 680,
+      "gmat_slope": 0.4,
+      "missing_score": 30,
+      "not_required_policy": "renormalize",
+      "notes": "设计文档 §1：相对目标专业录取中位数的位置，不要求的项目不计入（not_required_policy=renormalize：该项目去掉此维度、其余权重按比例放大）。参考中位数、斜率、未考时的子分均为 AI 草拟，需顾问确认；GMAT Focus 与旧版不互换，分别给参考值（与问卷 std_test_type 一致）",
+      "input": [
+        "std_test_type",
+        "std_test_total"
+      ]
+    },
+    "research": {
+      "formula": "research_level = none 时取 none_score；否则 min(100, max(none_score, level_score[research_level] * relevance_factor[research_relevant]) + extra_item_bonus * (research_count - 1))",
+      "level_score": {
+        "core_journal": 90,
+        "conference": 75,
+        "lab_project": 55,
+        "none": 20
+      },
+      "relevance_factor": {
+        "yes": 1.0,
+        "no": 0.5
+      },
+      "none_score": 20,
+      "extra_item_bonus": 5,
+      "notes": "级别（核心期刊 / 会议 / 课题组 / 无）与「按相关度加权」来自设计文档 §1；问卷只采集最高级别、段数、是否相关；分值与系数 AI 草拟，需顾问确认",
+      "input": [
+        "research_level",
+        "research_count",
+        "research_relevant"
+      ]
+    },
+    "work_experience": {
+      "formula": "none_score + (100 - none_score) * min(effective_months / saturation_months, 1)；effective_months = work_months * company_factor[work_company_tier] * relevance_factor[work_relevant]；无经历时 effective_months = 0",
+      "company_factor": {
+        "top": 1.0,
+        "normal": 0.7
+      },
+      "relevance_factor": {
+        "yes": 1.0,
+        "no": 0.5
+      },
+      "none_score": 20,
+      "saturation_months": 12,
+      "saturation_months_by_field": {
+        "business": 24,
+        "stem": 6
+      },
+      "notes": "头部 / 一般、相关 / 不相关、累计月数来自设计文档 §1；问卷按整体采集（累计月数、是否在头部公司、是否相关）；系数与“满分所需月数”AI 草拟，需顾问确认",
+      "input": [
+        "work_months",
+        "work_company_tier",
+        "work_relevant"
+      ]
+    },
+    "other_soft": {
+      "formula": "awards_level = none 时取 none_score；否则 min(100, level_score[awards_level] + extra_item_bonus * (awards_count - 1))",
+      "level_score": {
+        "international": 90,
+        "national": 75,
+        "provincial": 60,
+        "school": 45,
+        "none": 20
+      },
+      "none_score": 20,
+      "extra_item_bonus": 5,
+      "notes": "国际 / 国家 / 省级 / 校级来自设计文档 §1；分值 AI 草拟，需顾问确认",
+      "input": [
+        "awards_level",
+        "awards_count"
+      ]
+    },
+    "course_match": {
+      "formula": "clamp(100 * course_match_ratio)",
+      "applies": false,
+      "notes": "设计文档 §8（德国）：已对口学分 / 目标项目要求学分，由成绩单解析得到；映射方式 AI 草拟，需顾问确认",
+      "input": [
+        "course_match_ratio"
+      ]
+    }
+  },
+  "hard_thresholds": {
+    "source_priority": [
+      "program_requirement",
+      "defaults_below"
+    ],
+    "on_fail": "needs_improvement",
+    "on_fail_label": "补足后可申",
+    "unverified_flag_when_default_used": true,
+    "notes": "设计文档 §3：先按项目官网要求过滤，不达标的不进冲稳保，单列「补足后可申」。项目库（abr_requirement）有记录时只用项目库；下列默认值只在项目缺记录时兜底，并给结果打「要求待核实」标记",
+    "language": {
+      "scale": "ielts_equivalent",
+      "defaults_by_difficulty": {
+        "D1": {
+          "overall": 7.0,
+          "min_sub": 6.5
+        },
+        "D2": {
+          "overall": 7.0,
+          "min_sub": 6.0
+        },
+        "D3": {
+          "overall": 6.5,
+          "min_sub": 6.0
+        },
+        "D4": {
+          "overall": 6.5,
+          "min_sub": 6.0
+        },
+        "D5": {
+          "overall": 6.0,
+          "min_sub": 5.5
+        }
+      },
+      "notes": "检查总分与小分（设计文档 §3）；托福 / 多邻国按官方对照表换算到雅思尺度（§1，归一化阶段完成）；兜底分值 AI 草拟，需顾问确认"
+    },
+    "min_gpa_by_undergrad_tier": {
+      "defaults_by_difficulty": {
+        "D1": {
+          "c9": 84,
+          "985": 86,
+          "211": 88,
+          "double_first_class": 89,
+          "non_key": 90,
+          "overseas": 79
+        },
+        "D2": {
+          "c9": 82,
+          "985": 84,
+          "211": 86,
+          "double_first_class": 87,
+          "non_key": 88,
+          "overseas": 77
+        },
+        "D3": {
+          "c9": 80,
+          "985": 82,
+          "211": 84,
+          "double_first_class": 85,
+          "non_key": 86,
+          "overseas": 75
+        },
+        "D4": {
+          "c9": 77,
+          "985": 79,
+          "211": 81,
+          "double_first_class": 82,
+          "non_key": 83,
+          "overseas": 72
+        },
+        "D5": {
+          "c9": 74,
+          "985": 76,
+          "211": 78,
+          "double_first_class": 79,
+          "non_key": 80,
+          "overseas": 69
+        }
+      },
+      "undergrad_tiers_not_accepted_by_difficulty": {
+        "D1": [],
+        "D2": [],
+        "D3": [],
+        "D4": [],
+        "D5": []
+      },
+      "notes": "设计文档 §3「院校层次对应的最低均分」；兜底矩阵 = tier_reference_gpa + 难度档偏移 [4, 2, 0, -3, -6]，AI 草拟，需顾问确认；不接收某层次的情况只按项目库或顾问填写，AI 不预填"
+    },
+    "prerequisites": {
+      "mode": "program_requirement_only",
+      "missing_action": "risk_flag",
+      "notes": "设计文档 §3、§1：先修课只取项目库；项目标为必需而缺失时判不达标，否则只记风险项"
+    },
+    "work_years": {
+      "mode": "program_requirement_only",
+      "notes": "设计文档 §3：工作年限只取项目库"
+    },
+    "cross_major": {
+      "mode": "program_requirement_only",
+      "notes": "设计文档 §3：是否接受跨专业只取项目库"
+    }
+  },
+  "probability": {
+    "formula": "P = 1 / (1 + exp(-a * (C - (T + t_offset))))",
+    "notes": "公式来自设计文档 §4；T、a 优先取项目自己的参考线（abr_program_benchmark），没有时用 benchmark_defaults 与 a_default",
+    "a_default": 0.08,
+    "a_notes": "设计文档 §4：项目录取越标准化 a 越大；本国默认值 AI 草拟，需顾问确认；项目有自己的 a（abr_program_benchmark）时优先",
+    "t_offset": 2.0,
+    "t_offset_notes": "设计文档 §8：美国档位偏保守，统一抬高参考线；幅度 AI 草拟，需顾问确认",
+    "rounding": {
+      "c_scale": 2,
+      "p_scale": 4,
+      "mode": "HALF_UP"
+    },
+    "rounding_notes": "保证同一输入同一输出（开发规范 14.1）；位数 AI 草拟"
+  },
+  "tier_cutoffs": {
+    "reach_below": 0.35,
+    "safety_above": 0.7,
+    "labels": {
+      "reach": "冲",
+      "match": "稳",
+      "safety": "保"
+    },
+    "boundary_rule": "P < 0.35 → 冲；0.35 ≤ P ≤ 0.70 → 稳；P > 0.70 → 保",
+    "student_visible": "tier_label_only",
+    "expose_probability_to_student": false,
+    "notes": "设计文档 §4：冲刺 < 35%、主攻 35–70%、保底 > 70%（阈值可调）；对外只展示档位，不展示百分比"
+  },
+  "benchmark_defaults": {
+    "source_priority": [
+      "own_cases",
+      "official_stats",
+      "consultant_difficulty"
+    ],
+    "default_source": "consultant_difficulty",
+    "difficulty_levels": {
+      "D1": {
+        "t": 90,
+        "description": "极难：录取者几乎都是顶尖背景（参考：该国综合排名约前 10 院校的热门项目）"
+      },
+      "D2": {
+        "t": 84,
+        "description": "很难（参考：约前 11–30 名院校，或前 10 院校的非热门项目）"
+      },
+      "D3": {
+        "t": 78,
+        "description": "中等（参考：约前 31–60 名院校）"
+      },
+      "D4": {
+        "t": 72,
+        "description": "较易（参考：约前 61–100 名院校）"
+      },
+      "D5": {
+        "t": 64,
+        "description": "容易 / 门槛低（参考：100 名以后或录取较宽松的项目）"
+      }
+    },
+    "notes": "设计文档 §4、§7：冷启动期 T 由顾问按经验给的难度分（五档）决定，每条 T 标明来源；下列各档 T 值与档位说明为 AI 草拟，需顾问确认；排名区间只是帮助顾问定档的参考，不是对任何真实院校的判断"
+  },
+  "portfolio": {
+    "default_mix": {
+      "reach": 2,
+      "match": 4,
+      "safety": 2
+    },
+    "constraints": [
+      "total_budget_within_limit",
+      "at_least_one_safety_in_first_choice_country"
+    ],
+    "notes": "设计文档 §5：默认 2 冲 + 4 稳 + 2 保，总预算不超、至少一所保底在首选国家"
+  },
+  "gap_analysis": {
+    "target": "match",
+    "target_p": 0.35,
+    "changeable": [
+      "language",
+      "test_scores",
+      "research",
+      "work_experience"
+    ],
+    "actions": [
+      {
+        "code": "ielts_plus_0_5",
+        "dimension": "language",
+        "min_months": 2
+      },
+      {
+        "code": "gre_plus_10",
+        "dimension": "test_scores",
+        "min_months": 2
+      },
+      {
+        "code": "add_lab_research",
+        "dimension": "research",
+        "min_months": 4
+      },
+      {
+        "code": "add_related_internship_3m",
+        "dimension": "work_experience",
+        "min_months": 3
+      }
+    ],
+    "notes": "设计文档 §6：对冲刺校反算进入主攻档所需最小提升，只在可改变的维度里找，并按剩余时间判断是否现实；各动作所需月数 AI 草拟，需顾问确认"
+  },
+  "calibration": {
+    "refit_min_samples_per_country": 200,
+    "seasonal_check": {
+      "safety_admit_rate_min": 0.7,
+      "match_admit_rate_range": [
+        0.35,
+        0.7
+      ],
+      "reach_admit_rate_max": 0.35
+    },
+    "deviation_alert": 0.1,
+    "notes": "设计文档 §7：约 200 条结果后用逻辑回归重拟合；每季对比各档实际录取率。偏差告警 0.10 为 AI 草拟，需顾问确认"
+  },
+  "country_rules": {
+    "soft_background_emphasis": {
+      "value": true,
+      "notes": "设计文档 §8：软背景权重高（体现在 weights 中实习 / 科研 / 其他软背景占比高于英澳）"
+    },
+    "conservative_tiering": {
+      "t_offset_applied": true,
+      "notes": "设计文档 §8：不确定性大、档位偏保守 → a 取小值，并在 probability.t_offset 统一抬高参考线；幅度 AI 草拟，需顾问确认"
+    },
+    "test_policy": {
+      "per_program": true,
+      "notes": "设计文档 §1、§8：标化政策因校而异；项目不要求时按 scoring.test_scores.not_required_policy 处理"
+    },
+    "undergraduate_model": {
+      "separate_config": "US_BACHELOR（不在本批）",
+      "notes": "设计文档 §8：本科与研究生分开建模；本科为综合评估，冷启动最后上线"
+    },
+    "notes": "设计文档 §8 多国家适配"
+  }
+}
