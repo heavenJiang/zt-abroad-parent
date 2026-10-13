@@ -11,7 +11,7 @@
 - 基于 RuoYi-Vue 3.9.2（与 `zt-vision-parent` 同一套脚手架）；Maven 根项目 `com.ygb:zt-abroad-parent`；启动模块 `zt-admin`；业务模块 `zt-abroad`。
 - 留学业务统一放在 `zt-abroad`：包 `com.ygb.abroad`，控制器在 `zt-admin` 的 `com.ygb.web.controller.abroad`（学生端接口 `com.ygb.web.controller.app`，路径 `/app/**`），表前缀 `abr_`，权限 `abroad:资源:操作`，路径 `/abroad/资源`，字典 `abr_含义`。
 - 选校引擎在 `com.ygb.abroad.engine`：纯 Java、确定性，不访问数据库、不调用大模型；单元测试覆盖率 ≥ 90%。学生只看冲 / 稳 / 保，不展示概率百分比。
-- 大模型只能经 `com.ygb.abroad.ai` 网关调用（脱敏、schema 校验、调用日志、审核策略）；面向学生的 AI 内容默认待顾问审核。
+- 大模型只能经 `com.ygb.abroad.ai` 网关调用（脱敏、schema 校验、调用日志、审核策略）；审核策略按 Agent 配置：报告解读直接展示 + 抽检，个性化建议类内容默认顾问确认后发出；AI 内容一律标明“AI 生成”。
 - 不做多租户（定制输出按客户独立部署），表中不加 `tenant_id`。
 - 数据库 **PostgreSQL 15**；写 SQL 禁止 MySQL 语法；char 列比较加引号；String/boolean 写入数值列要 `cast`；时间区间参数要 `cast(... as date/timestamp)`；种子数据后重置序列。业务增量脚本放 `sql/abroad/`（见其 README）。
 - 修改既有文件时匹配周边代码风格（大括号另起一行、中文 Javadoc、`@Autowired` 字段注入）。
