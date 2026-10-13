@@ -1,0 +1,55 @@
+# 后端 CI：编译 + 单元测试；全量初始化脚本在 PostgreSQL 15 上实际执行
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: 编译与单元测试
+        run: mvn -B -q package
+
+  sql:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgre
+          POSTGRES_DB: abroad
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgre
+      PGDATABASE: abroad
+    steps:
+      - uses: actions/checkout@v4
+      - name: 执行全量初始化脚本
+        run: |
+          psql -v ON_ERROR_STOP=1 -q -f sql/zt_20261008_postgre.sql
+          psql -v ON_ERROR_STOP=1 -q -f sql/quartz_postgre.sql
+      - name: 按文件名顺序执行留学业务增量脚本（两遍，验证可重复执行）
+        run: |
+          for pass in 1 2; do
+            for f in $(ls sql/abroad/*.sql 2>/dev/null | sort); do
+              echo "第 $pass 遍：$f"
+              psql -v ON_ERROR_STOP=1 -q -f "$f"
+            done
+          done
