@@ -1,5 +1,6 @@
 package com.ygb.abroad.service.impl;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -151,6 +152,18 @@ public class AbrAssessmentServiceImpl implements IAbrAssessmentService
             }
         }
         return toVo(assessmentMapper.selectAbrAssessmentById(assessmentId));
+    }
+
+    @Override
+    public List<AbrAssessment> selectAbrAssessmentList(AbrAssessment assessment)
+    {
+        return assessmentMapper.selectAbrAssessmentList(assessment);
+    }
+
+    @Override
+    public AbrAssessment selectAbrAssessmentById(Long assessmentId)
+    {
+        return assessmentMapper.selectAbrAssessmentById(assessmentId);
     }
 
     private AbrQuestionnaire activeQuestionnaire(String code)

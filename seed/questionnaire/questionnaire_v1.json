@@ -2021,8 +2021,9 @@
           "points_note": "[GPA, 百分制]；区间内线性插值；草案数值"
         },
         "gpa5": {
-          "method": "linear",
-          "formula": "percent = 50 + 10 * gpa（gpa ≥ 1），gpa < 1 时 percent = 60 * gpa",
+          "method": "piecewise_linear",
+          "points": [[0, 0], [1, 60], [5, 100]],
+          "formula": "percent = 50 + 10 * gpa（gpa ≥ 1），gpa < 1 时 percent = 60 * gpa（与 points 折线等价，引擎按 points 计算）",
           "note": "草案：部分学校采用「绩点 = 分数 / 10 − 5」，是否适用需顾问确认"
         },
         "other": {

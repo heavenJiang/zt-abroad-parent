@@ -17,7 +17,7 @@ jobs:
           java-version: '17'
           cache: maven
       - name: 编译与单元测试
-        run: mvn -B -q package
+        run: mvn -B -q verify
 
   sql:
     runs-on: ubuntu-latest

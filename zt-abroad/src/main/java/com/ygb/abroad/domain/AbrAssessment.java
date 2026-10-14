@@ -1,5 +1,6 @@
 package com.ygb.abroad.domain;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -79,6 +80,25 @@ public class AbrAssessment extends BaseEntity
 
     /** 删除标志（0存在 2删除） */
     private String delFlag;
+
+    /** 已答题数（列表用，非表字段） */
+    private Integer answerCount;
+
+    /** 本科院校层次（来自背景档案，列表用） */
+    private String undergradTier;
+
+    /** 百分制均分（来自背景档案，列表用） */
+    private BigDecimal gpaPercent;
+
+    /** 雅思等效总分（来自背景档案，列表用） */
+    private BigDecimal ieltsEquivTotal;
+
+    /** 目标专业大类（来自背景档案，列表用） */
+    private String targetFieldGroup;
+
+    /** 归一化时间（来自背景档案，列表用） */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date normalizedTime;
 
     public void setAssessmentId(Long assessmentId)
     {
@@ -258,6 +278,66 @@ public class AbrAssessment extends BaseEntity
     public String getDelFlag()
     {
         return delFlag;
+    }
+
+    public void setAnswerCount(Integer answerCount)
+    {
+        this.answerCount = answerCount;
+    }
+
+    public Integer getAnswerCount()
+    {
+        return answerCount;
+    }
+
+    public void setUndergradTier(String undergradTier)
+    {
+        this.undergradTier = undergradTier;
+    }
+
+    public String getUndergradTier()
+    {
+        return undergradTier;
+    }
+
+    public void setGpaPercent(BigDecimal gpaPercent)
+    {
+        this.gpaPercent = gpaPercent;
+    }
+
+    public BigDecimal getGpaPercent()
+    {
+        return gpaPercent;
+    }
+
+    public void setIeltsEquivTotal(BigDecimal ieltsEquivTotal)
+    {
+        this.ieltsEquivTotal = ieltsEquivTotal;
+    }
+
+    public BigDecimal getIeltsEquivTotal()
+    {
+        return ieltsEquivTotal;
+    }
+
+    public void setTargetFieldGroup(String targetFieldGroup)
+    {
+        this.targetFieldGroup = targetFieldGroup;
+    }
+
+    public String getTargetFieldGroup()
+    {
+        return targetFieldGroup;
+    }
+
+    public void setNormalizedTime(Date normalizedTime)
+    {
+        this.normalizedTime = normalizedTime;
+    }
+
+    public Date getNormalizedTime()
+    {
+        return normalizedTime;
     }
 
     @Override

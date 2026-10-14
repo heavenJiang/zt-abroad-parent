@@ -1,5 +1,6 @@
 package com.ygb.abroad.mapper;
 
+import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import com.ygb.abroad.domain.AbrAssessment;
 
@@ -10,6 +11,14 @@ import com.ygb.abroad.domain.AbrAssessment;
  */
 public interface AbrAssessmentMapper
 {
+    /**
+     * 查询测评列表（管理端；不含答案，带背景档案摘要）
+     * 
+     * @param assessment 查询条件
+     * @return 测评集合
+     */
+    public List<AbrAssessment> selectAbrAssessmentList(AbrAssessment assessment);
+
     /**
      * 按ID查询测评（含答案）
      * 

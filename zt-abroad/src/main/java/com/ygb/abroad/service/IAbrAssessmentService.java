@@ -1,5 +1,7 @@
 package com.ygb.abroad.service;
 
+import java.util.List;
+import com.ygb.abroad.domain.AbrAssessment;
 import com.ygb.abroad.domain.AbrVisitor;
 import com.ygb.abroad.domain.vo.AppAnswersBody;
 import com.ygb.abroad.domain.vo.AppAssessmentBody;
@@ -70,4 +72,20 @@ public interface IAbrAssessmentService
      * @return 保存后的测评
      */
     public AppAssessmentVo saveAnswers(AbrVisitor visitor, Long assessmentId, AppAnswersBody body);
+
+    /**
+     * 管理端：查询测评列表（不含答案，带背景档案摘要）
+     * 
+     * @param assessment 查询条件
+     * @return 测评集合
+     */
+    public List<AbrAssessment> selectAbrAssessmentList(AbrAssessment assessment);
+
+    /**
+     * 管理端：按ID查询测评（含答案）
+     * 
+     * @param assessmentId 测评ID
+     * @return 测评
+     */
+    public AbrAssessment selectAbrAssessmentById(Long assessmentId);
 }

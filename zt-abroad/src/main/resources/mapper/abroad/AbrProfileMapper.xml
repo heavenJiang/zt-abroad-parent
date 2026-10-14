@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrProfileMapper">
+
+    <resultMap type="AbrProfile" id="AbrProfileResult">
+        <id     property="profileId"             column="profile_id"              />
+        <result property="assessmentId"          column="assessment_id"           />
+        <result property="visitorId"             column="visitor_id"              />
+        <result property="questionnaireId"       column="questionnaire_id"        />
+        <result property="undergradTier"         column="undergrad_tier"          />
+        <result property="undergradUniversityId" column="undergrad_university_id" />
+        <result property="gpaPercent"            column="gpa_percent"             />
+        <result property="classRank"             column="class_rank"              />
+        <result property="majorRelevance"        column="major_relevance"         />
+        <result property="englishStatus"         column="english_status"          />
+        <result property="ieltsEquivTotal"       column="ielts_equiv_total"       />
+        <result property="ieltsEquivMinSub"      column="ielts_equiv_min_sub"     />
+        <result property="stdTestType"           column="std_test_type"           />
+        <result property="stdTestTotal"          column="std_test_total"          />
+        <result property="targetDegree"          column="target_degree"           />
+        <result property="targetField"           column="target_field"            />
+        <result property="targetFieldGroup"      column="target_field_group"      />
+        <result property="targetCountries"       column="target_countries"        />
+        <result property="monthsToIntake"        column="months_to_intake"        />
+        <result property="profile"               column="profile"                 />
+        <result property="warnings"              column="warnings"                />
+        <result property="normalizedTime"        column="normalized_time"         />
+        <result property="createBy"              column="create_by"               />
+        <result property="createTime"            column="create_time"             />
+        <result property="updateBy"              column="update_by"               />
+        <result property="updateTime"            column="update_time"             />
+        <result property="remark"                column="remark"                  />
+    </resultMap>
+
+    <select id="selectAbrProfileByAssessmentId" parameterType="Long" resultMap="AbrProfileResult">
+        select p.profile_id, p.assessment_id, p.visitor_id, p.questionnaire_id, p.undergrad_tier, p.undergrad_university_id, p.gpa_percent,
+               p.class_rank, p.major_relevance, p.english_status, p.ielts_equiv_total, p.ielts_equiv_min_sub, p.std_test_type, p.std_test_total,
+               p.target_degree, p.target_field, p.target_field_group, p.target_countries, p.months_to_intake,
+               cast(p.profile as text) as profile, cast(p.warnings as text) as warnings, p.normalized_time,
+               p.create_by, p.create_time, p.update_by, p.update_time, p.remark
+        from abr_profile p
+        where p.assessment_id = #{assessmentId}
+    </select>
+
+    <insert id="upsertAbrProfile" parameterType="AbrProfile">
+        insert into abr_profile (assessment_id, visitor_id, questionnaire_id, undergrad_tier, undergrad_university_id, gpa_percent, class_rank,
+                                 major_relevance, english_status, ielts_equiv_total, ielts_equiv_min_sub, std_test_type, std_test_total,
+                                 target_degree, target_field, target_field_group, target_countries, months_to_intake, profile, warnings,
+                                 normalized_time, create_by, create_time)
+        values (#{assessmentId}, #{visitorId}, #{questionnaireId}, #{undergradTier}, #{undergradUniversityId}, #{gpaPercent}, #{classRank},
+                #{majorRelevance}, #{englishStatus}, #{ieltsEquivTotal}, #{ieltsEquivMinSub}, #{stdTestType}, #{stdTestTotal},
+                #{targetDegree}, #{targetField}, #{targetFieldGroup}, coalesce(#{targetCountries}, ''), #{monthsToIntake},
+                cast(#{profile} as jsonb), coalesce(cast(#{warnings} as jsonb), '[]'::jsonb), now(), #{createBy}, now())
+        on conflict (assessment_id) do update
+        set questionnaire_id        = excluded.questionnaire_id,
+            undergrad_tier          = excluded.undergrad_tier,
+            undergrad_university_id = excluded.undergrad_university_id,
+            gpa_percent             = excluded.gpa_percent,
+            class_rank              = excluded.class_rank,
+            major_relevance         = excluded.major_relevance,
+            english_status          = excluded.english_status,
+            ielts_equiv_total       = excluded.ielts_equiv_total,
+            ielts_equiv_min_sub     = excluded.ielts_equiv_min_sub,
+            std_test_type           = excluded.std_test_type,
+            std_test_total          = excluded.std_test_total,
+            target_degree           = excluded.target_degree,
+            target_field            = excluded.target_field,
+            target_field_group      = excluded.target_field_group,
+            target_countries        = excluded.target_countries,
+            months_to_intake        = excluded.months_to_intake,
+            profile                 = excluded.profile,
+            warnings                = excluded.warnings,
+            normalized_time         = now(),
+            update_by               = excluded.create_by,
+            update_time             = now()
+    </insert>
+
+</mapper>

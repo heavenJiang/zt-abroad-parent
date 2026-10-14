@@ -53,7 +53,7 @@ M0-06 产出的**第一批引擎参数草案**：每个「国家 × 学位」一
 
 ### 维度（`dimensions.keys`，所有文件相同、顺序固定）
 
-| 键 | 含义 | 档案输入（问卷归一化输出，见 `seed/questionnaire`；`abr_profile` 列名在 M3-03 定稿） |
+| 键 | 含义 | 档案输入（问卷归一化输出，见 `seed/questionnaire`；字段即 `engine.BackgroundProfile`，M3-03 已实现，主要字段在 `abr_profile` 单独建列） |
 | --- | --- | --- |
 | `academic` | 院校层次 + GPA（含排名加分）；§2 权重表第一列 | `undergrad_tier`、`gpa_percent`、`class_rank` |
 | `major_relevance` | 专业相关度 | `major_relevance`（same/related/cross）、`missing_prereq_count` |
@@ -140,3 +140,9 @@ P     = 1 / (1 + exp(-a × (C − T_eff)))
 - 每组数字带 `notes`；`status = confirmed` 时不应再有“AI 草拟”字样（导入时给出警告）。
 
 本目录的文件在 M0-06 生成时已用 Python 按上述规则校验通过（全部可解析、权重和为 1）。
+
+## 实现（M3-03）
+
+- 子分由 `com.ygb.abroad.engine.SubScoreCalculator` 按本目录各文件的 `scoring` 节计算，参数缺失时直接报错（不默认）；单元测试用 `uk_master.json` 复现 M0-06 说明文档 §3.1 的算例（88 / 100 / 20 / 48 / 60），并对全部 8 个文件跑同一个学生检查子分在 0–100 内。
+- 归一化（答案 → 背景档案）由 `engine.AnswerVisibility`（剔除隐藏题）、`engine.NormalizationRules`（问卷 normalization 节）、`engine.ProfileNormalizer` 完成；`engine` 包行覆盖率由 JaCoCo 在 `mvn verify` 时检查，低于 90% 构建失败。
+

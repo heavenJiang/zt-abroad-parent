@@ -28,6 +28,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateBy"             column="update_by"             />
         <result property="updateTime"           column="update_time"           />
         <result property="remark"               column="remark"                />
+        <result property="answerCount"          column="answer_count"          />
+        <result property="undergradTier"        column="undergrad_tier"        />
+        <result property="gpaPercent"           column="gpa_percent"           />
+        <result property="ieltsEquivTotal"      column="ielts_equiv_total"     />
+        <result property="targetFieldGroup"     column="target_field_group"    />
+        <result property="normalizedTime"       column="normalized_time"       />
     </resultMap>
 
     <sql id="selectAbrAssessmentVo">
@@ -37,6 +43,36 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                a.del_flag, a.create_by, a.create_time, a.update_by, a.update_time, a.remark
         from abr_assessment a
     </sql>
+
+    <select id="selectAbrAssessmentList" parameterType="AbrAssessment" resultMap="AbrAssessmentResult">
+        select a.assessment_id, a.visitor_id, a.questionnaire_id, a.questionnaire_code, a.questionnaire_version, a.channel_code,
+               a.client_platform, a.policy_version, a.consent_time, a.assessment_status, a.is_minor, a.current_screen, a.submitted_time,
+               a.create_time, a.update_time,
+               (select count(*) from jsonb_object_keys(a.answers)) as answer_count,
+               p.undergrad_tier, p.gpa_percent, p.ielts_equiv_total, p.target_field_group, p.normalized_time
+        from abr_assessment a
+        left join abr_profile p on p.assessment_id = a.assessment_id
+        where a.del_flag = '0'
+        <if test="assessmentId != null">
+            AND a.assessment_id = #{assessmentId}
+        </if>
+        <if test="assessmentStatus != null and assessmentStatus != ''">
+            AND a.assessment_status = #{assessmentStatus}
+        </if>
+        <if test="channelCode != null and channelCode != ''">
+            AND a.channel_code = #{channelCode}
+        </if>
+        <if test="isMinor != null and isMinor != ''">
+            AND a.is_minor = #{isMinor}
+        </if>
+        <if test="params.beginTime != null and params.beginTime != ''">
+            AND a.create_time &gt;= cast(#{params.beginTime} as date)
+        </if>
+        <if test="params.endTime != null and params.endTime != ''">
+            AND a.create_time &lt; cast(#{params.endTime} as date) + interval '1 day'
+        </if>
+        order by a.assessment_id desc
+    </select>
 
     <select id="selectAbrAssessmentById" parameterType="Long" resultMap="AbrAssessmentResult">
         <include refid="selectAbrAssessmentVo"/>
