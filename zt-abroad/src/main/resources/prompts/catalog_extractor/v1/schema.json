@@ -1,0 +1,569 @@
+{
+  "type": "object",
+  "required": [
+    "programNameEn",
+    "degree",
+    "durationMonths",
+    "tuition",
+    "currency",
+    "intakes",
+    "teachingLanguage",
+    "minGpa",
+    "tiersNotAccepted",
+    "ieltsOverall",
+    "ieltsMinSub",
+    "otherLanguage",
+    "testRequirement",
+    "testDetail",
+    "prerequisites",
+    "prerequisitesRequired",
+    "workYears",
+    "acceptCrossMajor",
+    "deadlines"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "programNameEn": {
+      "type": "object",
+      "required": [
+        "value",
+        "quote"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 300
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1000
+        }
+      }
+    },
+    "degree": {
+      "type": "object",
+      "required": [
+        "value",
+        "quote"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 20
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1000
+        }
+      }
+    },
+    "durationMonths": {
+      "type": "object",
+      "required": [
+        "value",
+        "quote"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1000
+        }
+      }
+    },
+    "tuition": {
+      "type": "object",
+      "required": [
+        "value",
+        "quote"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1000
+        }
+      }
+    },
+    "currency": {
+      "type": "object",
+      "required": [
+        "value",
+        "quote"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 10
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1000
+        }
+      }
+    },
+    "intakes": {
+      "type": "object",
+      "required": [
+        "value",
+        "quote"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 4,
+          "items": {
+            "type": "string",
+            "maxLength": 20
+          }
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1000
+        }
+      }
+    },
+    "teachingLanguage": {
+      "type": "object",
+      "required": [
+        "value",
+        "quote"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 20
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1000
+        }
+      }
+    },
+    "minGpa": {
+      "type": "object",
+      "required": [
+        "value",
+        "quote"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1000
+        }
+      }
+    },
+    "tiersNotAccepted": {
+      "type": "object",
+      "required": [
+        "value",
+        "quote"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "maxItems": 6,
+          "items": {
+            "type": "string",
+            "maxLength": 30
+          }
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1000
+        }
+      }
+    },
+    "ieltsOverall": {
+      "type": "object",
+      "required": [
+        "value",
+        "quote"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1000
+        }
+      }
+    },
+    "ieltsMinSub": {
+      "type": "object",
+      "required": [
+        "value",
+        "quote"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1000
+        }
+      }
+    },
+    "otherLanguage": {
+      "type": "object",
+      "required": [
+        "value",
+        "quote"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "overall": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "minSub": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "level": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 50
+              },
+              "note": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              }
+            }
+          }
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1000
+        }
+      }
+    },
+    "testRequirement": {
+      "type": "object",
+      "required": [
+        "value",
+        "quote"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 20
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1000
+        }
+      }
+    },
+    "testDetail": {
+      "type": "object",
+      "required": [
+        "value",
+        "quote"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "gre": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "gmat_focus": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "gmat_classic": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          }
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1000
+        }
+      }
+    },
+    "prerequisites": {
+      "type": "object",
+      "required": [
+        "value",
+        "quote"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1000
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1000
+        }
+      }
+    },
+    "prerequisitesRequired": {
+      "type": "object",
+      "required": [
+        "value",
+        "quote"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 5
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1000
+        }
+      }
+    },
+    "workYears": {
+      "type": "object",
+      "required": [
+        "value",
+        "quote"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1000
+        }
+      }
+    },
+    "acceptCrossMajor": {
+      "type": "object",
+      "required": [
+        "value",
+        "quote"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 5
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1000
+        }
+      }
+    },
+    "deadlines": {
+      "type": "object",
+      "required": [
+        "value",
+        "quote"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "rolling",
+            "rounds"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "rolling": {
+              "type": "boolean"
+            },
+            "rounds": {
+              "type": "array",
+              "maxItems": 12,
+              "items": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "date"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 50
+                  },
+                  "date": {
+                    "type": "string",
+                    "maxLength": 20
+                  }
+                }
+              }
+            }
+          }
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1000
+        }
+      }
+    }
+  }
+}

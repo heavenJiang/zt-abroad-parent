@@ -70,6 +70,9 @@ public final class AiConstants
     /** mock 模型的故障模拟输入键 */
     public static final String MOCK_KEY = "_mock";
 
+    /** mock 模型的输出覆盖键：输入中带此键（JSON 对象）时，mock 模型返回它而不是 mock.json；只用于评测样例，真实模型忽略 */
+    public static final String MOCK_OUTPUT_KEY = "_mockOutput";
+
     /** 调用日志输入摘要最大长度 */
     public static final int INPUT_SUMMARY_MAX = 2000;
 

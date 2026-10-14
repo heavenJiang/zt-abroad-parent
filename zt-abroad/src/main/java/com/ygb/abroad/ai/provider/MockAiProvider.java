@@ -2,6 +2,7 @@ package com.ygb.abroad.ai.provider;
 
 import java.util.Map;
 import com.ygb.abroad.ai.AiConstants;
+import com.ygb.abroad.ai.AiJson;
 import com.ygb.abroad.ai.AiTemplate;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ArrayNode;
@@ -13,7 +14,8 @@ import tools.jackson.databind.node.ObjectNode;
  * <p>
  * 输入 _mock 模拟故障：timeout / error（仅主模型失败）、timeout_all / error_all（主备都失败）、
  * invalid_json（每次都返回非 JSON）、schema_fail_once（第 1 轮返回 {}，第 2 轮正常）、
- * banned（在第一个字符串字段后追加“保证录取”）。token 按字符数 / 2 估算。
+ * banned（在第一个字符串字段后追加“保证录取”）。输入 _mockOutput（JSON 对象）时返回它而不是 mock.json，
+ * 供同一 Agent 的多个评测样例各自给出 mock 输出（真实模型忽略该键）。token 按字符数 / 2 估算。
  * </p>
  *
  * @author ygb
@@ -55,7 +57,8 @@ public class MockAiProvider implements AiProvider
         }
         else
         {
-            JsonNode mock = request.getPrompt() == null ? null : request.getPrompt().getMock();
+            Object override = input == null ? null : input.get(AiConstants.MOCK_OUTPUT_KEY);
+            JsonNode mock = override != null ? AiJson.toTree(override) : request.getPrompt() == null ? null : request.getPrompt().getMock();
             if (mock == null)
             {
                 throw new AiProviderException("模型 " + model + " 返回内容为空（提示词目录下没有 mock.json）");
