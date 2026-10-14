@@ -1,0 +1,11 @@
+{
+  "name": "去标识化后还原姓名，手机号不出现在输出中",
+  "input": { "studentName": "韩梅梅", "note": "韩梅梅的手机 13812345678，微信：hmm_2026", "profile": { "school": "某某大学" } },
+  "knownNames": ["韩梅梅"],
+  "expectStatus": "success",
+  "expect": [
+    { "path": "/summary", "contains": "韩梅梅的自测摘要" },
+    { "path": "/tags", "contains": "mock" },
+    { "path": "/level", "equals": "ok" }
+  ]
+}

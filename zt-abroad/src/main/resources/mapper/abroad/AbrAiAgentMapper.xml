@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrAiAgentMapper">
+
+    <resultMap type="AbrAiAgent" id="AbrAiAgentResult">
+        <id     property="agentId"          column="agent_id"          />
+        <result property="agentCode"        column="agent_code"        />
+        <result property="agentName"        column="agent_name"        />
+        <result property="description"      column="description"       />
+        <result property="reviewPolicy"     column="review_policy"     />
+        <result property="sampleRate"       column="sample_rate"       />
+        <result property="primaryModel"     column="primary_model"     />
+        <result property="backupModel"      column="backup_model"      />
+        <result property="promptVersion"    column="prompt_version"    />
+        <result property="timeoutMs"        column="timeout_ms"        />
+        <result property="maxOutputTokens"  column="max_output_tokens" />
+        <result property="temperature"      column="temperature"       />
+        <result property="status"           column="status"            />
+        <result property="createBy"         column="create_by"         />
+        <result property="createTime"       column="create_time"       />
+        <result property="updateBy"         column="update_by"         />
+        <result property="updateTime"       column="update_time"       />
+        <result property="remark"           column="remark"            />
+    </resultMap>
+
+    <sql id="selectAbrAiAgentVo">
+        select a.agent_id, a.agent_code, a.agent_name, a.description, a.review_policy, a.sample_rate, a.primary_model, a.backup_model,
+               a.prompt_version, a.timeout_ms, a.max_output_tokens, a.temperature, a.status,
+               a.create_by, a.create_time, a.update_by, a.update_time, a.remark
+        from abr_ai_agent a
+    </sql>
+
+    <select id="selectAbrAiAgentList" parameterType="AbrAiAgent" resultMap="AbrAiAgentResult">
+        <include refid="selectAbrAiAgentVo"/>
+        <where>
+            <if test="agentCode != null and agentCode != ''">
+                AND (a.agent_code ilike concat('%', #{agentCode}, '%') or a.agent_name like concat('%', #{agentCode}, '%'))
+            </if>
+            <if test="reviewPolicy != null and reviewPolicy != ''">
+                AND a.review_policy = #{reviewPolicy}
+            </if>
+            <if test="status != null and status != ''">
+                AND a.status = #{status}
+            </if>
+        </where>
+        order by a.agent_id
+    </select>
+
+    <select id="selectAbrAiAgentById" parameterType="Long" resultMap="AbrAiAgentResult">
+        <include refid="selectAbrAiAgentVo"/>
+        where a.agent_id = #{agentId}
+    </select>
+
+    <select id="selectAbrAiAgentByCode" parameterType="String" resultMap="AbrAiAgentResult">
+        <include refid="selectAbrAiAgentVo"/>
+        where a.agent_code = #{agentCode}
+    </select>
+
+    <update id="updateAbrAiAgent" parameterType="AbrAiAgent">
+        update abr_ai_agent
+        set agent_name        = #{agentName},
+            description       = coalesce(#{description}, ''),
+            review_policy     = #{reviewPolicy},
+            sample_rate       = coalesce(#{sampleRate}, 0),
+            primary_model     = #{primaryModel},
+            backup_model      = coalesce(#{backupModel}, ''),
+            prompt_version    = #{promptVersion},
+            timeout_ms        = #{timeoutMs},
+            max_output_tokens = #{maxOutputTokens},
+            temperature       = #{temperature},
+            status            = coalesce(#{status}, '0'),
+            remark            = #{remark},
+            update_by         = #{updateBy},
+            update_time       = now()
+        where agent_id = #{agentId}
+    </update>
+
+</mapper>

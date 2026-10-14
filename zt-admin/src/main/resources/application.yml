@@ -145,3 +145,36 @@ xss:
   excludes: /system/notice
   # 匹配链接
   urlPatterns: /system/*,/monitor/*,/tool/*,/abroad/*
+
+# 留学 AI 网关（M2-04）：模型供应商与单价；Agent 中的模型写作 供应商名:模型名（如 deepseek:deepseek-chat）
+# api-key 只从环境变量注入，不写入仓库；单价单位为 元 / 1000 token，上线前按供应商官网核对
+# 模型名含点号时用方括号写键，如 "[qwen2.5-72b-instruct]"
+abroad:
+  ai:
+    filter:
+      # 单个字符串字段最大长度，超过视为整篇文书并拦截
+      max-field-length: 1500
+    providers:
+      # 离线 mock：返回 prompts/<agent>/<版本>/mock.json，供开发、单元测试与评测
+      mock:
+        type: mock
+        models:
+          default:
+            input-price-per-1k: 0.001
+            output-price-per-1k: 0.002
+      deepseek:
+        type: openai-compatible
+        base-url: https://api.deepseek.com/v1
+        api-key: ${ABR_AI_DEEPSEEK_API_KEY:}
+        models:
+          deepseek-chat:
+            input-price-per-1k: 0.002
+            output-price-per-1k: 0.008
+      qwen:
+        type: openai-compatible
+        base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+        api-key: ${ABR_AI_QWEN_API_KEY:}
+        models:
+          qwen-plus:
+            input-price-per-1k: 0.0008
+            output-price-per-1k: 0.002

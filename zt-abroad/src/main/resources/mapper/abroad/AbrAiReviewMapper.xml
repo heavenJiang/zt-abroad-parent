@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrAiReviewMapper">
+
+    <resultMap type="AbrAiReview" id="AbrAiReviewResult">
+        <id     property="reviewId"       column="review_id"       />
+        <result property="callId"         column="call_id"         />
+        <result property="agentCode"      column="agent_code"      />
+        <result property="promptVersion"  column="prompt_version"  />
+        <result property="bizType"        column="biz_type"        />
+        <result property="bizId"          column="biz_id"          />
+        <result property="content"        column="content"         />
+        <result property="editedContent"  column="edited_content"  />
+        <result property="status"         column="status"          />
+        <result property="flags"          column="flags"           />
+        <result property="reviewer"       column="reviewer"        />
+        <result property="reviewTime"     column="review_time"     />
+        <result property="reason"         column="reason"          />
+        <result property="createBy"       column="create_by"       />
+        <result property="createTime"     column="create_time"     />
+        <result property="updateBy"       column="update_by"       />
+        <result property="updateTime"     column="update_time"     />
+        <result property="remark"         column="remark"          />
+    </resultMap>
+
+    <sql id="selectAbrAiReviewVo">
+        select r.review_id, r.call_id, r.agent_code, r.prompt_version, r.biz_type, r.biz_id, r.content, r.edited_content, r.status, r.flags,
+               r.reviewer, r.review_time, r.reason, r.create_by, r.create_time, r.update_by, r.update_time, r.remark
+        from abr_ai_review r
+    </sql>
+
+    <select id="selectAbrAiReviewList" parameterType="AbrAiReview" resultMap="AbrAiReviewResult">
+        select r.review_id, r.call_id, r.agent_code, r.prompt_version, r.biz_type, r.biz_id, r.status, r.flags,
+               r.reviewer, r.review_time, r.reason, r.create_by, r.create_time, r.update_by, r.update_time, r.remark
+        from abr_ai_review r
+        <where>
+            <if test="agentCode != null and agentCode != ''">
+                AND r.agent_code = #{agentCode}
+            </if>
+            <if test="status != null and status != ''">
+                AND r.status = #{status}
+            </if>
+            <if test="bizType != null and bizType != ''">
+                AND r.biz_type = #{bizType}
+            </if>
+            <if test="bizId != null and bizId != ''">
+                AND r.biz_id = #{bizId}
+            </if>
+            <if test="callId != null">
+                AND r.call_id = #{callId}
+            </if>
+            <if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
+                AND r.create_time &gt;= cast(#{params.beginTime} as date)
+            </if>
+            <if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
+                AND r.create_time &lt; cast(#{params.endTime} as date) + interval '1 day'
+            </if>
+        </where>
+        order by r.review_id desc
+    </select>
+
+    <select id="selectAbrAiReviewById" parameterType="Long" resultMap="AbrAiReviewResult">
+        <include refid="selectAbrAiReviewVo"/>
+        where r.review_id = #{reviewId}
+    </select>
+
+    <insert id="insertAbrAiReview" parameterType="AbrAiReview" useGeneratedKeys="true" keyProperty="reviewId" keyColumn="review_id">
+        insert into abr_ai_review (call_id, agent_code, prompt_version, biz_type, biz_id, content, status, flags, create_by, create_time)
+        values (#{callId}, #{agentCode}, coalesce(#{promptVersion}, ''), coalesce(#{bizType}, ''), coalesce(#{bizId}, ''),
+                cast(#{content} as jsonb), #{status}, cast(#{flags} as jsonb), coalesce(#{createBy}, ''), now())
+    </insert>
+
+    <update id="updateAbrAiReviewResult">
+        update abr_ai_review
+        set status      = #{review.status},
+            <if test="review.editedContent != null">
+            edited_content = cast(#{review.editedContent} as jsonb),
+            </if>
+            reason      = coalesce(#{review.reason}, ''),
+            reviewer    = #{review.reviewer},
+            review_time = now(),
+            update_by   = #{review.reviewer},
+            update_time = now()
+        where review_id = #{review.reviewId} and status in
+        <foreach collection="fromStatus" item="s" open="(" separator="," close=")">
+            #{s}
+        </foreach>
+    </update>
+
+</mapper>

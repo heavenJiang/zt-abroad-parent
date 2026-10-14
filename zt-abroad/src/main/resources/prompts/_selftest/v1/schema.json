@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "required": ["summary", "level", "score", "tags"],
+  "additionalProperties": false,
+  "properties": {
+    "summary": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "level":   { "type": "string", "enum": ["ok", "warn"] },
+    "score":   { "type": "number", "minimum": 0, "maximum": 100 },
+    "tags":    { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 20 } },
+    "contact": { "type": ["string", "null"], "maxLength": 50 }
+  }
+}

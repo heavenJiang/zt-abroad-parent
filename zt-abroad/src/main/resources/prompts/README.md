@@ -1,0 +1,23 @@
+# 提示词目录
+
+AI 网关（`com.ygb.abroad.ai`）从 classpath 的本目录加载提示词，代码中不写提示词。
+
+```
+prompts/
+├── _filters/                 输出过滤词表（每行一个词，# 注释，“# 类别：xxx” 为类别名称，! 开头为例外短语）
+│   ├── admission_promise.txt   录取承诺
+│   └── ad_banned.txt           广告违禁词
+└── <agentCode>/<版本>/        版本即 abr_ai_agent.prompt_version（如 v1）
+    ├── system.md              系统提示词
+    ├── user.md                用户提示词模板：{{变量}} 取输入（支持 a.b 路径；对象、数组填 JSON）；{{facts}} 为检索到的事实
+    ├── schema.json            输出 JSON Schema（type / properties / required / items / enum / minimum / maximum /
+    │                          minLength / maxLength / additionalProperties:false / ["string","null"]）
+    ├── mock.json              可选：mock 模型返回的固定输出（字符串中的 {{变量}} 用去标识化后的输入渲染）
+    └── eval/*.json            评测样例：{name, input, knownNames, facts, expectStatus, expect:[{path, equals|contains|exists|notExists}]}
+```
+
+- 改提示词就新建版本目录（v2…），在管理端「Agent 配置」切换生效版本；旧版本保留便于回滚。
+- 改提示词或模型前后都跑评测：`java -jar zt-admin.jar --abroad.ai.eval=<agentCode> [--abroad.ai.eval-provider=<provider:model>]`，
+  报告写到 `./ai-eval/<agentCode>-<yyyyMMddHHmmss>.md`，全部通过退出码 0，否则 1。
+- `_selftest` 是网关自测 Agent（业务停用，试用与评测可用），用来演示与回归整条管道。
+- 业务 Agent（report_explainer、resume_parser、lead_card、catalog_extractor）的提示词由各自任务卡编写；目录不存在时调用返回 error。

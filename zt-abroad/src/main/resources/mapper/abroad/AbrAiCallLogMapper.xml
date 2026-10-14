@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrAiCallLogMapper">
+
+    <resultMap type="AbrAiCallLog" id="AbrAiCallLogResult">
+        <id     property="callId"           column="call_id"           />
+        <result property="agentCode"        column="agent_code"        />
+        <result property="promptVersion"    column="prompt_version"    />
+        <result property="promptHash"       column="prompt_hash"       />
+        <result property="modelUsed"        column="model_used"        />
+        <result property="fallbackUsed"     column="fallback_used"     />
+        <result property="attempts"         column="attempts"          />
+        <result property="status"           column="status"            />
+        <result property="errorMsg"         column="error_msg"         />
+        <result property="inputSummary"     column="input_summary"     />
+        <result property="output"           column="output"            />
+        <result property="promptTokens"     column="prompt_tokens"     />
+        <result property="completionTokens" column="completion_tokens" />
+        <result property="cost"             column="cost"              />
+        <result property="latencyMs"        column="latency_ms"        />
+        <result property="bizType"          column="biz_type"          />
+        <result property="bizId"            column="biz_id"            />
+        <result property="reviewId"         column="review_id"         />
+        <result property="createBy"         column="create_by"         />
+        <result property="createTime"       column="create_time"       />
+    </resultMap>
+
+    <resultMap type="com.ygb.abroad.domain.vo.AbrAiUsageStat" id="AbrAiUsageStatResult">
+        <result property="day"              column="day"               />
+        <result property="agentCode"        column="agent_code"        />
+        <result property="calls"            column="calls"             />
+        <result property="successCalls"     column="success_calls"     />
+        <result property="errorCalls"       column="error_calls"       />
+        <result property="promptTokens"     column="prompt_tokens"     />
+        <result property="completionTokens" column="completion_tokens" />
+        <result property="cost"             column="cost"              />
+    </resultMap>
+
+    <sql id="selectAbrAiCallLogListVo">
+        select l.call_id, l.agent_code, l.prompt_version, l.prompt_hash, l.model_used, l.fallback_used, l.attempts, l.status, l.error_msg,
+               l.prompt_tokens, l.completion_tokens, l.cost, l.latency_ms, l.biz_type, l.biz_id, l.review_id, l.create_by, l.create_time
+        from abr_ai_call_log l
+    </sql>
+
+    <select id="selectAbrAiCallLogList" parameterType="AbrAiCallLog" resultMap="AbrAiCallLogResult">
+        <include refid="selectAbrAiCallLogListVo"/>
+        <where>
+            <if test="agentCode != null and agentCode != ''">
+                AND l.agent_code = #{agentCode}
+            </if>
+            <if test="status != null and status != ''">
+                AND l.status = #{status}
+            </if>
+            <if test="bizType != null and bizType != ''">
+                AND l.biz_type = #{bizType}
+            </if>
+            <if test="bizId != null and bizId != ''">
+                AND l.biz_id = #{bizId}
+            </if>
+            <if test="fallbackUsed != null and fallbackUsed != ''">
+                AND l.fallback_used = #{fallbackUsed}
+            </if>
+            <if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
+                AND l.create_time &gt;= cast(#{params.beginTime} as date)
+            </if>
+            <if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
+                AND l.create_time &lt; cast(#{params.endTime} as date) + interval '1 day'
+            </if>
+        </where>
+        order by l.call_id desc
+    </select>
+
+    <select id="selectAbrAiCallLogById" parameterType="Long" resultMap="AbrAiCallLogResult">
+        select l.call_id, l.agent_code, l.prompt_version, l.prompt_hash, l.model_used, l.fallback_used, l.attempts, l.status, l.error_msg,
+               l.input_summary, l.output, l.prompt_tokens, l.completion_tokens, l.cost, l.latency_ms, l.biz_type, l.biz_id, l.review_id,
+               l.create_by, l.create_time
+        from abr_ai_call_log l
+        where l.call_id = #{callId}
+    </select>
+
+    <select id="selectNextCallId" resultType="Long">
+        select nextval('abr_ai_call_log_call_id_seq')
+    </select>
+
+    <insert id="insertAbrAiCallLog" parameterType="AbrAiCallLog">
+        insert into abr_ai_call_log (call_id, agent_code, prompt_version, prompt_hash, model_used, fallback_used, attempts, status, error_msg,
+                                     input_summary, output, prompt_tokens, completion_tokens, cost, latency_ms, biz_type, biz_id, review_id,
+                                     create_by, create_time)
+        values (#{callId}, #{agentCode}, coalesce(#{promptVersion}, ''), coalesce(#{promptHash}, ''), coalesce(#{modelUsed}, ''),
+                coalesce(#{fallbackUsed}, 'N'), coalesce(#{attempts}, 0), #{status}, coalesce(#{errorMsg}, ''), coalesce(#{inputSummary}, ''),
+                #{output}, coalesce(#{promptTokens}, 0), coalesce(#{completionTokens}, 0), coalesce(#{cost}, 0), coalesce(#{latencyMs}, 0),
+                coalesce(#{bizType}, ''), coalesce(#{bizId}, ''), #{reviewId}, coalesce(#{createBy}, ''), now())
+    </insert>
+
+    <!-- 按北京时间的天分组：create_time 按会话时区（JDBC 驱动设为 JVM 时区）写入，先转为带时区时间再换算到 Asia/Shanghai -->
+    <select id="selectAbrAiUsageStats" resultMap="AbrAiUsageStatResult">
+        select to_char((l.create_time at time zone current_setting('TimeZone')) at time zone 'Asia/Shanghai', 'YYYY-MM-DD') as day,
+               l.agent_code,
+               count(*) as calls,
+               count(*) filter (where l.status = 'success') as success_calls,
+               count(*) filter (where l.status = 'error') as error_calls,
+               coalesce(sum(l.prompt_tokens), 0) as prompt_tokens,
+               coalesce(sum(l.completion_tokens), 0) as completion_tokens,
+               coalesce(sum(l.cost), 0) as cost
+        from abr_ai_call_log l
+        where l.create_time &gt;= #{beginTime} and l.create_time &lt; #{endTime}
+        group by 1, 2
+        order by 1, 2
+    </select>
+
+</mapper>

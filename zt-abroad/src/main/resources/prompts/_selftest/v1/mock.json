@@ -1,0 +1,7 @@
+{
+  "summary": "{{studentName}}的自测摘要：网关链路正常。",
+  "level": "ok",
+  "score": 88,
+  "tags": ["selftest", "mock"],
+  "contact": null
+}

@@ -1,0 +1,14 @@
+{
+  "name": "基本输出符合 Schema",
+  "input": { "studentName": "李雷", "note": "网关自测", "profile": { "gpa": 85, "ielts": 7.0 } },
+  "knownNames": ["李雷"],
+  "expectStatus": "success",
+  "expect": [
+    { "path": "/level", "equals": "ok" },
+    { "path": "/score", "equals": 88 },
+    { "path": "/tags", "contains": "selftest" },
+    { "path": "/summary", "contains": "李雷" },
+    { "path": "/contact", "exists": true },
+    { "path": "/probability", "notExists": true }
+  ]
+}
