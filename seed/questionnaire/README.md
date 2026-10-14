@@ -1,6 +1,10 @@
 # 测评问卷定义（seed/questionnaire）
 
-`questionnaire_v1.json` 是选校测评问卷的定义文件，由任务卡 M0-04 起草（**status = draft，顾问定稿前不得启用**）。定稿后由 M3-01 导入 `abr_questionnaire`（版本、题目定义 jsonb、是否启用）。管理端「问卷版本」页可以上传新版本，改问卷不需要发版。起草说明与待确认清单见 `doc/准备/M0-04-问卷初稿说明.md`。
+`questionnaire_v1.json` 是选校测评问卷的定义文件，由任务卡 M0-04 起草（**status = draft，顾问定稿前不得启用**）。M3-01 已建表 `abr_questionnaire`：
+
+- **种子导入**：`python3 -I seed/questionnaire/to_sql.py` 把本目录的 `questionnaire_*.json` 生成 `sql/abroad/update_20261014_questionnaire_seed.sql`，随 `migrate.sh` 执行。种子**只导入为草稿**；同编码同版本仍是草稿时用种子刷新，已启用或已停用的版本不受影响。改了 JSON 后重新生成并提交这两个文件。
+- **管理端「问卷版本」页**（测评与选校 → 问卷版本）：上传或粘贴 JSON → 校验 → 导入为草稿 → 顾问定稿后启用。同一编码只能有一个启用版本，启用新版本时旧版本自动停用；版本导入后不可修改，要改问卷就提高 `version` 导入新版本，不需要发版。
+- 导入时的结构校验（`AbrQuestionnaireValidator`）：`code` / `version` / `title`、步骤与题目 id 唯一且为 snake_case、题目的 `step` 存在、题型受支持、`options_ref` 指向顶层非空数组、单选多选有选项、每道题恰好出现在一屏、`visible_if` 引用的题目存在且运算符受支持、文案不含脚本片段。换算表和选项内容属于业务口径，由顾问审定。起草说明与待确认清单见 `doc/准备/M0-04-问卷初稿说明.md`。
 
 ## 顶层字段
 

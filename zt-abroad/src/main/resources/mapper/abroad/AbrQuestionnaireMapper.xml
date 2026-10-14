@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrQuestionnaireMapper">
+
+    <resultMap type="AbrQuestionnaire" id="AbrQuestionnaireResult">
+        <id     property="questionnaireId" column="questionnaire_id" />
+        <result property="code"            column="code"             />
+        <result property="version"         column="version"          />
+        <result property="versionLabel"    column="version_label"    />
+        <result property="title"           column="title"            />
+        <result property="publishStatus"   column="publish_status"   />
+        <result property="questionCount"   column="question_count"   />
+        <result property="definition"      column="definition"       />
+        <result property="activatedBy"     column="activated_by"     />
+        <result property="activatedTime"   column="activated_time"   />
+        <result property="delFlag"         column="del_flag"         />
+        <result property="createBy"        column="create_by"        />
+        <result property="createTime"      column="create_time"      />
+        <result property="updateBy"        column="update_by"        />
+        <result property="updateTime"      column="update_time"      />
+        <result property="remark"          column="remark"           />
+    </resultMap>
+
+    <sql id="selectAbrQuestionnaireVo">
+        select q.questionnaire_id, q.code, q.version, q.version_label, q.title, q.publish_status, q.question_count,
+               q.activated_by, q.activated_time, q.del_flag, q.create_by, q.create_time, q.update_by, q.update_time, q.remark
+        from abr_questionnaire q
+    </sql>
+
+    <sql id="selectAbrQuestionnaireWithDefinitionVo">
+        select q.questionnaire_id, q.code, q.version, q.version_label, q.title, q.publish_status, q.question_count,
+               cast(q.definition as text) as definition,
+               q.activated_by, q.activated_time, q.del_flag, q.create_by, q.create_time, q.update_by, q.update_time, q.remark
+        from abr_questionnaire q
+    </sql>
+
+    <select id="selectAbrQuestionnaireList" parameterType="AbrQuestionnaire" resultMap="AbrQuestionnaireResult">
+        <include refid="selectAbrQuestionnaireVo"/>
+        where q.del_flag = '0'
+        <if test="code != null and code != ''">
+            AND (q.code ilike concat('%', #{code}, '%') or q.title like concat('%', #{code}, '%'))
+        </if>
+        <if test="publishStatus != null and publishStatus != ''">
+            AND q.publish_status = #{publishStatus}
+        </if>
+        order by q.code, q.version desc
+    </select>
+
+    <select id="selectAbrQuestionnaireById" parameterType="Long" resultMap="AbrQuestionnaireResult">
+        <include refid="selectAbrQuestionnaireWithDefinitionVo"/>
+        where q.questionnaire_id = #{questionnaireId} and q.del_flag = '0'
+    </select>
+
+    <select id="selectActiveAbrQuestionnaire" parameterType="String" resultMap="AbrQuestionnaireResult">
+        <include refid="selectAbrQuestionnaireWithDefinitionVo"/>
+        where q.code = #{code} and q.publish_status = 'active' and q.del_flag = '0'
+    </select>
+
+    <select id="selectAbrQuestionnaireByCodeVersion" resultMap="AbrQuestionnaireResult">
+        <include refid="selectAbrQuestionnaireVo"/>
+        where q.code = #{code} and q.version = #{version} and q.del_flag = '0'
+    </select>
+
+    <insert id="insertAbrQuestionnaire" parameterType="AbrQuestionnaire" useGeneratedKeys="true" keyProperty="questionnaireId" keyColumn="questionnaire_id">
+        insert into abr_questionnaire (code, version, version_label, title, publish_status, question_count, definition,
+                                       del_flag, create_by, create_time, remark)
+        values (#{code}, #{version}, coalesce(#{versionLabel}, ''), coalesce(#{title}, ''), 'draft', coalesce(#{questionCount}, 0),
+                cast(#{definition} as jsonb), '0', #{createBy}, now(), #{remark})
+    </insert>
+
+    <update id="retireActiveAbrQuestionnaire">
+        update abr_questionnaire
+        set publish_status = 'retired',
+            update_by      = #{updateBy},
+            update_time    = now()
+        where code = #{code} and publish_status = 'active' and del_flag = '0'
+    </update>
+
+    <update id="activateAbrQuestionnaire">
+        update abr_questionnaire
+        set publish_status = 'active',
+            activated_by   = #{updateBy},
+            activated_time = now(),
+            update_by      = #{updateBy},
+            update_time    = now()
+        where questionnaire_id = #{questionnaireId} and publish_status in ('draft', 'retired') and del_flag = '0'
+    </update>
+
+    <update id="deleteDraftAbrQuestionnaireByIds">
+        update abr_questionnaire
+        set del_flag    = '2',
+            update_by   = #{updateBy},
+            update_time = now()
+        where publish_status = 'draft' and del_flag = '0' and questionnaire_id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+</mapper>
