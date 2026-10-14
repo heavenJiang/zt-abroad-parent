@@ -63,9 +63,9 @@ final class AbrAiPrefillChecker
     /** 其他语言考试（与前端 requirement.vue 的 LANGUAGE_TESTS 一致） */
     static final Set<String> LANGUAGE_TESTS = Set.of("toefl", "pte", "duolingo", "jlpt", "topik", "testdaf", "dsh", "goethe");
 
-    /** 字典缺失（缓存未加载）时使用的内置编码，与 update_20261013_catalog.sql 一致 */
+    /** 字典缺失（缓存未加载）时使用的内置编码，与 update_20261013_catalog.sql、update_20261014_degree_secondary.sql 一致 */
     private static final Map<String, Set<String>> DEFAULT_DICTS = Map.of(
-            "abr_degree", Set.of("master", "phd", "bachelor"),
+            "abr_degree", Set.of("secondary", "bachelor", "master", "phd"),
             "abr_intake", Set.of("fall", "spring", "summer", "winter"),
             "abr_teaching_language", Set.of("en", "ja", "ko", "de", "zh", "other"),
             "abr_test_requirement", Set.of("none", "optional", "required"),
