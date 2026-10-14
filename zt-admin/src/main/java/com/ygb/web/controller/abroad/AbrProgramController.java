@@ -1,6 +1,7 @@
 package com.ygb.web.controller.abroad;
 
 import java.util.List;
+import java.util.Map;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -13,7 +14,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import com.ygb.abroad.domain.AbrProgram;
+import com.ygb.abroad.domain.vo.AbrProgramImportRow;
+import com.ygb.abroad.service.IAbrProgramImportService;
 import com.ygb.abroad.service.IAbrProgramService;
 import com.ygb.common.annotation.Log;
 import com.ygb.common.core.controller.BaseController;
@@ -33,6 +37,9 @@ public class AbrProgramController extends BaseController
 {
     @Autowired
     private IAbrProgramService programService;
+
+    @Autowired
+    private IAbrProgramImportService importService;
 
     /**
      * 查询项目列表（params[verifyExpired]=Y 只看超过 90 天未核对的项目）
@@ -110,5 +117,42 @@ public class AbrProgramController extends BaseController
     public AjaxResult remove(@PathVariable Long[] programIds)
     {
         return toAjax(programService.deleteAbrProgramByIds(programIds, getUsername()));
+    }
+
+    /**
+     * 下载项目导入模板（字典列带下拉）
+     */
+    @PreAuthorize("@ss.hasPermi('abroad:program:import')")
+    @PostMapping("/importTemplate")
+    public void importTemplate(HttpServletResponse response)
+    {
+        ExcelUtil<AbrProgramImportRow> util = new ExcelUtil<AbrProgramImportRow>(AbrProgramImportRow.class);
+        util.importTemplateExcel(response, "项目导入");
+    }
+
+    /**
+     * 导入第一步：上传 Excel，返回逐行校验结果与 token（30 分钟内确认）
+     */
+    @PreAuthorize("@ss.hasPermi('abroad:program:import')")
+    @PostMapping("/importPreview")
+    public AjaxResult importPreview(MultipartFile file) throws Exception
+    {
+        if (file == null || file.isEmpty())
+        {
+            return error("请选择要导入的文件");
+        }
+        Map<String, Object> result = importService.preview(file.getInputStream());
+        return success(result);
+    }
+
+    /**
+     * 导入第二步：确认导入预览中可导入的行（重复、错误行跳过）
+     */
+    @PreAuthorize("@ss.hasPermi('abroad:program:import')")
+    @Log(title = "项目", businessType = BusinessType.IMPORT)
+    @PostMapping("/importConfirm/{token}")
+    public AjaxResult importConfirm(@PathVariable String token)
+    {
+        return success(importService.confirm(token, getUsername()));
     }
 }
