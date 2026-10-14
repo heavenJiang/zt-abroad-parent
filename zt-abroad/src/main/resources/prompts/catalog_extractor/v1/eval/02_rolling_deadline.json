@@ -1,0 +1,131 @@
+{
+  "name": "滚动录取：deadlines.rolling 为 true、不编造截止日期；WAM 不按层次换算均分",
+  "input": {
+    "url": "https://www.southbank.example/courses/master-of-data-science",
+    "programHint": "Southbank Institute of Technology · Master of Data Science（master）",
+    "pageTitle": "Master of Data Science | Southbank Institute of Technology",
+    "pageText": "Master of Data Science | Southbank Institute of Technology\nMaster of Data Science\nSouthbank Institute of Technology, Melbourne\nCourse overview\nDuration: 2 years full-time or part-time equivalent\nIntakes: February and July\nDelivery: on campus, taught in English\nFees\n2027 annual tuition fee for international students: A$49,800\nEntry requirements\nA bachelor's degree in any discipline with a weighted average mark (WAM) of at least 65%.\nPrior study in programming or mathematics is recommended but not essential.\nEnglish language requirements\nIELTS (Academic) overall score of 6.5 with no individual band below 6.0.\nPTE Academic overall 58 with no communicative skill below 50.\nApplications\nApplications are assessed on a rolling basis and close when the course is full.\nInternational students are encouraged to apply at least three months before the intake.",
+    "_mockOutput": {
+      "programNameEn": {
+        "value": "Master of Data Science",
+        "quote": "Master of Data Science"
+      },
+      "degree": {
+        "value": "master",
+        "quote": "Master of Data Science"
+      },
+      "durationMonths": {
+        "value": 24,
+        "quote": "Duration: 2 years full-time or part-time equivalent"
+      },
+      "tuition": {
+        "value": 49800,
+        "quote": "2027 annual tuition fee for international students: A$49,800"
+      },
+      "currency": {
+        "value": "AUD",
+        "quote": "2027 annual tuition fee for international students: A$49,800"
+      },
+      "intakes": {
+        "value": [
+          "spring",
+          "summer"
+        ],
+        "quote": "Intakes: February and July"
+      },
+      "teachingLanguage": {
+        "value": "en",
+        "quote": "Delivery: on campus, taught in English"
+      },
+      "minGpa": {
+        "value": null,
+        "quote": null
+      },
+      "tiersNotAccepted": {
+        "value": null,
+        "quote": null
+      },
+      "ieltsOverall": {
+        "value": 6.5,
+        "quote": "IELTS (Academic) overall score of 6.5 with no individual band below 6.0."
+      },
+      "ieltsMinSub": {
+        "value": 6.0,
+        "quote": "IELTS (Academic) overall score of 6.5 with no individual band below 6.0."
+      },
+      "otherLanguage": {
+        "value": {
+          "pte": {
+            "overall": 58,
+            "minSub": 50,
+            "level": null,
+            "note": null
+          }
+        },
+        "quote": "PTE Academic overall 58 with no communicative skill below 50."
+      },
+      "testRequirement": {
+        "value": null,
+        "quote": null
+      },
+      "testDetail": {
+        "value": null,
+        "quote": null
+      },
+      "prerequisites": {
+        "value": "编程、数学",
+        "quote": "Prior study in programming or mathematics is recommended but not essential."
+      },
+      "prerequisitesRequired": {
+        "value": "N",
+        "quote": "Prior study in programming or mathematics is recommended but not essential."
+      },
+      "workYears": {
+        "value": null,
+        "quote": null
+      },
+      "acceptCrossMajor": {
+        "value": "1",
+        "quote": "A bachelor's degree in any discipline with a weighted average mark (WAM) of at least 65%."
+      },
+      "deadlines": {
+        "value": {
+          "rolling": true,
+          "rounds": []
+        },
+        "quote": "Applications are assessed on a rolling basis and close when the course is full."
+      }
+    }
+  },
+  "expectStatus": "success",
+  "expect": [
+    {
+      "path": "/deadlines/value/rolling",
+      "equals": true
+    },
+    {
+      "path": "/deadlines/value/rounds",
+      "equals": []
+    },
+    {
+      "path": "/deadlines/quote",
+      "contains": "rolling basis"
+    },
+    {
+      "path": "/currency/value",
+      "equals": "AUD"
+    },
+    {
+      "path": "/minGpa/value",
+      "equals": null
+    },
+    {
+      "path": "/testRequirement/value",
+      "equals": null
+    },
+    {
+      "path": "/ieltsMinSub/value",
+      "equals": 6.0
+    }
+  ]
+}

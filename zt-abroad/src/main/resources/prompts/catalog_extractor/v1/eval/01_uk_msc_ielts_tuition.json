@@ -1,0 +1,80 @@
+{
+  "name": "英国 MSc：学费、雅思、按层次均分、轮次截止日（输出与 mock.json 一致）",
+  "input": {
+    "url": "https://www.eastvale.example/study/msc-finance",
+    "programHint": "University of Eastvale · MSc Finance（master）",
+    "pageTitle": "MSc Finance | University of Eastvale",
+    "pageText": "MSc Finance | University of Eastvale\nUniversity of Eastvale\nMSc Finance\nPostgraduate taught, 2027 entry\nOverview\nThe MSc Finance is a one-year full-time programme taught in English at the Eastvale Business School.\nDuration: 12 months full-time\nStart date: September 2027\nFees and funding\nTuition fees (2027/28)\nHome students: £16,900 per year\nInternational students: £38,500 per year\nEntry requirements\nAcademic requirements\nWe normally require a 2:1 honours degree or equivalent in a quantitative subject.\nApplicants from China: Bachelor's degree from a 985 or 211 university with an overall average of at least 80%; applicants from other recognised universities need an overall average of at least 85%.\nApplicants must have completed modules in calculus and statistics.\nApplicants are expected to have at least 2 years of relevant work experience.\nEnglish language requirements\nIELTS 7.0 overall with no less than 6.5 in each component.\nTOEFL iBT 100 overall with at least 22 in each section.\nGMAT/GRE\nGMAT or GRE scores are not required.\nHow to apply\nApplication deadlines\nRound 1: 15 November 2026\nRound 2: 15 January 2027\nRound 3: 1 March 2027\nWe recommend that you apply early as places are limited."
+  },
+  "expectStatus": "success",
+  "expect": [
+    {
+      "path": "/degree/value",
+      "equals": "master"
+    },
+    {
+      "path": "/durationMonths/value",
+      "equals": 12
+    },
+    {
+      "path": "/tuition/value",
+      "equals": 38500
+    },
+    {
+      "path": "/currency/value",
+      "equals": "GBP"
+    },
+    {
+      "path": "/tuition/quote",
+      "contains": "£38,500"
+    },
+    {
+      "path": "/ieltsOverall/value",
+      "equals": 7.0
+    },
+    {
+      "path": "/ieltsMinSub/value",
+      "equals": 6.5
+    },
+    {
+      "path": "/ieltsOverall/quote",
+      "contains": "IELTS 7.0"
+    },
+    {
+      "path": "/minGpa/value/985",
+      "equals": 80
+    },
+    {
+      "path": "/minGpa/value/non_key",
+      "equals": 85
+    },
+    {
+      "path": "/minGpa/value/overseas",
+      "notExists": true
+    },
+    {
+      "path": "/otherLanguage/value/toefl/overall",
+      "equals": 100
+    },
+    {
+      "path": "/testRequirement/value",
+      "equals": "none"
+    },
+    {
+      "path": "/deadlines/value/rolling",
+      "equals": false
+    },
+    {
+      "path": "/deadlines/value/rounds/0/date",
+      "equals": "2026-11-15"
+    },
+    {
+      "path": "/tiersNotAccepted/value",
+      "equals": null
+    },
+    {
+      "path": "/acceptCrossMajor/value",
+      "equals": null
+    }
+  ]
+}

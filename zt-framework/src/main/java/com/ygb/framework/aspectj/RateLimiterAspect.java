@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import com.ygb.common.annotation.RateLimiter;
 import com.ygb.common.enums.LimitType;
 import com.ygb.common.exception.ServiceException;
+import com.ygb.common.utils.SecurityUtils;
 import com.ygb.common.utils.StringUtils;
 import com.ygb.common.utils.ip.IpUtils;
 
@@ -80,10 +81,29 @@ public class RateLimiterAspect
         {
             stringBuffer.append(IpUtils.getIpAddr()).append("-");
         }
+        else if (rateLimiter.limitType() == LimitType.USER)
+        {
+            stringBuffer.append(currentUserKey()).append("-");
+        }
         MethodSignature signature = (MethodSignature) point.getSignature();
         Method method = signature.getMethod();
         Class<?> targetClass = method.getDeclaringClass();
         stringBuffer.append(targetClass.getName()).append("-").append(method.getName());
         return stringBuffer.toString();
+    }
+
+    /**
+     * 当前登录用户的限流标识（未登录时按IP）
+     */
+    private String currentUserKey()
+    {
+        try
+        {
+            return "u" + SecurityUtils.getUserId();
+        }
+        catch (Exception e)
+        {
+            return IpUtils.getIpAddr();
+        }
     }
 }

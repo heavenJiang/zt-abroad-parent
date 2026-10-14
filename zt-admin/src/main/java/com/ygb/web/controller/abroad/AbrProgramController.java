@@ -16,14 +16,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import com.ygb.abroad.domain.AbrProgram;
+import com.ygb.abroad.domain.vo.AbrAiPrefillBody;
 import com.ygb.abroad.domain.vo.AbrProgramImportRow;
+import com.ygb.abroad.service.IAbrProgramAiPrefillService;
 import com.ygb.abroad.service.IAbrProgramImportService;
 import com.ygb.abroad.service.IAbrProgramService;
 import com.ygb.common.annotation.Log;
+import com.ygb.common.annotation.RateLimiter;
 import com.ygb.common.core.controller.BaseController;
 import com.ygb.common.core.domain.AjaxResult;
 import com.ygb.common.core.page.TableDataInfo;
 import com.ygb.common.enums.BusinessType;
+import com.ygb.common.enums.LimitType;
 import com.ygb.common.utils.poi.ExcelUtil;
 
 /**
@@ -40,6 +44,9 @@ public class AbrProgramController extends BaseController
 
     @Autowired
     private IAbrProgramImportService importService;
+
+    @Autowired
+    private IAbrProgramAiPrefillService aiPrefillService;
 
     /**
      * 查询项目列表（params[verifyExpired]=Y 只看超过 90 天未核对的项目）
@@ -154,5 +161,18 @@ public class AbrProgramController extends BaseController
     public AjaxResult importConfirm(@PathVariable String token)
     {
         return success(importService.confirm(token, getUsername()));
+    }
+
+    /**
+     * AI 预填：抓取官网页面，由 catalog_extractor 抽取字段并附原文引句（30 秒内）；只返回提议值，不保存，
+     * 录入者逐字段确认后再走修改项目 / 保存申请要求。每个用户每分钟最多 5 次
+     */
+    @PreAuthorize("@ss.hasPermi('abroad:program:edit')")
+    @Log(title = "项目 AI 预填", businessType = BusinessType.OTHER, isSaveResponseData = false)
+    @RateLimiter(time = 60, count = 5, limitType = LimitType.USER)
+    @PostMapping("/aiPrefill")
+    public AjaxResult aiPrefill(@Validated @RequestBody AbrAiPrefillBody body)
+    {
+        return success(aiPrefillService.prefill(body.getUrl(), body.getProgramId(), getUsername()));
     }
 }

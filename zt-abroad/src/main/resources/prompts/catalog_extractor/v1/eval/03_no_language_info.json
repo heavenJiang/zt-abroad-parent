@@ -1,0 +1,126 @@
+{
+  "name": "页面没有语言要求：雅思、其他语言字段必须为 null（不按常识补）",
+  "input": {
+    "url": "https://www.northmoor.example/pg/msc-applied-mathematics",
+    "programHint": "Northmoor University · MSc Applied Mathematics（master）",
+    "pageTitle": "MSc Applied Mathematics | Northmoor University",
+    "pageText": "MSc Applied Mathematics | Northmoor University\nMSc Applied Mathematics\nNorthmoor University, Faculty of Science\nAbout the programme\nThe programme covers numerical analysis, optimisation and mathematical modelling.\nDuration: 1 year full-time\nEntry requirements\nA first or upper second class honours degree in mathematics or a closely related subject.\nApplicants should have taken advanced courses in linear algebra and real analysis.\nFees\nFees for 2027 entry will be published in the spring.",
+    "_mockOutput": {
+      "programNameEn": {
+        "value": "MSc Applied Mathematics",
+        "quote": "MSc Applied Mathematics"
+      },
+      "degree": {
+        "value": "master",
+        "quote": "MSc Applied Mathematics"
+      },
+      "durationMonths": {
+        "value": 12,
+        "quote": "Duration: 1 year full-time"
+      },
+      "tuition": {
+        "value": null,
+        "quote": null
+      },
+      "currency": {
+        "value": null,
+        "quote": null
+      },
+      "intakes": {
+        "value": null,
+        "quote": null
+      },
+      "teachingLanguage": {
+        "value": null,
+        "quote": null
+      },
+      "minGpa": {
+        "value": null,
+        "quote": null
+      },
+      "tiersNotAccepted": {
+        "value": null,
+        "quote": null
+      },
+      "ieltsOverall": {
+        "value": null,
+        "quote": null
+      },
+      "ieltsMinSub": {
+        "value": null,
+        "quote": null
+      },
+      "otherLanguage": {
+        "value": null,
+        "quote": null
+      },
+      "testRequirement": {
+        "value": null,
+        "quote": null
+      },
+      "testDetail": {
+        "value": null,
+        "quote": null
+      },
+      "prerequisites": {
+        "value": "线性代数、实分析",
+        "quote": "Applicants should have taken advanced courses in linear algebra and real analysis."
+      },
+      "prerequisitesRequired": {
+        "value": "Y",
+        "quote": "Applicants should have taken advanced courses in linear algebra and real analysis."
+      },
+      "workYears": {
+        "value": null,
+        "quote": null
+      },
+      "acceptCrossMajor": {
+        "value": "0",
+        "quote": "A first or upper second class honours degree in mathematics or a closely related subject."
+      },
+      "deadlines": {
+        "value": null,
+        "quote": null
+      }
+    }
+  },
+  "expectStatus": "success",
+  "expect": [
+    {
+      "path": "/ieltsOverall/value",
+      "equals": null
+    },
+    {
+      "path": "/ieltsOverall/quote",
+      "equals": null
+    },
+    {
+      "path": "/ieltsMinSub/value",
+      "equals": null
+    },
+    {
+      "path": "/otherLanguage/value",
+      "equals": null
+    },
+    {
+      "path": "/teachingLanguage/value",
+      "equals": null
+    },
+    {
+      "path": "/tuition/value",
+      "equals": null
+    },
+    {
+      "path": "/minGpa/value",
+      "equals": null
+    },
+    {
+      "path": "/deadlines/value",
+      "equals": null
+    },
+    {
+      "path": "/durationMonths/value",
+      "equals": 12
+    }
+  ]
+}

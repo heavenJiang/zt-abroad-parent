@@ -1,0 +1,109 @@
+{
+  "programNameEn": {
+    "value": "MSc Finance",
+    "quote": "MSc Finance"
+  },
+  "degree": {
+    "value": "master",
+    "quote": "MSc Finance"
+  },
+  "durationMonths": {
+    "value": 12,
+    "quote": "Duration: 12 months full-time"
+  },
+  "tuition": {
+    "value": 38500,
+    "quote": "International students: £38,500 per year"
+  },
+  "currency": {
+    "value": "GBP",
+    "quote": "International students: £38,500 per year"
+  },
+  "intakes": {
+    "value": [
+      "fall"
+    ],
+    "quote": "Start date: September 2027"
+  },
+  "teachingLanguage": {
+    "value": "en",
+    "quote": "The MSc Finance is a one-year full-time programme taught in English at the Eastvale Business School."
+  },
+  "minGpa": {
+    "value": {
+      "c9": 80,
+      "985": 80,
+      "211": 80,
+      "double_first_class": 85,
+      "non_key": 85
+    },
+    "quote": "Applicants from China: Bachelor's degree from a 985 or 211 university with an overall average of at least 80%; applicants from other recognised universities need an overall average of at least 85%."
+  },
+  "tiersNotAccepted": {
+    "value": null,
+    "quote": null
+  },
+  "ieltsOverall": {
+    "value": 7.0,
+    "quote": "IELTS 7.0 overall with no less than 6.5 in each component."
+  },
+  "ieltsMinSub": {
+    "value": 6.5,
+    "quote": "IELTS 7.0 overall with no less than 6.5 in each component."
+  },
+  "otherLanguage": {
+    "value": {
+      "toefl": {
+        "overall": 100,
+        "minSub": 22,
+        "level": null,
+        "note": null
+      }
+    },
+    "quote": "TOEFL iBT 100 overall with at least 22 in each section."
+  },
+  "testRequirement": {
+    "value": "none",
+    "quote": "GMAT or GRE scores are not required."
+  },
+  "testDetail": {
+    "value": null,
+    "quote": null
+  },
+  "prerequisites": {
+    "value": "微积分、统计学",
+    "quote": "Applicants must have completed modules in calculus and statistics."
+  },
+  "prerequisitesRequired": {
+    "value": "Y",
+    "quote": "Applicants must have completed modules in calculus and statistics."
+  },
+  "workYears": {
+    "value": 2,
+    "quote": "Applicants are expected to have at least 2 years of relevant work experience."
+  },
+  "acceptCrossMajor": {
+    "value": null,
+    "quote": null
+  },
+  "deadlines": {
+    "value": {
+      "rolling": false,
+      "rounds": [
+        {
+          "name": "Round 1",
+          "date": "2026-11-15"
+        },
+        {
+          "name": "Round 2",
+          "date": "2027-01-15"
+        },
+        {
+          "name": "Round 3",
+          "date": "2027-03-01"
+        }
+      ]
+    },
+    "quote": "Round 1: 15 November 2026\nRound 2: 15 January 2027\nRound 3: 1 March 2027"
+  }
+}

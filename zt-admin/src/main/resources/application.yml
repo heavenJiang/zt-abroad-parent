@@ -154,6 +154,12 @@ abroad:
     filter:
       # 单个字符串字段最大长度，超过视为整篇文书并拦截
       max-field-length: 1500
+    # AI 预填（M2-06）抓取官网页面：只允许 http/https 公网地址，最多 3 次重定向，连接 10 秒 / 总计 15 秒，正文最多 2 MB
+    fetch:
+      # 是否允许抓取本机、内网地址。生产必须为 false（防 SSRF）；只有测试实例为了用本机 HTTP 服务提供样例页面才设为 true
+      allow-private-hosts: false
+      # 页面转纯文本后交给模型的最大字符数（超过截断）
+      max-chars: 30000
     providers:
       # 离线 mock：返回 prompts/<agent>/<版本>/mock.json，供开发、单元测试与评测
       mock:

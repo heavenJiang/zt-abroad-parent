@@ -14,6 +14,8 @@ prompts/
     │                          minLength / maxLength / additionalProperties:false / ["string","null"]）
     ├── mock.json              可选：mock 模型返回的固定输出（字符串中的 {{变量}} 用去标识化后的输入渲染）
     └── eval/*.json            评测样例：{name, input, knownNames, facts, expectStatus, expect:[{path, equals|contains|exists|notExists}]}
+                               input 中可带 _mockOutput（JSON 对象）：mock 模型返回它而不是 mock.json，便于同一 Agent 的多个样例各有 mock 输出；
+                               真实模型忽略该键（样例的输入、断言对真实模型同样有效）
 ```
 
 - 改提示词就新建版本目录（v2…），在管理端「Agent 配置」切换生效版本；旧版本保留便于回滚。
@@ -21,3 +23,6 @@ prompts/
   报告写到 `./ai-eval/<agentCode>-<yyyyMMddHHmmss>.md`，全部通过退出码 0，否则 1。
 - `_selftest` 是网关自测 Agent（业务停用，试用与评测可用），用来演示与回归整条管道。
 - 业务 Agent（report_explainer、resume_parser、lead_card、catalog_extractor）的提示词由各自任务卡编写；目录不存在时调用返回 error。
+- `catalog_extractor/v1`（M2-06 项目 AI 预填）：输入 `url`、`programHint`、`pageTitle`、`pageText`（官网页面转纯文本，最多 30000 字）；
+  输出每个字段 `{value, quote}`。调用方 `AbrProgramAiPrefillServiceImpl` 事后逐字段核对：引句不在页面原文中、取值不符合人工保存规则的一律丢弃，
+  所以提示词只负责“尽量逐字引用、没有就填 null”，不要依赖模型自觉。eval/ 的三个样例：英国 MSc（学费、雅思、按层次均分、轮次截止日）、滚动录取、页面没有语言要求。
