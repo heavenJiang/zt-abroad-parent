@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrVisitorMapper">
+
+    <resultMap type="AbrVisitor" id="AbrVisitorResult">
+        <id     property="visitorId"      column="visitor_id"      />
+        <result property="tokenHash"      column="token_hash"      />
+        <result property="channelCode"    column="channel_code"    />
+        <result property="contentCode"    column="content_code"    />
+        <result property="clientPlatform" column="client_platform" />
+        <result property="profile"        column="profile"         />
+        <result property="appUserId"      column="app_user_id"     />
+        <result property="lastSeenTime"   column="last_seen_time"  />
+        <result property="delFlag"        column="del_flag"        />
+        <result property="createBy"       column="create_by"       />
+        <result property="createTime"     column="create_time"     />
+        <result property="updateBy"       column="update_by"       />
+        <result property="updateTime"     column="update_time"     />
+        <result property="remark"         column="remark"          />
+    </resultMap>
+
+    <sql id="selectAbrVisitorVo">
+        select v.visitor_id, v.token_hash, v.channel_code, v.content_code, v.client_platform, cast(v.profile as text) as profile,
+               v.app_user_id, v.last_seen_time, v.del_flag, v.create_by, v.create_time, v.update_by, v.update_time, v.remark
+        from abr_visitor v
+    </sql>
+
+    <select id="selectAbrVisitorByTokenHash" parameterType="String" resultMap="AbrVisitorResult">
+        <include refid="selectAbrVisitorVo"/>
+        where v.token_hash = #{tokenHash} and v.del_flag = '0'
+    </select>
+
+    <select id="selectAbrVisitorById" parameterType="Long" resultMap="AbrVisitorResult">
+        <include refid="selectAbrVisitorVo"/>
+        where v.visitor_id = #{visitorId} and v.del_flag = '0'
+    </select>
+
+    <insert id="insertAbrVisitor" parameterType="AbrVisitor" useGeneratedKeys="true" keyProperty="visitorId" keyColumn="visitor_id">
+        insert into abr_visitor (token_hash, channel_code, content_code, client_platform, profile, last_seen_time, del_flag, create_by, create_time)
+        values (#{tokenHash}, coalesce(#{channelCode}, 'direct'), coalesce(#{contentCode}, ''), coalesce(#{clientPlatform}, ''), '{}'::jsonb,
+                now(), '0', '', now())
+    </insert>
+
+    <update id="touchAbrVisitor" parameterType="Long">
+        update abr_visitor
+        set last_seen_time = now()
+        where visitor_id = #{visitorId}
+          and (last_seen_time is null or last_seen_time &lt; now() - interval '10 minutes')
+    </update>
+
+    <update id="mergeAbrVisitorProfile">
+        update abr_visitor
+        set profile     = coalesce(profile, '{}'::jsonb) || cast(#{patch} as jsonb),
+            update_time = now()
+        where visitor_id = #{visitorId}
+    </update>
+
+    <update id="clearAbrVisitorProfile" parameterType="Long">
+        update abr_visitor
+        set profile     = '{}'::jsonb,
+            update_time = now()
+        where visitor_id = #{visitorId}
+    </update>
+
+</mapper>

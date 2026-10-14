@@ -142,9 +142,9 @@ xss:
   # 过滤开关
   enabled: true
   # 排除链接（多个用逗号分隔）
-  excludes: /system/notice,/abroad/questionnaire/**
+  excludes: /system/notice,/abroad/questionnaire/**,/app/assessment/**
   # 匹配链接
-  urlPatterns: /system/*,/monitor/*,/tool/*,/abroad/*
+  urlPatterns: /system/*,/monitor/*,/tool/*,/abroad/*,/app/*
 
 # 留学 AI 网关（M2-04）：模型供应商与单价；Agent 中的模型写作 供应商名:模型名（如 deepseek:deepseek-chat）
 # api-key 只从环境变量注入，不写入仓库；单价单位为 元 / 1000 token，上线前按供应商官网核对
