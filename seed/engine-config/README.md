@@ -13,6 +13,7 @@ M0-06 产出的**第一批引擎参数草案**：每个「国家 × 学位」一
 | `uk_master.json` | 英国 | 授课型硕士 | 1 |
 | `au_master.json` | 澳洲 | 授课型硕士 | 1 |
 | `sg_master.json` | 新加坡 | 授课型硕士 | 1 |
+| `hk_master.json` | 中国香港 | 授课型硕士 | 1（2026-10-14 加入，先复制新加坡草案） |
 | `us_master.json` | 美国 | 硕士（含商科、理工覆盖） | 2 |
 | `jp_master.json` | 日本 | 修士（含路径推荐） | 3 |
 | `kr_master.json` | 韩国 | 硕士 | 3 |
@@ -36,7 +37,7 @@ M0-06 产出的**第一批引擎参数草案**：每个「国家 × 学位」一
 | 字段 | 内容 | 设计依据 |
 | --- | --- | --- |
 | `schema` | 固定 `abr-engine-config/1.0`，结构不兼容时升级 | — |
-| `config_code` / `country` / `country_name` / `degree` | 配置编码、国家代码（US/UK/AU/SG/JP/KR/DE）、学位（`master`） | §2、§8 |
+| `config_code` / `country` / `country_name` / `degree` | 配置编码、国家 / 地区代码（US/UK/AU/SG/HK/JP/KR/DE）、学位（`master`） | §2、§8 |
 | `launch_batch` | 上线批次 1/2/3 | §8 上线顺序 |
 | `dimensions` | 进入综合分的维度键与中文名；`not_weighted` 列出不进权重的项 | §1、§2、§8 |
 | `weights` | `default` 一组权重 + `by_field` 按专业大类的覆盖 | §2 |

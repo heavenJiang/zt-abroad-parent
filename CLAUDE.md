@@ -6,10 +6,11 @@
 
 ## 关键约定速查
 
-- 产品：留学智能体平台（新成立的 10 人以内创业型留学工作室自用，验证后“标准产品 + 定制交付”输出；覆盖美、英、日、韩、澳、新、德）。系统主要由 AI 编写，按任务卡逐张开发（`doc/研发/05-开发计划.md`）。
+- 产品：留学智能体平台（新成立的 10 人以内创业型留学工作室自用，验证后“标准产品 + 定制交付”输出；主做美、英、澳、新、港、日，韩、德保留）。1a 重心是**获客系统，由 Agent 全自动执行**（`doc/产品/06-获客系统设计.md`）：产品本身是第一获客渠道（免费主产品“我的申请规划”，核心结果不设留资墙），不做付费投放。系统主要由 AI 编写，按任务卡逐张开发（`doc/研发/05-开发计划.md`）。
 - 设计文档：产品设计 `doc/产品/`；研发文档 `doc/研发/`。**技术口径以 `doc/研发/00-RuoYi落地对照.md` 为准**（01–05 为在线文档导出稿，其中 `abroad-*` 模块、`cat_/asm_/crm_` 表前缀、`tenant_id`、Flyway、MyBatis-Plus、`/admin/api` 均已按对照表替换）。
 - 基于 RuoYi-Vue 3.9.2（与 `zt-vision-parent` 同一套脚手架）；Maven 根项目 `com.ygb:zt-abroad-parent`；启动模块 `zt-admin`；业务模块 `zt-abroad`。
-- 留学业务统一放在 `zt-abroad`：包 `com.ygb.abroad`，控制器在 `zt-admin` 的 `com.ygb.web.controller.abroad`（学生端接口 `com.ygb.web.controller.app`，路径 `/app/**`），表前缀 `abr_`，权限 `abroad:资源:操作`，路径 `/abroad/资源`，字典 `abr_含义`。
+- 留学业务统一放在 `zt-abroad`：包 `com.ygb.abroad`，控制器在 `zt-admin`：管理端 `com.ygb.web.controller.abroad`（`/abroad/**`，只给员工），C 端 `com.ygb.web.controller.app`（`/app/**`，学生令牌 + `abr_app_user`，只返回专用 VO），回调 `com.ygb.web.controller.callback`，表前缀 `abr_`，权限 `abroad:资源:操作`，路径 `/abroad/资源`，字典 `abr_含义`。
+- 获客自动化在 `com.ygb.abroad.growth`：不做付费投放，靠情报（院校 / 政策变化、需求信号）驱动自然流量；对外内容和消息发出前必须过合规闸门、频控、AI 预算闸，支持熔断与一键暂停；情报采集只抓白名单官方页面；价格、产品、剧本、词表都是配置，不写死。
 - 选校引擎在 `com.ygb.abroad.engine`：纯 Java、确定性，不访问数据库、不调用大模型；单元测试覆盖率 ≥ 90%。学生只看冲 / 稳 / 保，不展示概率百分比。
 - 大模型只能经 `com.ygb.abroad.ai` 网关调用（脱敏、schema 校验、调用日志、审核策略）；审核策略按 Agent 配置：报告解读直接展示 + 抽检，个性化建议类内容默认顾问确认后发出；AI 内容一律标明“AI 生成”。
 - 不做多租户（定制输出按客户独立部署），表中不加 `tenant_id`。
@@ -17,7 +18,7 @@
 - 修改既有文件时匹配周边代码风格（大括号另起一行、中文 Javadoc、`@Autowired` 字段注入）。
 - `*.bat` 文件保持 GBK + CRLF，编辑时按字节处理（如 `LC_ALL=C sed`），不要用会转码的工具重写。
 - `@author ruoyi`、README 中的上游署名保留不改。
-- 配套前端为同级目录 `../zt-abroad-vue`（Vue3 + Vite + Element Plus），开发代理 `/dev-api` → `http://localhost:8090`；前端规范见 `../zt-abroad-vue/doc/前端开发规范.md`。
+- 前端分两端：**管理后台**为同级目录 `../zt-abroad-vue`（Vue3 + Vite + Element Plus，只给工作室员工），开发代理 `/dev-api` → `http://localhost:8090`，规范见 `../zt-abroad-vue/doc/前端开发规范.md`；**C 端**（学生、家长）为独立工程 `../zt-abroad-uniapp`（uni-app，先 H5 后小程序，M1-06 新建）；公开项目页由后端生成静态 HTML。端划分见 `doc/研发/04-模块拆分.md`「端划分」。
 
 ## 构建与验证
 

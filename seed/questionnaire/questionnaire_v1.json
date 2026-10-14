@@ -46,6 +46,10 @@
       "label": "新加坡"
     },
     {
+      "value": "HK",
+      "label": "中国香港"
+    },
+    {
       "value": "DE",
       "label": "德国"
     }
@@ -1169,7 +1173,8 @@
             "op": "contains_any",
             "value": [
               "US",
-              "SG"
+              "SG",
+              "HK"
             ]
           },
           {
@@ -1233,7 +1238,7 @@
       },
       "allow_estimated": true,
       "help": "可跳过。美国不少项目对 GRE / GMAT 的政策因校而异，没考也能出报告。",
-      "skip_hint": "补充 GRE / GMAT 可让美国、新加坡项目的结果更准",
+      "skip_hint": "补充 GRE / GMAT 可让美国、新加坡、中国香港项目的结果更准",
       "est_seconds": 10,
       "maps_to": {
         "dimension": "test.gre_gmat",
@@ -1246,7 +1251,7 @@
           "note": "GMAT Focus 与旧版不互换，原值分开保存"
         }
       },
-      "visibility_note": "产品设计 §2 示意权重中美国与新加坡硕士的标化权重非 0，故对 US、SG 显示；其他国家不显示"
+      "visibility_note": "产品设计 §2 示意权重中美国与「香港 / 新加坡」硕士的标化权重非 0，故对 US、SG、HK 显示；其他国家不显示"
     },
     {
       "id": "jlpt_level",

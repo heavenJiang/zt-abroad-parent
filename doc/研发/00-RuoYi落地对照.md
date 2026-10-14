@@ -8,7 +8,7 @@
 
 | 原设计 | 落地 |
 | --- | --- |
-| 单仓库 monorepo（后端 + 管理端 + 学生端） | 三个仓库：后端 `zt-abroad-parent`、管理端 `zt-abroad-vue`；学生端（uni-app 小程序 + H5）在 M1-06 时另建 `zt-abroad-app` |
+| 单仓库 monorepo（后端 + 管理端 + 学生端） | 三个仓库：后端 `zt-abroad-parent`、管理端 `zt-abroad-vue`；学生端（uni-app 小程序 + H5）在 M1-06 时另建 `zt-abroad-uniapp` |
 | 包名 `com.xx.abroad` | `com.ygb.abroad`（与 zt 工程同一公司包名） |
 | `abroad-app` 启动模块 | `zt-admin`（启动类 `ZtApplication`，控制器在 `com.ygb.web.controller.abroad`；学生端接口在 `com.ygb.web.controller.app`） |
 | `abroad-common` / `abroad-system` | RuoYi 的 `zt-common` / `zt-system` / `zt-framework`（直接复用，不改动） |
@@ -52,7 +52,7 @@
 | --- | --- |
 | 管理端 Vue 3 + TypeScript | `zt-abroad-vue`（RuoYi-Vue3，JavaScript），规范见其 `doc/前端开发规范.md` |
 | 员工、角色、菜单、字典、日志页面 | RuoYi 现成页面，不再开发 |
-| 学生端 uni-app | 不变（Vue 3，独立仓库） |
+| 学生端 uni-app | C 端独立工程 `zt-abroad-uniapp`（Vue 3，先 H5 后小程序），只给学生和家长，只调 `/app/**`；管理后台 `zt-abroad-vue` 只给员工；公开项目页由后端生成静态 HTML。见《模块拆分·端划分》 |
 
 ## 5 开发计划的调整
 
