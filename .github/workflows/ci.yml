@@ -48,8 +48,6 @@ jobs:
       - name: 按文件名顺序执行留学业务增量脚本（两遍，验证可重复执行）
         run: |
           for pass in 1 2; do
-            for f in $(ls sql/abroad/*.sql 2>/dev/null | sort); do
-              echo "第 $pass 遍：$f"
-              psql -v ON_ERROR_STOP=1 -q -f "$f"
-            done
+            echo "第 $pass 遍"
+            sql/abroad/migrate.sh
           done

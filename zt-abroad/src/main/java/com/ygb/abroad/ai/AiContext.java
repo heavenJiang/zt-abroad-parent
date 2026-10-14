@@ -35,6 +35,9 @@ public class AiContext
     /** 指定模型（provider:model），覆盖 Agent 的主模型且不切备用；评测命令用 */
     private String modelOverride;
 
+    /** 整次调用的截止时刻（System.nanoTime() 刻度），0 表示不限；超过后不再重试、不再切备用模型 */
+    private long deadlineNanos;
+
     /**
      * 创建上下文
      *
@@ -130,5 +133,32 @@ public class AiContext
     public void setModelOverride(String modelOverride)
     {
         this.modelOverride = modelOverride;
+    }
+
+    /**
+     * 设置整次调用的时间预算（从现在算起）：单次模型超时取 Agent 配置与剩余预算的较小值，
+     * 预算用完后不再做格式重试或切备用模型，避免调用方已超时放弃而后台仍在消耗 token
+     *
+     * @param budgetMs 预算（毫秒），不大于 0 表示不限
+     * @return 本上下文
+     */
+    public AiContext withBudget(long budgetMs)
+    {
+        this.deadlineNanos = budgetMs <= 0 ? 0L : System.nanoTime() + budgetMs * 1_000_000L;
+        return this;
+    }
+
+    /**
+     * 剩余预算
+     *
+     * @return 剩余毫秒；未设置预算返回 Long.MAX_VALUE
+     */
+    public long remainingMs()
+    {
+        if (deadlineNanos == 0L)
+        {
+            return Long.MAX_VALUE;
+        }
+        return (deadlineNanos - System.nanoTime()) / 1_000_000L;
     }
 }

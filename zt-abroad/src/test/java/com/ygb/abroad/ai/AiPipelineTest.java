@@ -134,6 +134,34 @@ class AiPipelineTest
     }
 
     @Test
+    void retryPromptCarriesSchemaErrors()
+    {
+        String p = AiPipeline.retryPrompt("原提示词", List.of("e1", "e2", "e3", "e4", "e5", "e6"));
+        assertTrue(p.startsWith("原提示词"));
+        assertTrue(p.contains("- e1") && p.contains("- e5"), p);
+        assertFalse(p.contains("- e6"), p);
+    }
+
+    @Test
+    void budgetCapsModelTimeout()
+    {
+        assertEquals(30000, AiPipeline.budgetedTimeout(30000, ctx(), "x"));
+        int t = AiPipeline.budgetedTimeout(30000, ctx().withBudget(5000), "x");
+        assertTrue(t <= 5000 && t > 4000, String.valueOf(t));
+        assertEquals(3000, AiPipeline.budgetedTimeout(3000, ctx().withBudget(5000), "x"));
+    }
+
+    @Test
+    void exhaustedBudgetSkipsModelCall()
+    {
+        AiResult r = pipeline.invoke("_selftest", input(null), ctx().withBudget(AiPipeline.MIN_CALL_MS - 1));
+        assertEquals(AiConstants.STATUS_ERROR, r.getStatus());
+        assertTrue(r.getMessage().contains("时间预算"), r.getMessage());
+        assertEquals(0, r.getAttempts());
+        assertEquals(AiConstants.STATUS_ERROR, store.lastLog().getStatus());
+    }
+
+    @Test
     void invalidTwiceIsDegraded()
     {
         AiResult r = pipeline.invoke("_selftest", input("invalid_json"), ctx());

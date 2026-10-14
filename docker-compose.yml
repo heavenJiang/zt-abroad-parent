@@ -7,8 +7,8 @@
 # 端口与容器名均与 zt-vision-parent 错开，两个项目可在同一台机器上同时运行：
 #   PostgreSQL 5433、Redis 6380、后端 8090
 #
-# 数据库首次启动（卷为空）时会自动执行 sql/ 下的初始化脚本；卷中已有数据时不会重复执行。
-# 留学业务的增量脚本（sql/abroad/）需手动执行，见 sql/abroad/README.md。
+# 数据库首次启动（卷为空）时会自动执行 sql/ 下的初始化脚本和 sql/abroad/ 下的增量脚本；卷中已有数据时不会重复执行，
+# 拉取到新的增量脚本后执行 sql/abroad/migrate.sh（见 sql/abroad/README.md）。
 
 # 固定 compose 项目名，与所在文件夹名称无关
 name: zt-abroad-parent
@@ -23,12 +23,15 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-abroad}
       LANG: C.UTF-8
       TZ: Asia/Shanghai
+      ABR_SQL_DIR: /abroad-sql
     ports:
       - "5433:5432"
     volumes:
       - abr-pgdata:/var/lib/postgresql/data
       - ./sql/zt_20261008_postgre.sql:/docker-entrypoint-initdb.d/01_zt.sql:ro
       - ./sql/quartz_postgre.sql:/docker-entrypoint-initdb.d/02_quartz.sql:ro
+      - ./sql/abroad/migrate.sh:/docker-entrypoint-initdb.d/03_abroad.sh:ro
+      - ./sql/abroad:/abroad-sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-abroad}"]
       interval: 5s

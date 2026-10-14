@@ -24,7 +24,7 @@
 | 原设计 | 落地 |
 | --- | --- |
 | PostgreSQL 16 + pgvector | PostgreSQL 15（与 zt 工程一致）；1b 需要向量检索时评估 pgvector 扩展 |
-| Flyway 迁移 | 不用 Flyway：全量脚本 `sql/zt_20261008_postgre.sql` + 增量脚本 `sql/abroad/update_<yyyyMMdd>_<内容>.sql`（可重复执行，见 `sql/abroad/README.md`） |
+| Flyway 迁移 | 不用 Flyway：全量脚本 `sql/zt_20261008_postgre.sql` + 增量脚本 `sql/abroad/update_<yyyyMMdd>_<内容>.sql`（可重复执行，见 `sql/abroad/README.md`）；《架构设计》中“启动时由 Flyway 自动迁移”改为部署时先执行 `sql/abroad/migrate.sh`（按文件名顺序全部重跑），compose 空库首次启动自动执行 |
 | MyBatis-Plus | RuoYi 的 MyBatis + XML + PageHelper；单表 CRUD 用代码生成器生成 |
 | 表前缀 `cat_` `asm_` `crm_` `ai_` `itg_` | 统一 `abr_`：`cat_school` → `abr_school`，`asm_assessment` → `abr_assessment`，`asm_result` → `abr_assessment_result`，`crm_lead` → `abr_lead`，`ai_call_log` → `abr_ai_call_log`，`itg_wecom_contact` → `abr_wecom_contact`，依此类推 |
 | 必备字段 `id`、`tenant_id`、`created_by/at`、`updated_by/at`、`deleted` | RuoYi 口径：`xxx_id bigserial`、`status`、`del_flag`、`create_by/create_time`、`update_by/update_time`、`remark`（开发规范第 5 章） |

@@ -6,16 +6,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import com.ygb.abroad.ai.AiContext;
 import com.ygb.abroad.ai.AiGateway;
@@ -35,7 +30,8 @@ import com.ygb.common.utils.StringUtils;
  * 项目 AI 预填（catalog_extractor）服务层处理
  * <p>
  * 抓取官网页面（{@link AbrWebPageFetcher}，最多 15 秒）→ AI 网关抽取字段 + 原文引句 → 事后校验（{@link AbrAiPrefillChecker}：
- * 引句必须在页面原文中出现、取值符合人工保存规则）→ 返回提议值。总时限 30 秒；不写任何项目、申请要求表。
+ * 引句必须在页面原文中出现、取值符合人工保存规则）→ 返回提议值。总时限 30 秒：抓取后剩余时间作为网关的时间预算，
+ * 超时后网关不再重试或切备用模型；不写任何项目、申请要求表。
  * </p>
  *
  * @author ygb
@@ -68,10 +64,6 @@ public class AbrProgramAiPrefillServiceImpl implements IAbrProgramAiPrefillServi
 
     @Autowired
     private AbrProgramMapper programMapper;
-
-    @Autowired
-    @Qualifier("threadPoolTaskExecutor")
-    private Executor executor;
 
     /**
      * 抓取官网页面并 AI 预填
@@ -116,33 +108,17 @@ public class AbrProgramAiPrefillServiceImpl implements IAbrProgramAiPrefillServi
         input.put("programHint", StringUtils.isEmpty(hint) ? "（未指定，按页面主体项目抽取）" : hint);
         input.put("pageTitle", page.getTitle());
         input.put("pageText", page.getText());
-        AiContext context = AiContext.of(BIZ_TYPE, programId == null ? "" : String.valueOf(programId), operator);
-
         long remaining = TOTAL_TIMEOUT_MS - elapsedMs(start);
         if (remaining < MIN_AI_MS)
         {
             throw timeout();
         }
-        CompletableFuture<AiResult> future = CompletableFuture.supplyAsync(() -> gateway.invoke(AGENT_CODE, input, context), executor);
-        AiResult result;
-        try
+        AiContext context = AiContext.of(BIZ_TYPE, programId == null ? "" : String.valueOf(programId), operator).withBudget(remaining);
+        AiResult result = gateway.invoke(AGENT_CODE, input, context);
+        if (!result.isSuccess() && elapsedMs(start) >= TOTAL_TIMEOUT_MS - MIN_AI_MS)
         {
-            result = future.get(remaining, TimeUnit.MILLISECONDS);
-        }
-        catch (TimeoutException e)
-        {
-            future.cancel(true);
+            log.info("AI 预填超时 url={} callId={}：{}", url, result.getCallId(), result.getMessage());
             throw timeout();
-        }
-        catch (InterruptedException e)
-        {
-            Thread.currentThread().interrupt();
-            throw new ServiceException("AI 预填已中断，请重试或手动录入");
-        }
-        catch (ExecutionException e)
-        {
-            log.error("AI 预填调用异常 url={}", url, e.getCause());
-            throw new ServiceException("AI 预填失败：调用异常，请稍后重试或手动录入");
         }
         if (!result.isSuccess())
         {

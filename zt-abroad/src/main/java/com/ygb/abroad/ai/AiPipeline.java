@@ -27,10 +27,11 @@ import tools.jackson.databind.JsonNode;
  * 2 去标识化：姓名、手机、证件、邮箱、微信号 → 占位符（映射只在内存）
  * 3 可选检索：AiRetriever 取事实，填入 {{facts}}
  * 4 渲染提示词 → 调用主模型；超时、5xx、连接失败、空内容 → 备用模型
- * 5 校验输出 JSON Schema；失败重试 1 次（同样的主备顺序）→ 仍失败返回降级结果
+ * 5 校验输出 JSON Schema；失败重试 1 次（同样的主备顺序，并把校验错误告诉模型）→ 仍失败返回降级结果
  * 6 输出过滤：录取承诺、广告违禁词、整篇文书
  * 7 还原占位符 → 按审核策略直接返回、抽检或进入审核队列
  * 8 finally 写调用日志（异常也记录）
+ * 上下文设置了时间预算（{@link AiContext#withBudget(long)}）时，单次模型超时不超过剩余预算，预算用完不再重试或切备用模型。
  * </pre>
  *
  * @author ygb
@@ -41,6 +42,12 @@ public class AiPipeline
 
     /** Schema 校验最多轮数（首次 + 重试 1 次） */
     private static final int MAX_ROUNDS = 2;
+
+    /** 剩余预算低于该值（毫秒）时不再发起模型调用 */
+    static final long MIN_CALL_MS = 1000L;
+
+    /** 重试时附带的校验错误条数上限 */
+    private static final int RETRY_ERRORS_MAX = 5;
 
     private final AiStore store;
 
@@ -152,16 +159,21 @@ public class AiPipeline
         List<String> errors = null;
         for (int round = 1; round <= MAX_ROUNDS; round++)
         {
+            if (round > 1 && ctx.remainingMs() < MIN_CALL_MS)
+            {
+                log.warn("AI 时间预算已用完，不再做格式重试 agent={} callId={}", agentCode, result.getCallId());
+                break;
+            }
             AiModelRequest request = new AiModelRequest();
             request.setSystemPrompt(system);
-            request.setUserPrompt(user);
+            request.setUserPrompt(round == 1 ? user : retryPrompt(user, errors));
             request.setTimeoutMs(agent.getTimeoutMs() == null ? 30000 : agent.getTimeoutMs());
             request.setMaxTokens(agent.getMaxOutputTokens() == null ? 0 : agent.getMaxOutputTokens());
             request.setTemperature(agent.getTemperature() == null ? 0 : agent.getTemperature().doubleValue());
             request.setInput(masked);
             request.setPrompt(prompt);
             request.setAttempt(round);
-            lastContent = callChain(primarySpec, backupSpec, request, result);
+            lastContent = callChain(primarySpec, backupSpec, request, result, ctx);
             JsonNode node = AiJson.parseOrNull(lastContent);
             errors = node == null ? List.of("输出不是合法的 JSON") : AiSchemaValidator.validate(prompt.getSchema(), node);
             if (errors.isEmpty())
@@ -247,11 +259,13 @@ public class AiPipeline
      *
      * @return 模型输出原文
      */
-    private String callChain(String primarySpec, String backupSpec, AiModelRequest request, AiResult result)
+    private String callChain(String primarySpec, String backupSpec, AiModelRequest request, AiResult result, AiContext ctx)
     {
+        int agentTimeoutMs = request.getTimeoutMs();
         String primaryError;
         try
         {
+            request.setTimeoutMs(budgetedTimeout(agentTimeoutMs, ctx, "模型调用"));
             return callOne(primarySpec, true, request, result);
         }
         catch (AiProviderException e)
@@ -265,6 +279,7 @@ public class AiPipeline
         }
         try
         {
+            request.setTimeoutMs(budgetedTimeout(agentTimeoutMs, ctx, "主模型不可用（" + primaryError + "），切换备用模型"));
             String content = callOne(backupSpec, false, request, result);
             result.setFallbackUsed(true);
             return content;
@@ -293,6 +308,43 @@ public class AiPipeline
         result.setCompletionTokens(result.getCompletionTokens() + response.getCompletionTokens());
         result.setCost(result.getCost().add(AiProviderRegistry.cost(ref, response.getPromptTokens(), response.getCompletionTokens())));
         return response.getContent();
+    }
+
+    /**
+     * 单次模型超时：Agent 配置与剩余预算取小
+     *
+     * @param agentTimeoutMs Agent 配置的超时
+     * @param ctx 上下文
+     * @param action 预算不足时提示的动作
+     * @return 本次调用的超时（毫秒）
+     */
+    static int budgetedTimeout(int agentTimeoutMs, AiContext ctx, String action)
+    {
+        long remaining = ctx.remainingMs();
+        if (remaining < MIN_CALL_MS)
+        {
+            throw new AiException("AI 调用超出时间预算，未能" + action);
+        }
+        return (int) Math.min(agentTimeoutMs, remaining);
+    }
+
+    /**
+     * 格式重试的用户提示词：原提示词 + 上一轮的校验错误，让模型有针对性地修正（温度为 0 时原样重发多半得到同样的输出）
+     *
+     * @param user 原用户提示词
+     * @param errors 上一轮的校验错误
+     * @return 重试提示词
+     */
+    static String retryPrompt(String user, List<String> errors)
+    {
+        StringBuilder sb = new StringBuilder(user);
+        sb.append("\n\n上一次的输出未通过格式校验，请只输出符合约定 JSON Schema 的 JSON，不要附加任何说明。问题：");
+        int n = errors == null ? 0 : Math.min(RETRY_ERRORS_MAX, errors.size());
+        for (int i = 0; i < n; i++)
+        {
+            sb.append("\n- ").append(errors.get(i));
+        }
+        return sb.toString();
     }
 
     private void queue(String status, AbrAiAgent agent, AiContext ctx, JsonNode content, List<AiFilterHit> hits, AiResult result)
