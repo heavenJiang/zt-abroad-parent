@@ -138,4 +138,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </foreach>
     </update>
 
+    <select id="selectEngineCandidates" resultMap="AbrProgramResult">
+        <include refid="selectAbrProgramVo"/>
+        where p.del_flag = '0' and s.del_flag = '0' and p.status = '0' and s.status = '0'
+          and p.degree = #{degree}
+          and s.country in
+        <foreach collection="countries" item="c" open="(" separator="," close=")">
+            #{c}
+        </foreach>
+        <if test="fieldGroup != null and fieldGroup != ''">
+          and p.field_group = #{fieldGroup}
+        </if>
+        order by s.country, p.program_id
+    </select>
+
 </mapper>

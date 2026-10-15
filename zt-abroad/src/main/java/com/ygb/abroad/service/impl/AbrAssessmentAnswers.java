@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import com.ygb.abroad.engine.AnswerVisibility;
 import com.ygb.common.exception.ServiceException;
 import com.ygb.common.utils.StringUtils;
 import tools.jackson.core.JacksonException;
@@ -283,6 +284,44 @@ final class AbrAssessmentAnswers
      * @param clearAll 是否清空全部答案（终止且不保存答案）
      */
     record Outcome(ObjectNode set, List<String> removed, ObjectNode flags, boolean terminated, boolean clearAll)
+    {
+    }
+
+    /**
+     * 提交前整理：剔除隐藏题的答案，列出可见但未回答的必答题
+     * 
+     * @param questionnaire 问卷
+     * @param answers 已保存的答案
+     * @return 整理结果
+     */
+    static Submission submission(Questionnaire questionnaire, ObjectNode answers)
+    {
+        ArrayNode questions = MAPPER.createArrayNode();
+        questionnaire.questions().values().forEach(questions::add);
+        Map<String, JsonNode> all = new LinkedHashMap<>();
+        answers.properties().forEach(e -> all.put(e.getKey(), e.getValue()));
+        Map<String, JsonNode> visible = AnswerVisibility.visibleAnswers(questions, all);
+        List<String> missing = new ArrayList<>();
+        for (JsonNode q : questions)
+        {
+            String id = q.path("id").asString("");
+            if (q.path("required").asBoolean(false) && !visible.containsKey(id) && AnswerVisibility.isVisible(q.get("visible_if"), visible))
+            {
+                missing.add(q.path("title").asString(id));
+            }
+        }
+        ObjectNode kept = MAPPER.createObjectNode();
+        visible.forEach(kept::set);
+        return new Submission(kept, Collections.unmodifiableList(missing));
+    }
+
+    /**
+     * 提交整理结果
+     * 
+     * @param answers 只含可见题目的答案
+     * @param missingRequired 可见但未回答的必答题标题
+     */
+    record Submission(ObjectNode answers, List<String> missingRequired)
     {
     }
 }

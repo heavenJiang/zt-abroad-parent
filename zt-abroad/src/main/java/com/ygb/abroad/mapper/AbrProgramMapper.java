@@ -76,4 +76,15 @@ public interface AbrProgramMapper
      * @return 影响行数
      */
     public int deleteAbrProgramByIds(@Param("programIds") Long[] programIds, @Param("updateBy") String updateBy);
+
+    /**
+     * 选校引擎候选项目：目标国家 / 地区、学位、专业大类下正常状态的项目（含院校所在国家）
+     * 
+     * @param countries 国家 / 地区代码
+     * @param degree 学位
+     * @param fieldGroup 专业大类（为空不限）
+     * @return 项目集合
+     */
+    public List<AbrProgram> selectEngineCandidates(@Param("countries") List<String> countries, @Param("degree") String degree,
+            @Param("fieldGroup") String fieldGroup);
 }

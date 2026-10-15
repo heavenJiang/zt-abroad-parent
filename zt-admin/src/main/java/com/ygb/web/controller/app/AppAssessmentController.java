@@ -107,4 +107,16 @@ public class AppAssessmentController extends BaseController
         AbrVisitor visitor = visitorService.resolveVisitor(token);
         return success(assessmentService.saveAnswers(visitor, assessmentId, body));
     }
+
+    /**
+     * 提交测评（检查必答题后自动计算选校结果）
+     */
+    @RateLimiter(key = "app_assessment_submit:", time = 60, count = 10, limitType = LimitType.IP)
+    @PostMapping("/{assessmentId}/submit")
+    public AjaxResult submit(@RequestHeader(value = IAbrVisitorService.HEADER, required = false) String token,
+            @PathVariable Long assessmentId)
+    {
+        AbrVisitor visitor = visitorService.resolveVisitor(token);
+        return success(assessmentService.submitAssessment(visitor, assessmentId));
+    }
 }

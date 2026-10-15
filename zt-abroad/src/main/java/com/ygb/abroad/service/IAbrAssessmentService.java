@@ -74,6 +74,15 @@ public interface IAbrAssessmentService
     public AppAssessmentVo saveAnswers(AbrVisitor visitor, Long assessmentId, AppAnswersBody body);
 
     /**
+     * 提交测评：检查必答题，剔除隐藏题的答案，改为已提交，并自动计算选校结果（计算失败不影响提交，可在管理端重新计算）
+     * 
+     * @param visitor 访客
+     * @param assessmentId 测评ID
+     * @return 测评
+     */
+    public AppAssessmentVo submitAssessment(AbrVisitor visitor, Long assessmentId);
+
+    /**
      * 管理端：查询测评列表（不含答案，带背景档案摘要）
      * 
      * @param assessment 查询条件

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrAssessmentResultMapper">
+
+    <resultMap type="AbrAssessmentResult" id="AbrAssessmentResultResult">
+        <id     property="resultId"              column="result_id"               />
+        <result property="assessmentId"          column="assessment_id"           />
+        <result property="mode"                  column="mode"                    />
+        <result property="engineVersions"        column="engine_versions"         />
+        <result property="skippedCountries"      column="skipped_countries"       />
+        <result property="programCount"          column="program_count"           />
+        <result property="reachCount"            column="reach_count"             />
+        <result property="matchCount"            column="match_count"             />
+        <result property="safetyCount"           column="safety_count"            />
+        <result property="needsImprovementCount" column="needs_improvement_count" />
+        <result property="programs"              column="programs"                />
+        <result property="portfolio"             column="portfolio"               />
+        <result property="gaps"                  column="gaps"                    />
+        <result property="hints"                 column="hints"                   />
+        <result property="notices"               column="notices"                 />
+        <result property="subScores"             column="sub_scores"              />
+        <result property="computedTime"          column="computed_time"           />
+        <result property="createBy"              column="create_by"               />
+        <result property="createTime"            column="create_time"             />
+        <result property="updateBy"              column="update_by"               />
+        <result property="updateTime"            column="update_time"             />
+    </resultMap>
+
+    <select id="selectAbrAssessmentResultByAssessmentId" parameterType="Long" resultMap="AbrAssessmentResultResult">
+        select result_id, assessment_id, mode, cast(engine_versions as text) as engine_versions, skipped_countries, program_count,
+               reach_count, match_count, safety_count, needs_improvement_count, cast(programs as text) as programs,
+               cast(portfolio as text) as portfolio, cast(gaps as text) as gaps, cast(hints as text) as hints,
+               cast(notices as text) as notices, cast(sub_scores as text) as sub_scores, computed_time,
+               create_by, create_time, update_by, update_time
+        from abr_assessment_result
+        where assessment_id = #{assessmentId}
+    </select>
+
+    <insert id="upsertAbrAssessmentResult" parameterType="AbrAssessmentResult">
+        insert into abr_assessment_result (assessment_id, mode, engine_versions, skipped_countries, program_count, reach_count,
+                                           match_count, safety_count, needs_improvement_count, programs, portfolio, gaps, hints,
+                                           notices, sub_scores, computed_time, create_by, create_time)
+        values (#{assessmentId}, #{mode}, cast(#{engineVersions} as jsonb), coalesce(#{skippedCountries}, ''), #{programCount},
+                #{reachCount}, #{matchCount}, #{safetyCount}, #{needsImprovementCount}, cast(#{programs} as jsonb),
+                cast(#{portfolio} as jsonb), cast(#{gaps} as jsonb), cast(#{hints} as jsonb), cast(#{notices} as jsonb),
+                cast(#{subScores} as jsonb), now(), #{createBy}, now())
+        on conflict (assessment_id)
+        do update set mode                    = excluded.mode,
+                      engine_versions         = excluded.engine_versions,
+                      skipped_countries       = excluded.skipped_countries,
+                      program_count           = excluded.program_count,
+                      reach_count             = excluded.reach_count,
+                      match_count             = excluded.match_count,
+                      safety_count            = excluded.safety_count,
+                      needs_improvement_count = excluded.needs_improvement_count,
+                      programs                = excluded.programs,
+                      portfolio               = excluded.portfolio,
+                      gaps                    = excluded.gaps,
+                      hints                   = excluded.hints,
+                      notices                 = excluded.notices,
+                      sub_scores              = excluded.sub_scores,
+                      computed_time           = now(),
+                      update_by               = #{createBy},
+                      update_time             = now()
+    </insert>
+
+</mapper>

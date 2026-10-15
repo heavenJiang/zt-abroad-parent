@@ -32,6 +32,9 @@ public class AppAssessmentVo
     /** 流程标志（如 is_minor，前端据此显示提示） */
     private JsonNode flags;
 
+    /** 选校结果是否已生成（提交后自动计算；目标国家都未开放时为 false） */
+    private Boolean resultReady;
+
     /** 创建时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createTime;
@@ -39,6 +42,16 @@ public class AppAssessmentVo
     /** 最近保存时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updateTime;
+
+    public Boolean getResultReady()
+    {
+        return resultReady;
+    }
+
+    public void setResultReady(Boolean resultReady)
+    {
+        this.resultReady = resultReady;
+    }
 
     public Long getAssessmentId()
     {

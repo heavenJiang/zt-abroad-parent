@@ -3,11 +3,14 @@ package com.ygb.abroad.service.impl;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ygb.abroad.domain.AbrAssessment;
+import com.ygb.abroad.domain.AbrAssessmentResult;
 import com.ygb.abroad.domain.AbrQuestionnaire;
 import com.ygb.abroad.domain.AbrVisitor;
 import com.ygb.abroad.domain.vo.AppAnswersBody;
@@ -17,6 +20,7 @@ import com.ygb.abroad.domain.vo.AppQuestionnaireVo;
 import com.ygb.abroad.mapper.AbrAssessmentMapper;
 import com.ygb.abroad.mapper.AbrQuestionnaireMapper;
 import com.ygb.abroad.service.IAbrAssessmentService;
+import com.ygb.abroad.service.IAbrSelectionService;
 import com.ygb.abroad.service.IAbrVisitorService;
 import com.ygb.common.exception.ServiceException;
 import com.ygb.common.utils.StringUtils;
@@ -30,6 +34,8 @@ import tools.jackson.databind.node.ObjectNode;
 @Service
 public class AbrAssessmentServiceImpl implements IAbrAssessmentService
 {
+    private static final Logger log = LoggerFactory.getLogger(AbrAssessmentServiceImpl.class);
+
     /** 已解析问卷的缓存上限（问卷版本不可修改，按版本ID缓存是安全的） */
     private static final int CACHE_LIMIT = 64;
 
@@ -43,6 +49,9 @@ public class AbrAssessmentServiceImpl implements IAbrAssessmentService
 
     @Autowired
     private IAbrVisitorService visitorService;
+
+    @Autowired
+    private IAbrSelectionService selectionService;
 
     @Override
     public AppQuestionnaireVo selectCurrentQuestionnaire(String code)
@@ -152,6 +161,46 @@ public class AbrAssessmentServiceImpl implements IAbrAssessmentService
             }
         }
         return toVo(assessmentMapper.selectAbrAssessmentById(assessmentId));
+    }
+
+    @Override
+    public AppAssessmentVo submitAssessment(AbrVisitor visitor, Long assessmentId)
+    {
+        AbrAssessment assessment = owned(visitor, assessmentId);
+        if (!AbrAssessment.STATUS_IN_PROGRESS.equals(assessment.getAssessmentStatus()))
+        {
+            throw new ServiceException(AbrAssessment.STATUS_SUBMITTED.equals(assessment.getAssessmentStatus()) ? "测评已提交" : "测评已结束，不能提交");
+        }
+        AbrQuestionnaire questionnaire = questionnaireMapper.selectAbrQuestionnaireById(assessment.getQuestionnaireId());
+        if (questionnaire == null)
+        {
+            throw new ServiceException("问卷不存在");
+        }
+        AbrAssessmentAnswers.Submission submission = AbrAssessmentAnswers.submission(questionnaire(questionnaire),
+                AbrAssessmentAnswers.object(assessment.getAnswers()));
+        if (!submission.missingRequired().isEmpty())
+        {
+            throw new ServiceException("还有必答题没有完成：" + StringUtils.join(submission.missingRequired(), "、"));
+        }
+        if (assessmentMapper.submitAbrAssessment(assessmentId, submission.answers().toString()) == 0)
+        {
+            throw new ServiceException("测评已结束，不能提交");
+        }
+        boolean ready = false;
+        try
+        {
+            // 至少一个目标国家 / 地区有启用的引擎配置时才算生成了结果
+            AbrAssessmentResult result = selectionService.computeAssessment(assessmentId, "");
+            ready = result != null && StringUtils.isNotBlank(result.getEngineVersions()) && !"{}".equals(result.getEngineVersions());
+        }
+        catch (RuntimeException e)
+        {
+            // 提交已成功；计算失败（如引擎配置有误）记日志，由顾问在管理端重新计算
+            log.warn("测评提交后自动计算选校结果失败 assessmentId={}：{}", assessmentId, e.getMessage());
+        }
+        AppAssessmentVo vo = toVo(assessmentMapper.selectAbrAssessmentById(assessmentId));
+        vo.setResultReady(ready);
+        return vo;
     }
 
     @Override

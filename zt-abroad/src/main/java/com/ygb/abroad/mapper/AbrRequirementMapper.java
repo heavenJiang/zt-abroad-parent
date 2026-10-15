@@ -68,4 +68,12 @@ public interface AbrRequirementMapper
      * @return 影响行数
      */
     public int deleteAbrRequirementByProgramIds(@Param("programIds") Long[] programIds, @Param("updateBy") String updateBy);
+
+    /**
+     * 批量查询各项目最新申请季的要求
+     * 
+     * @param programIds 项目ID
+     * @return 每个项目最多一条（申请季最大的一条）
+     */
+    public List<AbrRequirement> selectLatestAbrRequirementByProgramIds(@Param("programIds") List<Long> programIds);
 }

@@ -76,4 +76,13 @@ public interface AbrAssessmentMapper
      */
     public int terminateAbrAssessment(@Param("assessmentId") Long assessmentId, @Param("flags") String flags,
             @Param("clearAnswers") boolean clearAnswers);
+
+    /**
+     * 提交测评：写入只含可见题目的答案并改为已提交（只对答题中的测评生效）
+     * 
+     * @param assessmentId 测评ID
+     * @param answers 答案 JSON
+     * @return 结果
+     */
+    public int submitAbrAssessment(@Param("assessmentId") Long assessmentId, @Param("answers") String answers);
 }

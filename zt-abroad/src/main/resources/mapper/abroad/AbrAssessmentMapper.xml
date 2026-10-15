@@ -125,4 +125,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where assessment_id = #{assessmentId} and assessment_status = 'in_progress' and del_flag = '0'
     </update>
 
+    <update id="submitAbrAssessment">
+        update abr_assessment
+        set assessment_status = 'submitted',
+            answers           = cast(#{answers} as jsonb),
+            submitted_time    = now(),
+            update_time       = now()
+        where assessment_id = #{assessmentId} and assessment_status = 'in_progress' and del_flag = '0'
+    </update>
+
 </mapper>

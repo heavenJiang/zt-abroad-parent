@@ -142,4 +142,40 @@ class AbrAssessmentAnswersTest
         assertEquals("[\"a\",\"b\"]", AbrAssessmentAnswers.toJsonArray(List.of("a", "b")));
         assertEquals("[]", AbrAssessmentAnswers.toJsonArray(List.of()));
     }
+
+    /** 英国硕士学生的完整答案（全部必答题） */
+    static final String COMPLETE = "{\"age_band\": \"18plus\", \"target_countries\": [\"UK\"], \"target_degree\": \"master\","
+            + " \"target_field\": \"management\", \"intake_year\": \"2027\", \"undergrad_school\": {\"kind\": \"cn\", \"university_id\": 7},"
+            + " \"undergrad_major\": {\"value\": \"management\", \"matched\": true}, \"gpa\": {\"type\": \"percent\", \"total\": 85},"
+            + " \"english_status\": \"taken\", \"english_score\": {\"type\": \"ielts\", \"total\": 6.5, \"min_sub\": 6.0},"
+            + " \"exp_research\": {\"has\": \"no\"}, \"exp_work\": {\"has\": \"no\"}, \"exp_awards\": {\"has\": \"no\"}}";
+
+    @Test
+    void submissionDropsHiddenAnswers()
+    {
+        ObjectNode answers = json(COMPLETE);
+        // 隐藏题的答案：学校已匹配，手填校名不显示；没选日本，JLPT 不显示
+        answers.put("undergrad_school_manual", "某大学");
+        answers.put("jlpt_level", "N2");
+        AbrAssessmentAnswers.Submission s = AbrAssessmentAnswers.submission(q, answers);
+        assertTrue(s.missingRequired().isEmpty());
+        assertEquals(json(COMPLETE), s.answers());
+    }
+
+    @Test
+    void submissionListsMissingRequired()
+    {
+        ObjectNode answers = json(COMPLETE);
+        answers.remove("gpa");
+        answers.put("english_status", "taken");
+        answers.remove("english_score");
+        answers.set("target_countries", MAPPER.readTree("[\"UK\", \"JP\"]"));
+        AbrAssessmentAnswers.Submission s = AbrAssessmentAnswers.submission(q, answers);
+        assertEquals(3, s.missingRequired().size());
+        assertTrue(s.missingRequired().contains("日语能力（JLPT）"));
+        // 可选题不要求
+        answers = json(COMPLETE);
+        answers.remove("exp_awards");
+        assertEquals(1, AbrAssessmentAnswers.submission(q, answers).missingRequired().size());
+    }
 }

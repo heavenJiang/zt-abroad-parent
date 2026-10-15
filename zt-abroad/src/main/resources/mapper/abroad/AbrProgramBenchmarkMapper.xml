@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrProgramBenchmarkMapper">
+
+    <resultMap type="AbrProgramBenchmark" id="AbrProgramBenchmarkResult">
+        <id     property="benchmarkId"  column="benchmark_id"  />
+        <result property="programId"    column="program_id"    />
+        <result property="schoolName"   column="school_name"   />
+        <result property="programName"  column="program_name"  />
+        <result property="country"      column="country"       />
+        <result property="difficulty"   column="difficulty"    />
+        <result property="refLine"      column="ref_line"      />
+        <result property="stability"    column="stability"     />
+        <result property="source"       column="source"        />
+        <result property="sampleSize"   column="sample_size"   />
+        <result property="delFlag"      column="del_flag"      />
+        <result property="createBy"     column="create_by"     />
+        <result property="createTime"   column="create_time"   />
+        <result property="updateBy"     column="update_by"     />
+        <result property="updateTime"   column="update_time"   />
+        <result property="remark"       column="remark"        />
+    </resultMap>
+
+    <sql id="selectAbrProgramBenchmarkVo">
+        select b.benchmark_id, b.program_id, s.school_name, p.program_name, s.country, p.difficulty, b.ref_line, b.stability,
+               b.source, b.sample_size, b.del_flag, b.create_by, b.create_time, b.update_by, b.update_time, b.remark
+        from abr_program_benchmark b
+        join abr_program p on p.program_id = b.program_id
+        join abr_school s on s.school_id = p.school_id
+    </sql>
+
+    <select id="selectAbrProgramBenchmarkList" parameterType="AbrProgramBenchmark" resultMap="AbrProgramBenchmarkResult">
+        <include refid="selectAbrProgramBenchmarkVo"/>
+        where b.del_flag = '0' and p.del_flag = '0' and s.del_flag = '0'
+        <if test="programId != null">
+            AND b.program_id = #{programId}
+        </if>
+        <if test="country != null and country != ''">
+            AND s.country = #{country}
+        </if>
+        <if test="source != null and source != ''">
+            AND b.source = #{source}
+        </if>
+        <if test="programName != null and programName != ''">
+            AND (p.program_name like concat('%', #{programName}, '%') or p.program_name_en ilike concat('%', #{programName}, '%')
+                 or s.school_name like concat('%', #{programName}, '%') or s.school_name_en ilike concat('%', #{programName}, '%'))
+        </if>
+        order by s.country, s.school_name, p.program_name, b.benchmark_id
+    </select>
+
+    <select id="selectAbrProgramBenchmarkById" parameterType="Long" resultMap="AbrProgramBenchmarkResult">
+        <include refid="selectAbrProgramBenchmarkVo"/>
+        where b.benchmark_id = #{benchmarkId} and b.del_flag = '0'
+    </select>
+
+    <select id="selectAbrProgramBenchmarkByProgramId" parameterType="Long" resultMap="AbrProgramBenchmarkResult">
+        <include refid="selectAbrProgramBenchmarkVo"/>
+        where b.program_id = #{programId} and b.del_flag = '0'
+    </select>
+
+    <select id="selectAbrProgramBenchmarkByProgramIds" resultMap="AbrProgramBenchmarkResult">
+        <include refid="selectAbrProgramBenchmarkVo"/>
+        where b.del_flag = '0' and b.program_id in
+        <foreach collection="programIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <insert id="insertAbrProgramBenchmark" parameterType="AbrProgramBenchmark" useGeneratedKeys="true" keyProperty="benchmarkId" keyColumn="benchmark_id">
+        insert into abr_program_benchmark (program_id, ref_line, stability, source, sample_size, del_flag, create_by, create_time, remark)
+        values (#{programId}, #{refLine}, #{stability}, #{source}, #{sampleSize}, '0', #{createBy}, now(), #{remark})
+    </insert>
+
+    <update id="updateAbrProgramBenchmark" parameterType="AbrProgramBenchmark">
+        update abr_program_benchmark
+        set ref_line    = #{refLine},
+            stability   = #{stability},
+            source      = #{source},
+            sample_size = #{sampleSize},
+            remark      = #{remark},
+            update_by   = #{updateBy},
+            update_time = now()
+        where benchmark_id = #{benchmarkId} and del_flag = '0'
+    </update>
+
+    <update id="deleteAbrProgramBenchmarkByIds">
+        update abr_program_benchmark set del_flag = '2', update_by = #{updateBy}, update_time = now()
+        where del_flag = '0' and benchmark_id in
+        <foreach collection="benchmarkIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+</mapper>

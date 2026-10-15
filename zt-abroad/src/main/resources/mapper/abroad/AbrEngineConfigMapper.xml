@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrEngineConfigMapper">
+
+    <resultMap type="AbrEngineConfig" id="AbrEngineConfigResult">
+        <id     property="configId"       column="config_id"       />
+        <result property="configCode"     column="config_code"     />
+        <result property="country"        column="country"         />
+        <result property="degree"         column="degree"          />
+        <result property="version"        column="version"         />
+        <result property="fileStatus"     column="file_status"     />
+        <result property="publishStatus"  column="publish_status"  />
+        <result property="config"         column="config"          />
+        <result property="warnings"       column="warnings"        />
+        <result property="activatedBy"    column="activated_by"    />
+        <result property="activatedTime"  column="activated_time"  />
+        <result property="delFlag"        column="del_flag"        />
+        <result property="createBy"       column="create_by"       />
+        <result property="createTime"     column="create_time"     />
+        <result property="updateBy"       column="update_by"       />
+        <result property="updateTime"     column="update_time"     />
+        <result property="remark"         column="remark"          />
+    </resultMap>
+
+    <sql id="selectAbrEngineConfigVo">
+        select c.config_id, c.config_code, c.country, c.degree, c.version, c.file_status, c.publish_status,
+               cast(c.warnings as text) as warnings, c.activated_by, c.activated_time, c.del_flag,
+               c.create_by, c.create_time, c.update_by, c.update_time, c.remark
+        from abr_engine_config c
+    </sql>
+
+    <sql id="selectAbrEngineConfigWithJsonVo">
+        select c.config_id, c.config_code, c.country, c.degree, c.version, c.file_status, c.publish_status,
+               cast(c.config as text) as config, cast(c.warnings as text) as warnings, c.activated_by, c.activated_time, c.del_flag,
+               c.create_by, c.create_time, c.update_by, c.update_time, c.remark
+        from abr_engine_config c
+    </sql>
+
+    <select id="selectAbrEngineConfigList" parameterType="AbrEngineConfig" resultMap="AbrEngineConfigResult">
+        <include refid="selectAbrEngineConfigVo"/>
+        where c.del_flag = '0'
+        <if test="configCode != null and configCode != ''">
+            AND (c.config_code ilike concat('%', #{configCode}, '%') or c.version ilike concat('%', #{configCode}, '%'))
+        </if>
+        <if test="country != null and country != ''">
+            AND c.country = #{country}
+        </if>
+        <if test="degree != null and degree != ''">
+            AND c.degree = #{degree}
+        </if>
+        <if test="publishStatus != null and publishStatus != ''">
+            AND c.publish_status = #{publishStatus}
+        </if>
+        order by c.country, c.degree, c.create_time desc, c.config_id desc
+    </select>
+
+    <select id="selectAbrEngineConfigById" parameterType="Long" resultMap="AbrEngineConfigResult">
+        <include refid="selectAbrEngineConfigWithJsonVo"/>
+        where c.config_id = #{configId} and c.del_flag = '0'
+    </select>
+
+    <select id="selectActiveAbrEngineConfigs" parameterType="String" resultMap="AbrEngineConfigResult">
+        <include refid="selectAbrEngineConfigWithJsonVo"/>
+        where c.degree = #{degree} and c.publish_status = 'active' and c.del_flag = '0'
+        order by c.country
+    </select>
+
+    <select id="selectActiveAbrEngineConfig" resultMap="AbrEngineConfigResult">
+        <include refid="selectAbrEngineConfigVo"/>
+        where c.country = #{country} and c.degree = #{degree} and c.publish_status = 'active' and c.del_flag = '0'
+    </select>
+
+    <select id="selectAbrEngineConfigByCodeVersion" resultMap="AbrEngineConfigResult">
+        <include refid="selectAbrEngineConfigVo"/>
+        where c.config_code = #{configCode} and c.version = #{version} and c.del_flag = '0'
+    </select>
+
+    <insert id="insertAbrEngineConfig" parameterType="AbrEngineConfig" useGeneratedKeys="true" keyProperty="configId" keyColumn="config_id">
+        insert into abr_engine_config (config_code, country, degree, version, file_status, publish_status, config, warnings,
+                                       del_flag, create_by, create_time, remark)
+        values (#{configCode}, #{country}, #{degree}, #{version}, coalesce(#{fileStatus}, 'draft'), 'draft', cast(#{config} as jsonb),
+                cast(#{warnings} as jsonb), '0', #{createBy}, now(), #{remark})
+    </insert>
+
+    <update id="retireActiveAbrEngineConfig">
+        update abr_engine_config
+        set publish_status = 'retired',
+            update_by      = #{updateBy},
+            update_time    = now()
+        where country = #{country} and degree = #{degree} and publish_status = 'active' and del_flag = '0'
+    </update>
+
+    <update id="activateAbrEngineConfig">
+        update abr_engine_config
+        set publish_status = 'active',
+            activated_by   = #{updateBy},
+            activated_time = now(),
+            update_by      = #{updateBy},
+            update_time    = now()
+        where config_id = #{configId} and publish_status in ('draft', 'retired') and file_status = 'confirmed' and del_flag = '0'
+    </update>
+
+    <update id="deleteDraftAbrEngineConfigByIds">
+        update abr_engine_config
+        set del_flag    = '2',
+            update_by   = #{updateBy},
+            update_time = now()
+        where publish_status = 'draft' and del_flag = '0' and config_id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+</mapper>
