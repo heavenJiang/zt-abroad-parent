@@ -64,6 +64,9 @@ public class AbrRequirement extends BaseEntity
     /** 是否接受跨专业（0不接受 1接受 2未知） */
     private String acceptCrossMajor;
 
+    /** 是否接受语言班（0不接受 1接受 2未知） */
+    private String acceptPreSessional;
+
     /** 截止日（JSON 对象） */
     private String deadlines;
 
@@ -225,6 +228,16 @@ public class AbrRequirement extends BaseEntity
         return acceptCrossMajor;
     }
 
+    public void setAcceptPreSessional(String acceptPreSessional)
+    {
+        this.acceptPreSessional = acceptPreSessional;
+    }
+
+    public String getAcceptPreSessional()
+    {
+        return acceptPreSessional;
+    }
+
     public void setDeadlines(String deadlines)
     {
         this.deadlines = deadlines;
@@ -283,6 +296,7 @@ public class AbrRequirement extends BaseEntity
             .append("prerequisitesRequired", getPrerequisitesRequired())
             .append("workYears", getWorkYears())
             .append("acceptCrossMajor", getAcceptCrossMajor())
+            .append("acceptPreSessional", getAcceptPreSessional())
             .append("deadlines", getDeadlines())
             .append("status", getStatus())
             .append("delFlag", getDelFlag())

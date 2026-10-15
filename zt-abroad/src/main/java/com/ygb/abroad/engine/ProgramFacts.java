@@ -31,10 +31,11 @@ public record ProgramFacts(Long programId, String country, String difficulty, St
      * @param prerequisitesRequired 先修课是否硬性要求
      * @param workYears 工作年限要求（年）
      * @param acceptCrossMajor 是否接受跨专业（0 不接受 / 1 接受 / 2 未知）
+     * @param acceptPreSessional 是否接受语言班（0 不接受 / 1 接受 / 2 未知）
      */
     public record Requirement(Map<String, BigDecimal> minGpa, Set<String> tiersNotAccepted, BigDecimal ieltsOverall,
             BigDecimal ieltsMinSub, JsonNode otherLanguage, String prerequisites, boolean prerequisitesRequired, Integer workYears,
-            String acceptCrossMajor)
+            String acceptCrossMajor, String acceptPreSessional)
     {
     }
 }

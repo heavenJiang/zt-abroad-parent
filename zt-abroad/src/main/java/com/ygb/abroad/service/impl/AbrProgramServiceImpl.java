@@ -58,6 +58,7 @@ public class AbrProgramServiceImpl implements IAbrProgramService
         SOURCE_FIELDS.put("prerequisites", AbrRequirement::getPrerequisites);
         SOURCE_FIELDS.put("workYears", AbrRequirement::getWorkYears);
         SOURCE_FIELDS.put("acceptCrossMajor", AbrRequirement::getAcceptCrossMajor);
+        SOURCE_FIELDS.put("acceptPreSessional", AbrRequirement::getAcceptPreSessional);
         SOURCE_FIELDS.put("deadlines", AbrRequirement::getDeadlines);
     }
 

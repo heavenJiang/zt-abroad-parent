@@ -19,6 +19,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="prerequisitesRequired"  column="prerequisites_required"  />
         <result property="workYears"              column="work_years"              />
         <result property="acceptCrossMajor"       column="accept_cross_major"      />
+        <result property="acceptPreSessional"     column="accept_pre_sessional"    />
         <result property="deadlines"              column="deadlines"               />
         <result property="status"                 column="status"                  />
         <result property="delFlag"                column="del_flag"                />
@@ -31,8 +32,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectAbrRequirementVo">
         select requirement_id, program_id, season, min_gpa, tiers_not_accepted, ielts_overall, ielts_min_sub, other_language,
-               test_requirement, test_detail, prerequisites, prerequisites_required, work_years, accept_cross_major, deadlines,
-               status, del_flag, create_by, create_time, update_by, update_time, remark
+               test_requirement, test_detail, prerequisites, prerequisites_required, work_years, accept_cross_major, accept_pre_sessional,
+               deadlines, status, del_flag, create_by, create_time, update_by, update_time, remark
         from abr_requirement
     </sql>
 
@@ -55,11 +56,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <insert id="insertAbrRequirement" parameterType="AbrRequirement" useGeneratedKeys="true" keyProperty="requirementId" keyColumn="requirement_id">
         insert into abr_requirement (program_id, season, min_gpa, tiers_not_accepted, ielts_overall, ielts_min_sub, other_language,
                                      test_requirement, test_detail, prerequisites, prerequisites_required, work_years,
-                                     accept_cross_major, deadlines, status, create_by, create_time, remark)
+                                     accept_cross_major, accept_pre_sessional, deadlines, status, create_by, create_time, remark)
         values (#{programId}, #{season}, cast(#{minGpa} as jsonb), coalesce(#{tiersNotAccepted}, ''), #{ieltsOverall}, #{ieltsMinSub},
                 cast(#{otherLanguage} as jsonb), coalesce(#{testRequirement}, 'none'), cast(#{testDetail} as jsonb),
                 coalesce(#{prerequisites}, ''), coalesce(#{prerequisitesRequired}, 'N'), #{workYears},
-                coalesce(#{acceptCrossMajor}, '2'), cast(#{deadlines} as jsonb), coalesce(#{status}, '0'), #{createBy}, now(), #{remark})
+                coalesce(#{acceptCrossMajor}, '2'), coalesce(#{acceptPreSessional}, '2'), cast(#{deadlines} as jsonb), coalesce(#{status}, '0'), #{createBy}, now(), #{remark})
     </insert>
 
     <update id="updateAbrRequirement" parameterType="AbrRequirement">
@@ -76,6 +77,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             prerequisites_required = coalesce(#{prerequisitesRequired}, 'N'),
             work_years             = #{workYears},
             accept_cross_major     = coalesce(#{acceptCrossMajor}, '2'),
+            accept_pre_sessional   = coalesce(#{acceptPreSessional}, '2'),
             deadlines              = cast(#{deadlines} as jsonb),
             status                 = coalesce(#{status}, '0'),
             remark                 = #{remark},

@@ -157,7 +157,7 @@ P     = 1 / (1 + exp(-a × (C − T_eff)))
 
 | 键 | 规则 |
 | --- | --- |
-| `language_en` | 英语授课（缺省）。项目写了学生所考考试（托福 / PTE / 多邻国）的总分时直接比原始分；否则比雅思等效总分与最低小分。差距 ≤ `country_rules.pre_sessional.max_overall_gap`（英、澳）时记 `pre_sessional`（可读语言班），不判不达标。没考也估不出 → 未判定 + `language_pending`；预估分照常比较 + `language_estimated`；非雅思考试没有小分换算 → 只比总分 + `sub_score_unchecked` |
+| `language_en` | 英语授课（缺省）。项目写了学生所考考试（托福 / PTE / 多邻国）的总分时直接比原始分；否则比雅思等效总分与最低小分。差距 ≤ `country_rules.pre_sessional.max_overall_gap`（英、澳）时记 `pre_sessional`（可读语言班），不判不达标；项目库 `accept_pre_sessional` 为“不接受”时不适用，为“未知”时照常适用并加 `pre_sessional_unverified`。没考也估不出 → 未判定 + `language_pending`；预估分照常比较 + `language_estimated`；非雅思考试没有小分换算 → 只比总分 + `sub_score_unchecked` |
 | `language_ja` / `language_ko` | 日语 / 韩语授课：JLPT / TOPIK 等级，项目库 `other_language.jlpt|topik.level` 优先，否则 `teaching_language_thresholds` 按难度档 |
 | `language_de` | 德语授课：问卷 v1 不采集德语水平，只列出项目库要求，记未判定 + `german_to_verify` |
 | `tier_accepted`、`gpa` | 不接收的本科层次；层次对应最低均分（≥ 即达标，不容差）。层次待核定按双非计算 + `tier_unknown`；未填均分 → 未判定 |
@@ -166,5 +166,5 @@ P     = 1 / (1 + exp(-a × (C − T_eff)))
 | `cross_major` | 只对跨专业学生检查：不接受 → 不达标；未知或无记录 → 风险 `cross_major_unknown` |
 | `aps`、`course_match` | 德国：APS 未办理（不了解按未办理）→ 不达标，审核中 → 达标 + `aps_in_progress`；课程匹配度低于兜底比例 → 不达标，未解析成绩单 → 未判定 |
 
-- 风险项和未判定项都**不筛掉项目**，只给顾问提示。课前语言目前按国家规则判断（项目库还没有“是否接受课前语言”字段）。
+- 风险项和未判定项都**不筛掉项目**，只给顾问提示。可接受的语言差距只在国家规则里配置（目前英、澳），其他国家项目即使标“接受语言班”也不适用。
 - 测试复现 M0-06 说明文档 §3.3（项目 A / B 通过）与 §3.5（D1 项目因均分不够归入补足后可申；雅思差 0.5 在英国标“可读语言班”），并对 8 个国家各跑正、反、边界样例。

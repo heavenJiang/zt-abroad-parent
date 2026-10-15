@@ -332,10 +332,16 @@ public final class HardThresholdChecker
                 add(key, MET, required, actual, source);
                 return;
             }
+            // 课前语言：项目明确不接受时不适用；可接受差距取国家规则；项目未注明时按国家规则并标待核实
+            String accept = req == null ? null : req.acceptPreSessional();
             JsonNode max = rules.path("pre_sessional").path("max_overall_gap");
-            if (ielts && max.isNumber() && gap.compareTo(max.decimalValue()) <= 0)
+            if (ielts && !"0".equals(accept) && max.isNumber() && gap.compareTo(max.decimalValue()) <= 0)
             {
                 flags.add("pre_sessional");
+                if (!"1".equals(accept))
+                {
+                    flags.add("pre_sessional_unverified");
+                }
                 add(key, PRE_SESSIONAL, required, actual, source);
                 return;
             }
@@ -697,7 +703,7 @@ public final class HardThresholdChecker
      * @param status pass / 配置 on_fail（needs_improvement，补足后可申）/ excluded
      * @param items 检查项（按检查顺序）
      * @param missing 不达标的检查项（即“缺什么”，按检查顺序）
-     * @param flags 提示码（如 requirement_unverified 要求待核实、language_pending 语言待考、pre_sessional 可读语言班）
+     * @param flags 提示码（如 requirement_unverified 要求待核实、language_pending 语言待考、pre_sessional 可读语言班、pre_sessional_unverified 项目是否接受语言班待核实）
      */
     public record Result(String status, List<Item> items, List<String> missing, List<String> flags)
     {

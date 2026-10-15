@@ -67,9 +67,15 @@ class HardThresholdCheckerTest
     private static ProgramFacts.Requirement req(Map<String, BigDecimal> minGpa, Set<String> notAccepted, String ielts, String sub,
             String otherLanguage, String prereq, boolean prereqRequired, Integer workYears, String cross)
     {
+        return req(minGpa, notAccepted, ielts, sub, otherLanguage, prereq, prereqRequired, workYears, cross, "2");
+    }
+
+    private static ProgramFacts.Requirement req(Map<String, BigDecimal> minGpa, Set<String> notAccepted, String ielts, String sub,
+            String otherLanguage, String prereq, boolean prereqRequired, Integer workYears, String cross, String preSessional)
+    {
         return new ProgramFacts.Requirement(minGpa, notAccepted, ielts == null ? null : new BigDecimal(ielts),
                 sub == null ? null : new BigDecimal(sub), otherLanguage == null ? null : EngineSeeds.json(otherLanguage), prereq, prereqRequired,
-                workYears, cross);
+                workYears, cross, preSessional);
     }
 
     /** 只有语言要求、其余为空的项目库记录 */
@@ -116,6 +122,7 @@ class HardThresholdCheckerTest
         // 雅思差 0.5，英国允许课前语言：标「可读语言班」而不判不达标
         assertEquals("pre_sessional", outcome(r, "language_en"));
         assertTrue(r.flags().contains("pre_sessional"));
+        assertTrue(r.flags().contains("pre_sessional_unverified"));
 
         // 新加坡没有课前语言规则：同样差 0.5 判不达标
         Result sg = HardThresholdChecker.check(student(), program("SG", "D1"), SG);
@@ -134,6 +141,27 @@ class HardThresholdCheckerTest
         p = student();
         p.setIeltsEquivMinSub(new BigDecimal("5.5"));
         assertEquals("not_met", outcome(HardThresholdChecker.check(p, program("UK", "D1"), UK), "language_en"));
+    }
+
+    @Test
+    void preSessionalFollowsProgramRecord()
+    {
+        Map<String, BigDecimal> gpa = Map.of("211", new BigDecimal("80"));
+        // 项目明确接受：可读语言班，不标待核实
+        Result yes = HardThresholdChecker.check(student(), program("UK", "D1", "en", false,
+                req(gpa, Set.of(), "7.0", "6.5", null, null, false, null, null, "1")), UK);
+        assertEquals("pre_sessional", outcome(yes, "language_en"));
+        assertEquals(HardThresholdChecker.PASS, yes.status());
+        assertFalse(yes.flags().contains("pre_sessional_unverified"));
+        // 项目明确不接受：判不达标
+        Result no = HardThresholdChecker.check(student(), program("UK", "D1", "en", false,
+                req(gpa, Set.of(), "7.0", "6.5", null, null, false, null, null, "0")), UK);
+        assertEquals("not_met", outcome(no, "language_en"));
+        assertEquals(List.of("language_en"), no.missing());
+        // 接受但国家没有课前语言规则（新加坡）：不适用
+        Result sg = HardThresholdChecker.check(student(), program("SG", "D1", "en", false,
+                req(gpa, Set.of(), "7.0", "6.5", null, null, false, null, null, "1")), SG);
+        assertEquals("not_met", outcome(sg, "language_en"));
     }
 
     @Test

@@ -43,6 +43,7 @@ class AbrEngineInputsTest
         r.setPrerequisitesRequired("Y");
         r.setWorkYears(2);
         r.setAcceptCrossMajor("0");
+        r.setAcceptPreSessional("1");
 
         ProgramFacts f = AbrEngineInputs.programFacts(program(), r);
         assertEquals(9L, f.programId());
@@ -58,6 +59,7 @@ class AbrEngineInputsTest
         assertTrue(q.prerequisitesRequired());
         assertEquals(2, q.workYears());
         assertEquals("0", q.acceptCrossMajor());
+        assertEquals("1", q.acceptPreSessional());
     }
 
     @Test
