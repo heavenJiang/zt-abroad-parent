@@ -34,6 +34,19 @@ public class AppAssessmentBody
         this.degree = degree;
     }
 
+    /** 内容编号（最近一次进入时链接上的 ct；格式不对时忽略） */
+    private String contentCode;
+
+    public String getContentCode()
+    {
+        return contentCode;
+    }
+
+    public void setContentCode(String contentCode)
+    {
+        this.contentCode = contentCode;
+    }
+
     /** 答题端（h5 / mp_weixin） */
     private String clientPlatform;
 

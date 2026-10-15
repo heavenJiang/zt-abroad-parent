@@ -28,6 +28,19 @@ public class AbrAssessment extends BaseEntity
     /** 学段（字典 abr_degree，C 端首屏选择） */
     private String degree;
 
+    /** 创建测评时最近一次进入的内容编号 */
+    private String contentCode;
+
+    public String getContentCode()
+    {
+        return contentCode;
+    }
+
+    public void setContentCode(String contentCode)
+    {
+        this.contentCode = contentCode;
+    }
+
     public String getDegree()
     {
         return degree;

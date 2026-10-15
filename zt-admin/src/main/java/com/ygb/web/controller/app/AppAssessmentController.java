@@ -61,6 +61,16 @@ public class AppAssessmentController extends BaseController
     }
 
     /**
+     * 落地页：已完成测评的人数（人数少时为空，不显示）
+     */
+    @RateLimiter(key = "app_questionnaire:", time = 60, count = 60, limitType = LimitType.IP)
+    @GetMapping("/stats")
+    public AjaxResult stats()
+    {
+        return success().put("submittedCount", assessmentService.selectSubmittedCount());
+    }
+
+    /**
      * 按学段取启用的问卷（首屏选学段后用）
      */
     @RateLimiter(key = "app_questionnaire:", time = 60, count = 60, limitType = LimitType.IP)

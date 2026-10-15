@@ -48,6 +48,13 @@ public interface IAbrAssessmentService
     public List<AppDegreeVo> selectDegrees();
 
     /**
+     * 落地页：已提交的测评数（少于配置的下限时返回 null，不显示）
+     * 
+     * @return 数量或 null
+     */
+    public Long selectSubmittedCount();
+
+    /**
      * 按版本ID取问卷（续答旧测评时使用；草稿不可取）
      * 
      * @param questionnaireId 问卷版本ID

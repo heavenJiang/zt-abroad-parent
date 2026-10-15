@@ -85,4 +85,11 @@ public interface AbrAssessmentMapper
      * @return 结果
      */
     public int submitAbrAssessment(@Param("assessmentId") Long assessmentId, @Param("answers") String answers);
+
+    /**
+     * 已提交的测评数（落地页“已有 N 人完成测评”）
+     * 
+     * @return 数量
+     */
+    public long countSubmittedAbrAssessment();
 }

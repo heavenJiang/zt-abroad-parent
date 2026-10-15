@@ -11,6 +11,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="questionnaireCode"    column="questionnaire_code"    />
         <result property="questionnaireVersion" column="questionnaire_version" />
         <result property="degree"               column="degree"                />
+        <result property="contentCode"          column="content_code"          />
         <result property="requestId"            column="request_id"            />
         <result property="channelCode"          column="channel_code"          />
         <result property="clientPlatform"       column="client_platform"       />
@@ -39,14 +40,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectAbrAssessmentVo">
         select a.assessment_id, a.visitor_id, a.questionnaire_id, a.questionnaire_code, a.questionnaire_version, a.degree, a.request_id,
-               a.channel_code, a.client_platform, a.policy_code, a.policy_version, a.consent_time, a.assessment_status,
+               a.channel_code, a.content_code, a.client_platform, a.policy_code, a.policy_version, a.consent_time, a.assessment_status,
                cast(a.answers as text) as answers, cast(a.flags as text) as flags, a.is_minor, a.current_screen, a.submitted_time,
                a.del_flag, a.create_by, a.create_time, a.update_by, a.update_time, a.remark
         from abr_assessment a
     </sql>
 
     <select id="selectAbrAssessmentList" parameterType="AbrAssessment" resultMap="AbrAssessmentResult">
-        select a.assessment_id, a.visitor_id, a.questionnaire_id, a.questionnaire_code, a.questionnaire_version, a.degree, a.channel_code,
+        select a.assessment_id, a.visitor_id, a.questionnaire_id, a.questionnaire_code, a.questionnaire_version, a.degree, a.channel_code, a.content_code,
                a.client_platform, a.policy_version, a.consent_time, a.assessment_status, a.is_minor, a.current_screen, a.submitted_time,
                a.create_time, a.update_time,
                (select count(*) from jsonb_object_keys(a.answers)) as answer_count,
@@ -97,11 +98,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <insert id="insertAbrAssessment" parameterType="AbrAssessment" useGeneratedKeys="true" keyProperty="assessmentId" keyColumn="assessment_id">
-        insert into abr_assessment (visitor_id, questionnaire_id, questionnaire_code, questionnaire_version, degree, request_id, channel_code,
+        insert into abr_assessment (visitor_id, questionnaire_id, questionnaire_code, questionnaire_version, degree, request_id, channel_code, content_code,
                                     client_platform, policy_code, policy_version, consent_time, assessment_status, answers, flags,
                                     is_minor, current_screen, del_flag, create_by, create_time, update_time)
         values (#{visitorId}, #{questionnaireId}, #{questionnaireCode}, #{questionnaireVersion}, coalesce(#{degree}, 'master'), #{requestId},
-                coalesce(#{channelCode}, 'direct'),
+                coalesce(#{channelCode}, 'direct'), coalesce(#{contentCode}, ''),
                 coalesce(#{clientPlatform}, ''), coalesce(#{policyCode}, ''), #{policyVersion}, now(), 'in_progress',
                 coalesce(cast(#{answers} as jsonb), '{}'::jsonb), '{}'::jsonb, 'N', '', '0', '', now(), now())
     </insert>
@@ -138,5 +139,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             update_time       = now()
         where assessment_id = #{assessmentId} and assessment_status = 'in_progress' and del_flag = '0'
     </update>
+
+    <select id="countSubmittedAbrAssessment" resultType="long">
+        select count(*) from abr_assessment where assessment_status = 'submitted' and del_flag = '0'
+    </select>
 
 </mapper>

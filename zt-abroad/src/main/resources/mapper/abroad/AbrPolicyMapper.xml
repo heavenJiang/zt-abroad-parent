@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrPolicyMapper">
+
+    <resultMap type="AbrPolicy" id="AbrPolicyResult">
+        <id     property="policyId"       column="policy_id"       />
+        <result property="policyCode"     column="policy_code"     />
+        <result property="version"        column="version"         />
+        <result property="title"          column="title"           />
+        <result property="content"        column="content"         />
+        <result property="isDraft"        column="is_draft"        />
+        <result property="publishStatus"  column="publish_status"  />
+        <result property="effectiveDate"  column="effective_date"  />
+        <result property="delFlag"        column="del_flag"        />
+        <result property="createBy"       column="create_by"       />
+        <result property="createTime"     column="create_time"     />
+        <result property="updateBy"       column="update_by"       />
+        <result property="updateTime"     column="update_time"     />
+        <result property="remark"         column="remark"          />
+    </resultMap>
+
+    <select id="selectActiveAbrPolicy" parameterType="String" resultMap="AbrPolicyResult">
+        select policy_id, policy_code, version, title, content, is_draft, publish_status, effective_date, del_flag,
+               create_by, create_time, update_by, update_time, remark
+        from abr_policy
+        where policy_code = #{policyCode} and publish_status = 'active' and del_flag = '0'
+    </select>
+
+</mapper>

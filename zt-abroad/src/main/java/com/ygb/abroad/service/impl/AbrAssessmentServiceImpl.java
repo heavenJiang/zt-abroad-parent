@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,7 @@ import com.ygb.abroad.mapper.AbrAssessmentMapper;
 import com.ygb.abroad.mapper.AbrEngineConfigMapper;
 import com.ygb.abroad.mapper.AbrQuestionnaireMapper;
 import com.ygb.abroad.service.IAbrAssessmentService;
+import com.ygb.abroad.service.IAbrPolicyService;
 import com.ygb.abroad.service.IAbrSelectionService;
 import com.ygb.abroad.service.IAbrVisitorService;
 import com.ygb.common.exception.ServiceException;
@@ -62,6 +64,13 @@ public class AbrAssessmentServiceImpl implements IAbrAssessmentService
     @Autowired
     private AbrEngineConfigMapper engineConfigMapper;
 
+    @Autowired
+    private IAbrPolicyService policyService;
+
+    /** 落地页显示测评人数的下限（人数少时不显示，避免冷启动期数字难看） */
+    @Value("${abroad.app.landing-count-min:100}")
+    private long landingCountMin;
+
     @Override
     public AppQuestionnaireVo selectCurrentQuestionnaire(String code)
     {
@@ -94,6 +103,8 @@ public class AbrAssessmentServiceImpl implements IAbrAssessmentService
             throw new ServiceException("该学段的测评暂未开放，可预约顾问评估");
         }
         AbrAssessmentAnswers.Questionnaire q = questionnaire(questionnaire);
+        // 同意的必须是当前启用的隐私政策版本（隐私政策更新后旧页面提交会被拒绝，学生需重新阅读）
+        policyService.checkConsentVersion(q.policyCode(), body.getPolicyVersion());
         ObjectNode prefill = AbrAssessmentAnswers.prefill(q, AbrAssessmentAnswers.object(visitor.getProfile()));
         AbrAssessmentAnswers.prefillDegree(q, prefill, degree);
 
@@ -106,6 +117,7 @@ public class AbrAssessmentServiceImpl implements IAbrAssessmentService
         assessment.setRequestId(body.getRequestId());
         assessment.setChannelCode(StringUtils.isBlank(body.getChannelCode()) ? visitor.getChannelCode()
                 : AbrVisitorServiceImpl.channel(body.getChannelCode()));
+        assessment.setContentCode(AbrVisitorServiceImpl.code(body.getContentCode(), ""));
         assessment.setClientPlatform(AbrVisitorServiceImpl.platform(body.getClientPlatform()));
         assessment.setPolicyCode(q.policyCode());
         assessment.setPolicyVersion(body.getPolicyVersion().trim());
@@ -188,6 +200,13 @@ public class AbrAssessmentServiceImpl implements IAbrAssessmentService
             throw new ServiceException("该学段的测评暂未开放，可预约顾问评估");
         }
         return toVo(questionnaire);
+    }
+
+    @Override
+    public Long selectSubmittedCount()
+    {
+        long count = assessmentMapper.countSubmittedAbrAssessment();
+        return count >= landingCountMin ? count : null;
     }
 
     @Override
