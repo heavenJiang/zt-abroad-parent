@@ -80,4 +80,19 @@ class CaseBenchTest
         assertEquals(List.of(CaseBench.ALL, "UK", "US"), List.copyOf(r.summaries().keySet()));
         assertEquals(1, r.summaries().get("US").errors());
     }
+
+    @Test
+    void preSessionalThreshold()
+    {
+        // D1：雅思 6.5 差 0.5，英国可读语言班；均分要求放低到 80 让均分达标
+        ProgramFacts.Requirement req = new ProgramFacts.Requirement(Map.of("211", new BigDecimal("80")), java.util.Set.of(), new BigDecimal("7.0"),
+                null, null, null, null, false, null, "2", "1", false);
+        CaseBench.BenchCase pre = new CaseBench.BenchCase("p", "X", student(), new ProgramFacts(1L, "UK", "D1", "en", false, req), null, null, false,
+                "pre_sessional");
+        CaseBench.BenchCase strict = new CaseBench.BenchCase("s", "X", student(), new ProgramFacts(1L, "UK", "D1", "en", false, req), null, null, false,
+                "needs_improvement");
+        CaseBench.Report r = CaseBench.run(List.of(pre, strict), Map.of("UK", UK));
+        assertEquals(Boolean.TRUE, r.results().get(0).thresholdHit());
+        assertEquals(Boolean.FALSE, r.results().get(1).thresholdHit());
+    }
 }

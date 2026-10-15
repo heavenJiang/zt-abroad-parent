@@ -4,7 +4,7 @@
 
 - 模板：`cases_template.csv`（表头 + 3 行虚构示例，`case_id` 以 `EXAMPLE-` 开头）。
 - 示例集：`cases_sample.csv`（27 行，**AI 构造、没有真实录取结果**）：8 个真实项目按官网要求、8 位虚构学生，档位由 AI 按经验标注；来源、口径与首次运行结果见 `sample_sources.md`。只用于检验测试台和发现引擎口径问题，命中率不作为上线门槛。
-- 测试台（M3-08）：管理端「引擎配置 → 测试台」上传 CSV，可为每个国家选择配置版本（默认启用版本，没有时用最新草稿），只读不保存；`mvn test` 中 `AbrEngineCaseBenchTest` 用种子配置跑本目录的案例并打印报告。除下表的列外，还可以填 `req_min_gpa`（官网不设均分线时填 `none`）、`req_ielts_overall`、`req_ielts_min_sub`（项目官网要求，引擎以此代替兜底值）与 `expected_threshold`（按官网要求判断的 `pass` / `needs_improvement`，用于统计硬门槛一致率），说明见 `sample_sources.md`。
+- 测试台（M3-08）：管理端「引擎配置 → 测试台」上传 CSV，可为每个国家选择配置版本（默认启用版本，没有时用最新草稿），只读不保存；`mvn test` 中 `AbrEngineCaseBenchTest` 用种子配置跑本目录的案例并打印报告。除下表的列外，还可以填 `req_min_gpa`（官网不设均分线时填 `none`）、`req_ielts_overall`、`req_ielts_min_sub`（项目官网要求，引擎以此代替兜底值）、`req_pre_sessional`（是否接受语言班 `Y` / `N`）与 `expected_threshold`（按官网要求判断的 `pass` / `pre_sessional` / `needs_improvement`，用于统计硬门槛一致率），说明见 `sample_sources.md`。
 - 正式案例：复制模板为 `cases.csv`，删除 3 行示例后填写。测试台跳过所有 `EXAMPLE-` 开头的行。
 - 参数：`seed/engine-config/`；说明与算例：`doc/准备/M0-06-引擎参数草案说明.md`。
 

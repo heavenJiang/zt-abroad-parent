@@ -165,10 +165,16 @@ final class AbrEngineCaseCsv
         BigDecimal minGpa = noCutoff ? null : decimal(r, "req_min_gpa");
         BigDecimal ieltsOverall = decimal(r, "req_ielts_overall");
         BigDecimal ieltsSub = decimal(r, "req_ielts_min_sub");
-        if (noCutoff || minGpa != null || ieltsOverall != null || ieltsSub != null)
+        String preSessional = switch (r.getOrDefault("req_pre_sessional", ""))
+        {
+            case "Y" -> "1";
+            case "N" -> "0";
+            default -> "2";
+        };
+        if (noCutoff || minGpa != null || ieltsOverall != null || ieltsSub != null || !"2".equals(preSessional))
         {
             Map<String, BigDecimal> gpa = minGpa == null ? Map.of() : Map.of(tier, minGpa);
-            req = new ProgramFacts.Requirement(gpa, Set.of(), ieltsOverall, ieltsSub, null, null, null, false, null, "2", "2", noCutoff);
+            req = new ProgramFacts.Requirement(gpa, Set.of(), ieltsOverall, ieltsSub, null, null, null, false, null, "2", preSessional, noCutoff);
         }
         String lang = blankToNull(r.get("teaching_language"));
         ProgramFacts program = new ProgramFacts(rowNo, r.get("country"), r.get("program_difficulty"), lang == null ? "en" : lang, false, req);
@@ -185,9 +191,9 @@ final class AbrEngineCaseCsv
             admitted = false;
         }
         String expected = blankToNull(r.get("expected_threshold"));
-        if (expected != null && !Set.of("pass", "needs_improvement").contains(expected))
+        if (expected != null && !Set.of("pass", "pre_sessional", "needs_improvement").contains(expected))
         {
-            throw new IllegalArgumentException("expected_threshold 应为 pass 或 needs_improvement");
+            throw new IllegalArgumentException("expected_threshold 应为 pass、pre_sessional 或 needs_improvement");
         }
         return new CaseBench.BenchCase(r.get("case_id"), r.getOrDefault("verification_level", ""), p, program, consultant, admitted,
                 "Y".equals(r.get("is_borderline")), expected);

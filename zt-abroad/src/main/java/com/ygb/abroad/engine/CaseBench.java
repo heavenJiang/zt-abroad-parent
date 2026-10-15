@@ -57,7 +57,8 @@ public final class CaseBench
             Boolean tierHit = tiered && c.consultantTier() != null ? c.consultantTier().equals(group) : null;
             boolean severe = tiered && c.consultantTier() != null && distance(c.consultantTier(), group) == 2;
             String engineThreshold = SelectionEngine.NEEDS_IMPROVEMENT.equals(group) ? SelectionEngine.NEEDS_IMPROVEMENT
-                    : SelectionEngine.EXCLUDED.equals(group) ? SelectionEngine.EXCLUDED : "pass";
+                    : SelectionEngine.EXCLUDED.equals(group) ? SelectionEngine.EXCLUDED
+                    : e.threshold().flags().contains(HardThresholdChecker.PRE_SESSIONAL) ? HardThresholdChecker.PRE_SESSIONAL : "pass";
             Boolean thresholdHit = c.expectedThreshold() == null ? null : c.expectedThreshold().equals(engineThreshold);
             boolean misjudged = SelectionEngine.NEEDS_IMPROVEMENT.equals(group) && Boolean.TRUE.equals(c.admitted());
             results.add(new CaseResult(c, group, e.estimate().tier(), e.composite().c(), e.estimate().p(), e.estimate().t(),
@@ -157,7 +158,7 @@ public final class CaseBench
      * @param consultantTier 顾问档位（reach / match / safety；未填为 null，不进档位统计）
      * @param admitted 是否录取（候补按最终结果；未知为 null）
      * @param borderline 是否边界案例
-     * @param expectedThreshold 按官网要求判断的硬门槛结果（pass / needs_improvement；未填为 null）
+     * @param expectedThreshold 按官网要求判断的硬门槛结果（pass / pre_sessional 读语言班后达标 / needs_improvement；未填为 null）
      */
     public record BenchCase(String caseId, String verificationLevel, BackgroundProfile profile, ProgramFacts program, String consultantTier,
             Boolean admitted, boolean borderline, String expectedThreshold)

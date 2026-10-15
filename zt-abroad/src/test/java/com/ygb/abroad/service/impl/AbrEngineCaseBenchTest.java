@@ -114,6 +114,13 @@ class AbrEngineCaseBenchTest
         // req_min_gpa = none：官网不设均分线
         AbrEngineCaseCsv.Parsed none = AbrEngineCaseCsv.parse(header + ",req_min_gpa\nT-1,UK,master,business,D2,211,same,85,100,ielts,保,6.5,,,,,,none\n", rules());
         assertTrue(none.cases().get(0).program().requirement().gpaNoCutoff());
+        // req_pre_sessional：Y 接受语言班 / N 不接受；expected_threshold 可为 pre_sessional
+        AbrEngineCaseCsv.Parsed pre = AbrEngineCaseCsv.parse(header + ",req_pre_sessional\nT-1,UK,master,business,D2,211,same,85,100,ielts,保,6.5,,,,,pre_sessional,Y\n"
+                + "T-2,UK,master,business,D2,211,same,85,100,ielts,保,6.5,,,,,,N\n", rules());
+        assertEquals(List.of(), pre.errors());
+        assertEquals("1", pre.cases().get(0).program().requirement().acceptPreSessional());
+        assertEquals("pre_sessional", pre.cases().get(0).expectedThreshold());
+        assertEquals("0", pre.cases().get(1).program().requirement().acceptPreSessional());
     }
 
     /** 报告打印到测试输出，便于在 CI 日志中查看 */
