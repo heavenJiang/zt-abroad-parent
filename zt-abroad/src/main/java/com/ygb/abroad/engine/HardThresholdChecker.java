@@ -84,6 +84,20 @@ public final class HardThresholdChecker
      */
     public static Result check(BackgroundProfile p, ProgramFacts program, JsonNode config)
     {
+        return check(p, program, config, false);
+    }
+
+    /**
+     * 检查一个项目
+     * 
+     * @param p 背景档案
+     * @param program 项目事实
+     * @param config 该项目所在国家的引擎配置（根节点，需含 hard_thresholds，country_rules 可缺省）
+     * @param quick 快测模式：只检查语言（未采集时记语言待考）与院校层次 / 均分；先修课、工作年限、跨专业、APS、课程匹配度未采集，不检查
+     * @return 检查结果
+     */
+    public static Result check(BackgroundProfile p, ProgramFacts program, JsonNode config, boolean quick)
+    {
         JsonNode ht = config.path("hard_thresholds");
         JsonNode onFail = ht.get("on_fail");
         if (onFail == null || !onFail.isString() || onFail.asString().isBlank())
@@ -93,11 +107,18 @@ public final class HardThresholdChecker
         Check c = new Check(p, program, ht, config.path("country_rules"));
         c.language();
         c.gpa();
-        c.prerequisites();
-        c.workYears();
-        c.crossMajor();
-        c.aps();
-        c.courseMatch();
+        if (quick)
+        {
+            c.flags.add("quick_mode");
+        }
+        else
+        {
+            c.prerequisites();
+            c.workYears();
+            c.crossMajor();
+            c.aps();
+            c.courseMatch();
+        }
 
         List<String> missing = new ArrayList<>();
         boolean excluded = false;
@@ -249,7 +270,7 @@ public final class HardThresholdChecker
         private void english()
         {
             String key = "language_en";
-            String test = ENGLISH_TEST_KEYS.get(p.getEnglishTest());
+            String test = p.getEnglishTest() == null ? null : ENGLISH_TEST_KEYS.get(p.getEnglishTest());
             BigDecimal reqTotal = null;
             BigDecimal reqSub = null;
             String scale = null;

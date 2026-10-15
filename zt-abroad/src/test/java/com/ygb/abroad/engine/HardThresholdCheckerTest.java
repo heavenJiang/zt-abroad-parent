@@ -74,7 +74,7 @@ class HardThresholdCheckerTest
             String otherLanguage, String prereq, boolean prereqRequired, Integer workYears, String cross, String preSessional)
     {
         return new ProgramFacts.Requirement(minGpa, notAccepted, ielts == null ? null : new BigDecimal(ielts),
-                sub == null ? null : new BigDecimal(sub), otherLanguage == null ? null : EngineSeeds.json(otherLanguage), prereq, prereqRequired,
+                sub == null ? null : new BigDecimal(sub), null, otherLanguage == null ? null : EngineSeeds.json(otherLanguage), prereq, prereqRequired,
                 workYears, cross, preSessional);
     }
 
@@ -275,6 +275,7 @@ class HardThresholdCheckerTest
         assertEquals(new Item("language_en", "unchecked", "雅思 7.0（小分 6.5）", "未考", "default"), item(r, "language_en"));
         assertTrue(r.flags().contains("language_pending"));
         p.setEnglishStatus(null);
+        p.setEnglishTest(null);
         assertTrue(HardThresholdChecker.check(p, program("UK", "D1"), UK).flags().contains("language_pending"));
 
         p = student();

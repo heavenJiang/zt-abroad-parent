@@ -168,3 +168,14 @@ P     = 1 / (1 + exp(-a × (C − T_eff)))
 
 - 风险项和未判定项都**不筛掉项目**，只给顾问提示。可接受的语言差距只在国家规则里配置（目前英、澳），其他国家项目即使标“接受语言班”也不适用。
 - 测试复现 M0-06 说明文档 §3.3（项目 A / B 通过）与 §3.5（D1 项目因均分不够归入补足后可申；雅思差 0.5 在英国标“可读语言班”），并对 8 个国家各跑正、反、边界样例。
+
+## 实现（M3-05）
+
+入口为 `com.ygb.abroad.engine.SelectionEngine`：每个候选项目依次做「子分（按国家缓存）→ 硬门槛 → 综合分 C → P → 分档」，结果按传入顺序返回，并记录所用配置的 `version`。
+
+- **综合分**（`CompositeScorer`）：权重取 `weights.by_field[专业大类]`，没有时取 `default`；缺子分（如德国未解析成绩单的 `course_match`）、项目不要求标化（`test_requirement = none` 且 `not_required_policy = renormalize`）的维度从计算中去掉，其余权重按比例放大，放大后的权重随结果留痕。
+- **P 与分档**（`AdmissionEstimator`）：T、a 取项目参考线（`ProgramBenchmark`，可只给 T 或只给 a），否则 T 取难度档默认值、来源记为 `default_source`，a 取 `a_default`；`T_eff = T + t_offset`。指数用 `StrictMath`，P 按 `p_scale` 取整后分档。项目既无参考线又未定难度档时分组为 `unrated`（待顾问定档）。
+- **分组**：通过硬门槛的按档位分为 `reach` / `match` / `safety` / `unrated`；未通过的为 `needs_improvement`（C、P 仍计算，供 M3-06 差距反算），不在考虑范围的为 `excluded`。
+- **快测**（`SelectionEngine.quick`）：只取 `undergrad_school`、`gpa`、`target_countries`、`target_field` 四题归一化；综合分只用学术维度（院校层次 + 均分，权重放大为 1）；硬门槛只查院校层次 / 均分与语言（未采集时记“语言待考”），先修课、工作年限、跨专业、APS、课程匹配度不查，结果带 `quick_mode`。
+- 测试复现 M0-06 §3.2（C = 81.00）、§3.4（A：P = 0.4551 → 稳；B：P = 0.8787 → 保）、§3.5（D1：P = 0.2210 → 冲；补足后 C = 85.55、P = 0.3915 → 稳）；300 个项目一次评估在 1 秒内。
+- 配置、参考线、结果的入库（`abr_engine_config`、`abr_program_benchmark`、`abr_assessment_result`）在 M3-07 随配置管理一起完成，届时学生提交测评后自动计算。

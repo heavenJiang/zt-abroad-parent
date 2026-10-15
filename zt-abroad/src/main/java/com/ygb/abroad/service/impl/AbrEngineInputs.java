@@ -62,7 +62,7 @@ public final class AbrEngineInputs
             }
         }
         JsonNode other = AbrJsonFields.parse(r.getOtherLanguage(), "其他语言要求");
-        return new ProgramFacts.Requirement(minGpa, tiers, r.getIeltsOverall(), r.getIeltsMinSub(),
+        return new ProgramFacts.Requirement(minGpa, tiers, r.getIeltsOverall(), r.getIeltsMinSub(), r.getTestRequirement(),
                 other != null && other.isObject() ? other : null, r.getPrerequisites(), "Y".equals(r.getPrerequisitesRequired()),
                 r.getWorkYears(), r.getAcceptCrossMajor(), r.getAcceptPreSessional());
     }

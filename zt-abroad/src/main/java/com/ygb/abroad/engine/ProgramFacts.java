@@ -26,6 +26,7 @@ public record ProgramFacts(Long programId, String country, String difficulty, St
      * @param tiersNotAccepted 不接受的本科层次
      * @param ieltsOverall 雅思总分要求
      * @param ieltsMinSub 雅思最低小分要求
+     * @param testRequirement 标化要求（none 不要求 / optional 可选 / required 必需；为空按可选）
      * @param otherLanguage 其他语言要求（{"toefl":{"overall":90,"minSub":20},"jlpt":{"level":"N2"}}，可为 null）
      * @param prerequisites 先修课要求（文字）
      * @param prerequisitesRequired 先修课是否硬性要求
@@ -34,7 +35,7 @@ public record ProgramFacts(Long programId, String country, String difficulty, St
      * @param acceptPreSessional 是否接受语言班（0 不接受 / 1 接受 / 2 未知）
      */
     public record Requirement(Map<String, BigDecimal> minGpa, Set<String> tiersNotAccepted, BigDecimal ieltsOverall,
-            BigDecimal ieltsMinSub, JsonNode otherLanguage, String prerequisites, boolean prerequisitesRequired, Integer workYears,
+            BigDecimal ieltsMinSub, String testRequirement, JsonNode otherLanguage, String prerequisites, boolean prerequisitesRequired, Integer workYears,
             String acceptCrossMajor, String acceptPreSessional)
     {
     }
