@@ -9,6 +9,7 @@ import com.ygb.abroad.domain.vo.AppMaterialsVo;
 import com.ygb.abroad.domain.vo.AppPlanItemBody;
 import com.ygb.abroad.domain.vo.AppPlanItemVo;
 import com.ygb.abroad.domain.vo.AppPlanVo;
+import com.ygb.abroad.domain.vo.AppSharedPlanVo;
 
 /**
  * 我的选校单 服务层（M4-02：加入、查看、移除；排序、逐项达标、失衡提示在 M4-10）
@@ -94,4 +95,44 @@ public interface IAbrPlanService
      * @return 更新后的材料清单
      */
     public AppMaterialsVo updateMaterial(AbrVisitor visitor, AppMaterialBody body);
+
+    /**
+     * 开启家长只读视图分享（已开启时返回原链接；撤销后再开启换新链接）
+     * 
+     * @param visitor 访客
+     * @return shared、code、url、viewCount、lastViewTime
+     */
+    public Map<String, Object> createPlanShare(AbrVisitor visitor);
+
+    /**
+     * 家长只读视图的分享状态
+     * 
+     * @param visitor 访客
+     * @return shared，开启时含 code、url、viewCount、lastViewTime
+     */
+    public Map<String, Object> selectPlanShare(AbrVisitor visitor);
+
+    /**
+     * 撤销家长只读视图分享（原链接立即失效）
+     * 
+     * @param visitor 访客
+     * @return 分享状态
+     */
+    public Map<String, Object> revokePlanShare(AbrVisitor visitor);
+
+    /**
+     * 凭分享码查看家长只读视图（记录查看次数）
+     * 
+     * @param code 分享码
+     * @return 只读视图
+     */
+    public AppSharedPlanVo selectSharedPlan(String code);
+
+    /**
+     * 生成选校单分享卡（PNG；只含档位与校名，二维码带分享码）
+     * 
+     * @param visitor 访客
+     * @return PNG 字节
+     */
+    public byte[] renderPlanCard(AbrVisitor visitor);
 }

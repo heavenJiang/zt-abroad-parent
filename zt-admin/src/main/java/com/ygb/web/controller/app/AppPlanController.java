@@ -30,7 +30,7 @@ import com.ygb.common.core.domain.AjaxResult;
 import com.ygb.common.enums.LimitType;
 
 /**
- * C 端-我的选校单、申请日历与材料清单（匿名按访客保存，M4-04 登录后同步到学生账号）
+ * C 端-我的选校单、申请日历、材料清单与分享（匿名按访客保存，M4-04 登录后同步到学生账号）
  * 
  * @author ygb
  */
@@ -149,5 +149,50 @@ public class AppPlanController extends BaseController
     {
         AbrVisitor visitor = visitorService.resolveVisitor(token);
         return success(planService.updateMaterial(visitor, body));
+    }
+
+    /**
+     * 家长只读视图的分享状态
+     */
+    @RateLimiter(key = "app_plan_read:", time = 60, count = 120, limitType = LimitType.IP)
+    @GetMapping("/share")
+    public AjaxResult shareStatus(@RequestHeader(value = IAbrVisitorService.HEADER, required = false) String token)
+    {
+        AbrVisitor visitor = visitorService.resolveVisitor(token);
+        return success(planService.selectPlanShare(visitor));
+    }
+
+    /**
+     * 开启家长只读视图分享（返回链接）
+     */
+    @RateLimiter(key = "app_plan_write:", time = 60, count = 60, limitType = LimitType.IP)
+    @PostMapping("/share")
+    public AjaxResult share(@RequestHeader(value = IAbrVisitorService.HEADER, required = false) String token)
+    {
+        AbrVisitor visitor = visitorService.resolveVisitor(token);
+        return success(planService.createPlanShare(visitor));
+    }
+
+    /**
+     * 撤销家长只读视图分享
+     */
+    @RateLimiter(key = "app_plan_write:", time = 60, count = 60, limitType = LimitType.IP)
+    @DeleteMapping("/share")
+    public AjaxResult revokeShare(@RequestHeader(value = IAbrVisitorService.HEADER, required = false) String token)
+    {
+        AbrVisitor visitor = visitorService.resolveVisitor(token);
+        return success(planService.revokePlanShare(visitor));
+    }
+
+    /**
+     * 生成选校单分享卡（PNG；只含档位与校名，不含个人信息）
+     */
+    @RateLimiter(key = "app_plan_card:", time = 60, count = 20, limitType = LimitType.IP)
+    @PostMapping("/share-image")
+    public ResponseEntity<byte[]> shareImage(@RequestHeader(value = IAbrVisitorService.HEADER, required = false) String token)
+    {
+        AbrVisitor visitor = visitorService.resolveVisitor(token);
+        byte[] png = planService.renderPlanCard(visitor);
+        return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).cacheControl(CacheControl.noStore()).body(png);
     }
 }

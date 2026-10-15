@@ -22,6 +22,7 @@ import com.ygb.abroad.domain.AbrPlanItem;
 import com.ygb.abroad.domain.AbrProgram;
 import com.ygb.abroad.domain.AbrQuestionnaire;
 import com.ygb.abroad.domain.AbrRequirement;
+import com.ygb.abroad.domain.AbrShare;
 import com.ygb.abroad.domain.AbrToolRun;
 import com.ygb.abroad.domain.AbrVisitor;
 import com.ygb.abroad.domain.vo.AppCalendarVo;
@@ -30,6 +31,7 @@ import com.ygb.abroad.domain.vo.AppMaterialsVo;
 import com.ygb.abroad.domain.vo.AppPlanItemBody;
 import com.ygb.abroad.domain.vo.AppPlanItemVo;
 import com.ygb.abroad.domain.vo.AppPlanVo;
+import com.ygb.abroad.domain.vo.AppSharedPlanVo;
 import com.ygb.abroad.engine.AnswerVisibility;
 import com.ygb.abroad.engine.BackgroundProfile;
 import com.ygb.abroad.engine.SelectionEngine;
@@ -40,6 +42,8 @@ import com.ygb.abroad.mapper.AbrPlanMaterialMapper;
 import com.ygb.abroad.mapper.AbrProgramMapper;
 import com.ygb.abroad.mapper.AbrQuestionnaireMapper;
 import com.ygb.abroad.mapper.AbrRequirementMapper;
+import com.ygb.abroad.mapper.AbrShareMapper;
+import com.ygb.abroad.mapper.AbrVisitorMapper;
 import com.ygb.abroad.mapper.AbrToolRunMapper;
 import com.ygb.abroad.service.IAbrPlanService;
 import com.ygb.abroad.service.IAbrProfileService;
@@ -126,6 +130,15 @@ public class AbrPlanServiceImpl implements IAbrPlanService
 
     @Autowired
     private AbrPlanMaterialMapper planMaterialMapper;
+
+    @Autowired
+    private AbrShareMapper shareMapper;
+
+    @Autowired
+    private AbrVisitorMapper visitorMapper;
+
+    @Autowired
+    private AbrShareSupport shareSupport;
 
     /** C 端地址（日历事件 UID 的域名部分取其主机名） */
     @Value("${abroad.app.url:http://localhost:5173/}")
@@ -274,6 +287,75 @@ public class AbrPlanServiceImpl implements IAbrPlanService
         }
         planMaterialMapper.upsertPlanMaterial(visitor.getVisitorId(), visitor.getAppUserId(), key, Boolean.TRUE.equals(body.getDone()));
         return materials(visitor.getVisitorId());
+    }
+
+    @Override
+    public Map<String, Object> createPlanShare(AbrVisitor visitor)
+    {
+        shareSupport.shareCode(AbrPlanShare.KIND_VIEW, visitor.getVisitorId(), visitor.getVisitorId(), "{}");
+        return planShareStatus(visitor);
+    }
+
+    @Override
+    public Map<String, Object> selectPlanShare(AbrVisitor visitor)
+    {
+        return planShareStatus(visitor);
+    }
+
+    @Override
+    public Map<String, Object> revokePlanShare(AbrVisitor visitor)
+    {
+        shareMapper.revokeAbrShare(AbrPlanShare.KIND_VIEW, visitor.getVisitorId(), visitor.getVisitorId());
+        return planShareStatus(visitor);
+    }
+
+    @Override
+    public AppSharedPlanVo selectSharedPlan(String code)
+    {
+        AbrShare share = code == null || !code.matches("^[A-Za-z0-9]{10}$") ? null : shareMapper.selectAbrShareByCode(code);
+        if (share == null || Boolean.TRUE.equals(share.getRevoked()) || !AbrPlanShare.KIND_VIEW.equals(share.getKind()))
+        {
+            throw new ServiceException("分享链接已失效，请让孩子重新分享");
+        }
+        AbrVisitor owner = visitorMapper.selectAbrVisitorById(share.getVisitorId());
+        if (owner == null)
+        {
+            throw new ServiceException("分享链接已失效，请让孩子重新分享");
+        }
+        shareMapper.touchAbrShareView(share.getShareId());
+        return AbrPlanShare.view(selectPlan(owner), calendar(owner.getVisitorId()), materials(owner.getVisitorId()));
+    }
+
+    @Override
+    public byte[] renderPlanCard(AbrVisitor visitor)
+    {
+        AppPlanVo plan = selectPlan(visitor);
+        if (plan.items().stream().allMatch(i -> AbrSelectionServiceImpl.PLAN_OFFLINE.equals(i.status())))
+        {
+            throw new ServiceException("选校单还是空的，先加几个项目再分享吧");
+        }
+        String code = shareSupport.shareCode(AbrPlanShare.KIND_CARD, visitor.getVisitorId(), visitor.getVisitorId(), "{}");
+        return shareSupport.png(AbrPlanShare.card(plan, shareSupport.brandName(), shareSupport.landingLink(code)));
+    }
+
+    /**
+     * 家长只读视图的分享状态（未分享或已撤销时 shared 为 false，不返回链接）
+     */
+    private Map<String, Object> planShareStatus(AbrVisitor visitor)
+    {
+        AbrShare share = shareMapper.selectAbrShareByRef(AbrPlanShare.KIND_VIEW, visitor.getVisitorId(), visitor.getVisitorId());
+        boolean shared = share != null && !Boolean.TRUE.equals(share.getRevoked());
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("shared", shared);
+        if (shared)
+        {
+            String code = share.getShareCode();
+            data.put("code", code);
+            data.put("url", shareSupport.appLink("pages/share/plan?code=" + code + "&ch=share&ct=" + code));
+            data.put("viewCount", share.getViewCount());
+            data.put("lastViewTime", share.getLastViewTime());
+        }
+        return data;
     }
 
     /**

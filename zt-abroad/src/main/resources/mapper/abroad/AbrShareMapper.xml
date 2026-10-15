@@ -4,14 +4,54 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ygb.abroad.mapper.AbrShareMapper">
 
+    <resultMap type="AbrShare" id="AbrShareResult">
+        <id     property="shareId"       column="share_id"       />
+        <result property="shareCode"     column="share_code"     />
+        <result property="kind"          column="kind"           />
+        <result property="visitorId"     column="visitor_id"     />
+        <result property="refId"         column="ref_id"         />
+        <result property="revoked"       column="revoked"        />
+        <result property="viewCount"     column="view_count"     />
+        <result property="lastViewTime"  column="last_view_time" />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectAbrShareVo">
+        select share_id, share_code, kind, visitor_id, ref_id, coalesce(revoked, false) as revoked, coalesce(view_count, 0) as view_count,
+               last_view_time, create_time, update_time
+        from abr_share
+    </sql>
+
     <select id="upsertAbrShare" resultType="String" flushCache="true">
-        insert into abr_share (share_code, kind, visitor_id, ref_id, options, render_count, create_time, update_time)
-        values (#{shareCode}, #{kind}, #{visitorId}, #{refId}, cast(#{options} as jsonb), 1, now(), now())
+        insert into abr_share (share_code, kind, visitor_id, ref_id, options, render_count, revoked, create_time, update_time)
+        values (#{shareCode}, #{kind}, #{visitorId}, #{refId}, cast(#{options} as jsonb), 1, false, now(), now())
         on conflict (kind, visitor_id, ref_id)
-        do update set options      = excluded.options,
+        do update set share_code   = case when abr_share.revoked then excluded.share_code else abr_share.share_code end,
+                      revoked      = false,
+                      options      = excluded.options,
                       render_count = abr_share.render_count + 1,
                       update_time  = now()
         returning share_code
     </select>
+
+    <select id="selectAbrShareByCode" parameterType="String" resultMap="AbrShareResult">
+        <include refid="selectAbrShareVo"/>
+        where share_code = #{shareCode}
+    </select>
+
+    <select id="selectAbrShareByRef" resultMap="AbrShareResult">
+        <include refid="selectAbrShareVo"/>
+        where kind = #{kind} and visitor_id = #{visitorId} and ref_id = #{refId}
+    </select>
+
+    <update id="revokeAbrShare">
+        update abr_share set revoked = true, update_time = now()
+        where kind = #{kind} and visitor_id = #{visitorId} and ref_id = #{refId}
+    </update>
+
+    <update id="touchAbrShareView" parameterType="Long">
+        update abr_share set view_count = coalesce(view_count, 0) + 1, last_view_time = now() where share_id = #{shareId}
+    </update>
 
 </mapper>
