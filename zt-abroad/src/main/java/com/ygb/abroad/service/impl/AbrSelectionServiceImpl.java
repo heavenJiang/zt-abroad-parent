@@ -8,6 +8,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ygb.abroad.domain.AbrAssessment;
 import com.ygb.abroad.domain.AbrAssessmentResult;
 import com.ygb.abroad.domain.AbrProfile;
 import com.ygb.abroad.domain.AbrProgram;
@@ -16,10 +17,12 @@ import com.ygb.abroad.domain.AbrRequirement;
 import com.ygb.abroad.domain.AbrSchool;
 import com.ygb.abroad.engine.AdmissionEstimator;
 import com.ygb.abroad.engine.BackgroundProfile;
+import com.ygb.abroad.engine.DegreeStrategy;
 import com.ygb.abroad.engine.ProgramBenchmark;
 import com.ygb.abroad.engine.ProgramFacts;
 import com.ygb.abroad.engine.RecommendationPlanner;
 import com.ygb.abroad.engine.SelectionEngine;
+import com.ygb.abroad.mapper.AbrAssessmentMapper;
 import com.ygb.abroad.mapper.AbrAssessmentResultMapper;
 import com.ygb.abroad.mapper.AbrProgramBenchmarkMapper;
 import com.ygb.abroad.mapper.AbrProgramMapper;
@@ -50,6 +53,9 @@ public class AbrSelectionServiceImpl implements IAbrSelectionService
     /** 问卷未答学位时按硕士计算（1a 引擎只支持硕士，其余学段见 M3-09） */
     static final String DEFAULT_DEGREE = "master";
 
+    /** 结果模式：该学段由顾问评估（引擎尚未实现） */
+    static final String MODE_CONSULTANT = "consultant";
+
     @Autowired
     private IAbrProfileService profileService;
 
@@ -71,6 +77,9 @@ public class AbrSelectionServiceImpl implements IAbrSelectionService
     @Autowired
     private AbrAssessmentResultMapper resultMapper;
 
+    @Autowired
+    private AbrAssessmentMapper assessmentMapper;
+
     @Override
     public AbrAssessmentResult selectAbrAssessmentResult(Long assessmentId)
     {
@@ -83,7 +92,22 @@ public class AbrSelectionServiceImpl implements IAbrSelectionService
     {
         AbrProfile profile = profileService.normalizeAssessment(assessmentId, operator);
         BackgroundProfile p = MAPPER.readValue(profile.getProfile(), BackgroundProfile.class);
-        String degree = StringUtils.isBlank(p.getTargetDegree()) ? DEFAULT_DEGREE : p.getTargetDegree();
+        String degree = p.getTargetDegree();
+        if (StringUtils.isBlank(degree))
+        {
+            // 问卷没问目标学位时用首屏选择的学段
+            AbrAssessment assessment = assessmentMapper.selectAbrAssessmentById(assessmentId);
+            degree = assessment == null || StringUtils.isBlank(assessment.getDegree()) ? DEFAULT_DEGREE : assessment.getDegree();
+        }
+        DegreeStrategy strategy = DegreeStrategy.of(degree);
+        if (strategy == null || !strategy.implemented())
+        {
+            // 引擎尚未实现该学段：不计算，结果标“由顾问评估”
+            AbrAssessmentResult result = consultantResult(assessmentId, p.getTargetCountries());
+            result.setCreateBy(StringUtils.nvl(operator, ""));
+            resultMapper.upsertAbrAssessmentResult(result);
+            return resultMapper.selectAbrAssessmentResultByAssessmentId(assessmentId);
+        }
         Map<String, JsonNode> active = engineConfigService.selectActiveConfigs(degree);
 
         List<String> open = new ArrayList<>();
@@ -134,6 +158,30 @@ public class AbrSelectionServiceImpl implements IAbrSelectionService
         result.setCreateBy(StringUtils.nvl(operator, ""));
         resultMapper.upsertAbrAssessmentResult(result);
         return resultMapper.selectAbrAssessmentResultByAssessmentId(assessmentId);
+    }
+
+    /**
+     * 引擎尚未实现的学段：不计算，提示由顾问评估
+     */
+    private static AbrAssessmentResult consultantResult(Long assessmentId, List<String> countries)
+    {
+        AbrAssessmentResult result = new AbrAssessmentResult();
+        result.setAssessmentId(assessmentId);
+        result.setMode(MODE_CONSULTANT);
+        result.setEngineVersions("{}");
+        result.setSkippedCountries(String.join(",", countries));
+        result.setProgramCount(0);
+        result.setReachCount(0);
+        result.setMatchCount(0);
+        result.setSafetyCount(0);
+        result.setNeedsImprovementCount(0);
+        result.setPrograms("[]");
+        result.setPortfolio("{}");
+        result.setGaps("[]");
+        result.setHints("[]");
+        result.setNotices(MAPPER.writeValueAsString(List.of(DegreeStrategy.NOTICE_CONSULTANT_REVIEW)));
+        result.setSubScores("{}");
+        return result;
     }
 
     private static AbrAssessmentResult toResult(Long assessmentId, SelectionEngine.Evaluation evaluation, RecommendationPlanner.Plan plan,

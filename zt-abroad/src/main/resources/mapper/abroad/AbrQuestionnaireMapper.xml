@@ -12,6 +12,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="title"           column="title"            />
         <result property="publishStatus"   column="publish_status"   />
         <result property="questionCount"   column="question_count"   />
+        <result property="degrees"         column="degrees"          />
         <result property="definition"      column="definition"       />
         <result property="activatedBy"     column="activated_by"     />
         <result property="activatedTime"   column="activated_time"   />
@@ -24,13 +25,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectAbrQuestionnaireVo">
-        select q.questionnaire_id, q.code, q.version, q.version_label, q.title, q.publish_status, q.question_count,
+        select q.questionnaire_id, q.code, q.version, q.version_label, q.title, q.publish_status, q.question_count, q.degrees,
                q.activated_by, q.activated_time, q.del_flag, q.create_by, q.create_time, q.update_by, q.update_time, q.remark
         from abr_questionnaire q
     </sql>
 
     <sql id="selectAbrQuestionnaireWithDefinitionVo">
-        select q.questionnaire_id, q.code, q.version, q.version_label, q.title, q.publish_status, q.question_count,
+        select q.questionnaire_id, q.code, q.version, q.version_label, q.title, q.publish_status, q.question_count, q.degrees,
                cast(q.definition as text) as definition,
                q.activated_by, q.activated_time, q.del_flag, q.create_by, q.create_time, q.update_by, q.update_time, q.remark
         from abr_questionnaire q
@@ -63,11 +64,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where q.code = #{code} and q.version = #{version} and q.del_flag = '0'
     </select>
 
+    <select id="selectActiveAbrQuestionnaireByDegree" parameterType="String" resultMap="AbrQuestionnaireResult">
+        <include refid="selectAbrQuestionnaireWithDefinitionVo"/>
+        where q.publish_status = 'active' and q.del_flag = '0'
+          and position(',' || #{degree} || ',' in ',' || q.degrees || ',') &gt; 0
+        order by q.code
+        limit 1
+    </select>
+
     <insert id="insertAbrQuestionnaire" parameterType="AbrQuestionnaire" useGeneratedKeys="true" keyProperty="questionnaireId" keyColumn="questionnaire_id">
-        insert into abr_questionnaire (code, version, version_label, title, publish_status, question_count, definition,
+        insert into abr_questionnaire (code, version, version_label, title, publish_status, question_count, degrees, definition,
                                        del_flag, create_by, create_time, remark)
         values (#{code}, #{version}, coalesce(#{versionLabel}, ''), coalesce(#{title}, ''), 'draft', coalesce(#{questionCount}, 0),
-                cast(#{definition} as jsonb), '0', #{createBy}, now(), #{remark})
+                coalesce(#{degrees}, ''), cast(#{definition} as jsonb), '0', #{createBy}, now(), #{remark})
     </insert>
 
     <update id="retireActiveAbrQuestionnaire">

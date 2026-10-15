@@ -78,4 +78,12 @@ public interface AbrQuestionnaireMapper
      * @return 结果
      */
     public int deleteDraftAbrQuestionnaireByIds(@Param("ids") Long[] questionnaireIds, @Param("updateBy") String updateBy);
+
+    /**
+     * 查询服务某学段的启用问卷（含问卷定义；多份时按编码取第一份）
+     * 
+     * @param degree 学段
+     * @return 启用的问卷，没有返回 null
+     */
+    public AbrQuestionnaire selectActiveAbrQuestionnaireByDegree(String degree);
 }

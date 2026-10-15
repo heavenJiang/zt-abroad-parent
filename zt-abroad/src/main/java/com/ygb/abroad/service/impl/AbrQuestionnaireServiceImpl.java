@@ -76,6 +76,7 @@ public class AbrQuestionnaireServiceImpl implements IAbrQuestionnaireService
         questionnaire.setVersionLabel(StringUtils.nvl(check.getVersionLabel(), ""));
         questionnaire.setTitle(check.getTitle());
         questionnaire.setQuestionCount(check.getQuestionCount());
+        questionnaire.setDegrees(check.getDegrees());
         questionnaire.setDefinition(AbrQuestionnaireValidator.normalize(definition));
         questionnaire.setCreateBy(operator);
         questionnaire.setRemark(remark);

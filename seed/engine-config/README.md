@@ -203,3 +203,8 @@ P     = 1 / (1 + exp(-a × (C − T_eff)))
 ## 实现（M3-08）
 
 测试台 `com.ygb.abroad.engine.CaseBench` 按 `seed/engine-cases/README.md` 第 4 节口径统计：档位命中率（每档、整体、3×3 混淆矩阵）、严重错档、补足后可申与硬门槛误判、硬门槛与官网一致率（案例填了 `expected_threshold` 时）、按引擎档位的实际录取率（每组少于 10 行标“样本不足”）。案例 CSV 由 `AbrEngineCaseCsv` 解析，均分与英语分未换算时按启用问卷的换算表换算。
+
+## 实现（M3-09）
+
+- 引擎按学段选策略（`engine.DegreeStrategy`）：`master` 为硬门槛 + 综合分 + 分档（已实现）；`secondary`、`bachelor` 为学术匹配、`phd` 为匹配清单不分档，均在学段扩展路线 M11–M13 实现。未实现的学段：学生提交后结果为 `consultant` 模式（不计算、提示码 `degree_consultant_review`），配置文件 `degree` 为这些学段时不能导入。
+- 计算用的学段：问卷中的目标学位答案优先，未答时用测评首屏选择的学段（`abr_assessment.degree`）。

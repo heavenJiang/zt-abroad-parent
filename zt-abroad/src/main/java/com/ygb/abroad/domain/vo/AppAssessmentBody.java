@@ -20,6 +20,20 @@ public class AppAssessmentBody
     /** 渠道码（不传时用访客首次进入的渠道码） */
     private String channelCode;
 
+    /** 学段（首屏选择：secondary / bachelor / master / phd；不传按硕士） */
+    private String degree;
+
+    @Pattern(regexp = "^(secondary|bachelor|master|phd)$", message = "学段不正确")
+    public String getDegree()
+    {
+        return degree;
+    }
+
+    public void setDegree(String degree)
+    {
+        this.degree = degree;
+    }
+
     /** 答题端（h5 / mp_weixin） */
     private String clientPlatform;
 

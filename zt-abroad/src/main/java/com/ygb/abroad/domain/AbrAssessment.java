@@ -25,6 +25,19 @@ public class AbrAssessment extends BaseEntity
     /** 已提交 */
     public static final String STATUS_SUBMITTED = "submitted";
 
+    /** 学段（字典 abr_degree，C 端首屏选择） */
+    private String degree;
+
+    public String getDegree()
+    {
+        return degree;
+    }
+
+    public void setDegree(String degree)
+    {
+        this.degree = degree;
+    }
+
     /** 测评ID */
     private Long assessmentId;
 

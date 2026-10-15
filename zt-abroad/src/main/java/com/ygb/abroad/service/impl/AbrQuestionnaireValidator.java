@@ -1,5 +1,6 @@
 package com.ygb.abroad.service.impl;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -36,6 +37,9 @@ final class AbrQuestionnaireValidator
     private static final Pattern ID = Pattern.compile("^[a-z][a-z0-9_]{0,63}$");
 
     /** 支持的题型 */
+    /** 学段（字典 abr_degree，按学段顺序） */
+    static final List<String> DEGREES = List.of("secondary", "bachelor", "master", "phd");
+
     static final Set<String> TYPES = Set.of("single", "multi", "number", "text", "select-search", "score-with-type", "exp-summary", "file");
 
     /** 需要选项的题型 */
@@ -156,6 +160,28 @@ final class AbrQuestionnaireValidator
                 error("version_label 不能超过 100 个字符");
             }
             result.setVersionLabel(label);
+            List<String> degrees = new ArrayList<>();
+            JsonNode levels = root.get("degree_levels");
+            if (levels == null || !levels.isArray() || levels.isEmpty())
+            {
+                error("degree_levels 必须是非空数组（问卷服务的学段：" + String.join(" / ", DEGREES) + "）");
+            }
+            else
+            {
+                for (JsonNode level : levels)
+                {
+                    String v = text(level.get("value"));
+                    if (v == null || !DEGREES.contains(v))
+                    {
+                        error("degree_levels 的 value 应为 " + String.join(" / ", DEGREES) + " 之一");
+                    }
+                    else if (!degrees.contains(v))
+                    {
+                        degrees.add(v);
+                    }
+                }
+            }
+            result.setDegrees(String.join(",", degrees));
         }
 
         private Set<String> checkSteps(JsonNode steps)

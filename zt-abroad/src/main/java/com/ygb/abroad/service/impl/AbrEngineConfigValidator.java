@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import com.ygb.abroad.domain.vo.AbrEngineConfigCheck;
 import com.ygb.abroad.engine.BackgroundProfile;
+import com.ygb.abroad.engine.DegreeStrategy;
 import com.ygb.abroad.engine.ProgramFacts;
 import com.ygb.abroad.engine.RecommendationPlanner;
 import com.ygb.abroad.engine.SelectionEngine;
@@ -83,6 +84,15 @@ final class AbrEngineConfigValidator
         require(errors, result.getConfigCode(), "config_code", 64);
         require(errors, result.getVersion(), "version", 64);
         require(errors, result.getDegree(), "degree", 16);
+        DegreeStrategy strategy = DegreeStrategy.of(result.getDegree());
+        if (result.getDegree() != null && strategy == null)
+        {
+            errors.add("degree 应为 secondary / bachelor / master / phd 之一");
+        }
+        else if (strategy != null && !strategy.implemented())
+        {
+            errors.add("学段 " + result.getDegree() + " 的引擎策略尚未实现（学段扩展路线 M11–M13），暂不能导入配置");
+        }
         if (!COUNTRIES.contains(result.getCountry()))
         {
             errors.add("country 应为 " + String.join(" / ", COUNTRIES.stream().sorted().toList()) + " 之一");

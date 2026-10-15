@@ -30,6 +30,7 @@ class AbrQuestionnaireValidatorTest
               "version": 2,
               "version_label": "v2",
               "title": "测试问卷",
+              "degree_levels": [{"value": "master"}, {"value": "phd"}, {"value": "master"}],
               "levels": [{"value": "master", "label": "硕士"}],
               "steps": [{"id": "goal", "screens": [{"id": "goal_1", "questions": ["degree", "note"]}]}],
               "questions": [
@@ -65,6 +66,18 @@ class AbrQuestionnaireValidatorTest
         assertEquals(1, check.getVersion());
         assertEquals(5, check.getStepCount());
         assertEquals(25, check.getQuestionCount());
+        assertEquals("master,phd", check.getDegrees());
+    }
+
+    @Test
+    void degreeLevelsRequired()
+    {
+        ObjectNode root = minimal();
+        assertEquals("master,phd", AbrQuestionnaireValidator.check(root.toString()).getDegrees());
+        root.remove("degree_levels");
+        assertTrue(hasError(errors(root), "degree_levels 必须是非空数组"));
+        root.set("degree_levels", MAPPER.readTree("[{\"value\": \"mba\"}]"));
+        assertTrue(hasError(errors(root), "degree_levels 的 value"));
     }
 
     @Test

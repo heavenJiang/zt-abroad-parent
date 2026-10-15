@@ -49,6 +49,10 @@ public class AbrQuestionnaire extends BaseEntity
     @Excel(name = "发布状态", dictType = "abr_questionnaire_status")
     private String publishStatus;
 
+    /** 服务的学段（字典 abr_degree，逗号分隔） */
+    @Excel(name = "学段")
+    private String degrees;
+
     /** 题目数 */
     @Excel(name = "题目数")
     private Integer questionCount;
@@ -74,6 +78,16 @@ public class AbrQuestionnaire extends BaseEntity
     public Long getQuestionnaireId()
     {
         return questionnaireId;
+    }
+
+    public void setDegrees(String degrees)
+    {
+        this.degrees = degrees;
+    }
+
+    public String getDegrees()
+    {
+        return degrees;
     }
 
     public void setCode(String code)
@@ -186,6 +200,7 @@ public class AbrQuestionnaire extends BaseEntity
             .append("versionLabel", getVersionLabel())
             .append("title", getTitle())
             .append("publishStatus", getPublishStatus())
+            .append("degrees", getDegrees())
             .append("questionCount", getQuestionCount())
             .append("activatedBy", getActivatedBy())
             .append("activatedTime", getActivatedTime())

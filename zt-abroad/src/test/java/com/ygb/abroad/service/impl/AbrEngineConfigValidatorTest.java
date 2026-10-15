@@ -132,6 +132,15 @@ class AbrEngineConfigValidatorTest
     }
 
     @Test
+    void degreeMustHaveImplementedStrategy()
+    {
+        AbrEngineConfigCheck phd = checkModified("uk_master.json", r -> r.put("degree", "phd"));
+        assertTrue(phd.getErrors().stream().anyMatch(e -> e.contains("学段 phd 的引擎策略尚未实现")), phd.getErrors().toString());
+        AbrEngineConfigCheck bad = checkModified("uk_master.json", r -> r.put("degree", "mba"));
+        assertTrue(bad.getErrors().contains("degree 应为 secondary / bachelor / master / phd 之一"));
+    }
+
+    @Test
     void dryRunCatchesMissingParameters()
     {
         AbrEngineConfigCheck check = checkModified("uk_master.json",

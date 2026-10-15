@@ -1,5 +1,6 @@
 package com.ygb.abroad.service.impl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,18 +12,23 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ygb.abroad.domain.AbrAssessment;
 import com.ygb.abroad.domain.AbrAssessmentResult;
+import com.ygb.abroad.domain.AbrEngineConfig;
 import com.ygb.abroad.domain.AbrQuestionnaire;
 import com.ygb.abroad.domain.AbrVisitor;
 import com.ygb.abroad.domain.vo.AppAnswersBody;
 import com.ygb.abroad.domain.vo.AppAssessmentBody;
 import com.ygb.abroad.domain.vo.AppAssessmentVo;
+import com.ygb.abroad.domain.vo.AppDegreeVo;
 import com.ygb.abroad.domain.vo.AppQuestionnaireVo;
+import com.ygb.abroad.engine.DegreeStrategy;
 import com.ygb.abroad.mapper.AbrAssessmentMapper;
+import com.ygb.abroad.mapper.AbrEngineConfigMapper;
 import com.ygb.abroad.mapper.AbrQuestionnaireMapper;
 import com.ygb.abroad.service.IAbrAssessmentService;
 import com.ygb.abroad.service.IAbrSelectionService;
 import com.ygb.abroad.service.IAbrVisitorService;
 import com.ygb.common.exception.ServiceException;
+import com.ygb.common.utils.DictUtils;
 import com.ygb.common.utils.StringUtils;
 import tools.jackson.databind.node.ObjectNode;
 
@@ -53,6 +59,9 @@ public class AbrAssessmentServiceImpl implements IAbrAssessmentService
     @Autowired
     private IAbrSelectionService selectionService;
 
+    @Autowired
+    private AbrEngineConfigMapper engineConfigMapper;
+
     @Override
     public AppQuestionnaireVo selectCurrentQuestionnaire(String code)
     {
@@ -78,15 +87,22 @@ public class AbrAssessmentServiceImpl implements IAbrAssessmentService
         {
             return toVo(existing);
         }
-        AbrQuestionnaire questionnaire = activeQuestionnaire(DEFAULT_QUESTIONNAIRE_CODE);
+        String degree = StringUtils.isBlank(body.getDegree()) ? DEFAULT_DEGREE : body.getDegree();
+        AbrQuestionnaire questionnaire = questionnaireMapper.selectActiveAbrQuestionnaireByDegree(degree);
+        if (questionnaire == null)
+        {
+            throw new ServiceException("该学段的测评暂未开放，可预约顾问评估");
+        }
         AbrAssessmentAnswers.Questionnaire q = questionnaire(questionnaire);
         ObjectNode prefill = AbrAssessmentAnswers.prefill(q, AbrAssessmentAnswers.object(visitor.getProfile()));
+        AbrAssessmentAnswers.prefillDegree(q, prefill, degree);
 
         AbrAssessment assessment = new AbrAssessment();
         assessment.setVisitorId(visitor.getVisitorId());
         assessment.setQuestionnaireId(questionnaire.getQuestionnaireId());
         assessment.setQuestionnaireCode(questionnaire.getCode());
         assessment.setQuestionnaireVersion(questionnaire.getVersion());
+        assessment.setDegree(degree);
         assessment.setRequestId(body.getRequestId());
         assessment.setChannelCode(StringUtils.isBlank(body.getChannelCode()) ? visitor.getChannelCode()
                 : AbrVisitorServiceImpl.channel(body.getChannelCode()));
@@ -161,6 +177,44 @@ public class AbrAssessmentServiceImpl implements IAbrAssessmentService
             }
         }
         return toVo(assessmentMapper.selectAbrAssessmentById(assessmentId));
+    }
+
+    @Override
+    public AppQuestionnaireVo selectCurrentQuestionnaireByDegree(String degree)
+    {
+        AbrQuestionnaire questionnaire = questionnaireMapper.selectActiveAbrQuestionnaireByDegree(degree);
+        if (questionnaire == null)
+        {
+            throw new ServiceException("该学段的测评暂未开放，可预约顾问评估");
+        }
+        return toVo(questionnaire);
+    }
+
+    @Override
+    public List<AppDegreeVo> selectDegrees()
+    {
+        List<AppDegreeVo> list = new ArrayList<>();
+        for (DegreeStrategy s : DegreeStrategy.values())
+        {
+            AppDegreeVo vo = new AppDegreeVo();
+            vo.setDegree(s.degree());
+            vo.setLabel(StringUtils.defaultIfBlank(DictUtils.getDictLabel("abr_degree", s.degree()), s.degree()));
+            vo.setMethod(s.method());
+            List<String> countries = new ArrayList<>();
+            if (s.implemented())
+            {
+                AbrEngineConfig query = new AbrEngineConfig();
+                query.setDegree(s.degree());
+                query.setPublishStatus(AbrEngineConfig.STATUS_ACTIVE);
+                engineConfigMapper.selectAbrEngineConfigList(query).forEach(c -> countries.add(c.getCountry()));
+            }
+            vo.setOpenCountries(countries);
+            boolean hasQuestionnaire = questionnaireMapper.selectActiveAbrQuestionnaireByDegree(s.degree()) != null;
+            vo.setMode(!hasQuestionnaire ? AppDegreeVo.MODE_CONSULTANT
+                    : countries.isEmpty() ? AppDegreeVo.MODE_QUESTIONNAIRE : AppDegreeVo.MODE_ASSESSMENT);
+            list.add(vo);
+        }
+        return list;
     }
 
     @Override

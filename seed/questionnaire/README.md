@@ -11,7 +11,7 @@
 | 字段 | 含义 |
 | --- | --- |
 | `code` / `version` / `status` | 问卷编码、整数版本号、`draft` / `active` / `retired` |
-| `countries` / `degree_levels` | 覆盖的国家（US UK JP KR AU SG DE）与学位，题目通过 `options_ref` 引用 |
+| `countries` / `degree_levels` | 覆盖的国家（US UK JP KR AU SG DE）与学位，题目通过 `options_ref` 引用。`degree_levels` 必填（M3-09）：其 `value` 即问卷服务的学段（`secondary` / `bachelor` / `master` / `phd`），C 端首屏选学段后按它找启用问卷 |
 | `ux` | 时长目标（3–5 分钟）、每屏最多 4 题、自动保存、断点续答、登录时机等前端约定 |
 | `consent` | 第 1 步之前的隐私同意；`separate_consents` 为上传简历前的单独同意 |
 | `hidden_fields` | 学生看不到的字段：`channel_code`（渠道码）、`client_platform` |

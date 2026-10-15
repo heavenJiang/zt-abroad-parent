@@ -151,6 +151,22 @@ class AbrAssessmentAnswersTest
             + " \"exp_research\": {\"has\": \"no\"}, \"exp_work\": {\"has\": \"no\"}, \"exp_awards\": {\"has\": \"no\"}}";
 
     @Test
+    void prefillDegreeOnlyForExistingOption()
+    {
+        ObjectNode a = json("{}");
+        AbrAssessmentAnswers.prefillDegree(q, a, "phd");
+        assertEquals(json("{\"target_degree\": \"phd\"}"), a);
+        // 已有答案不覆盖；问卷没有该选项不预填
+        AbrAssessmentAnswers.prefillDegree(q, a, "master");
+        assertEquals("phd", a.path("target_degree").asString());
+        ObjectNode b = json("{}");
+        AbrAssessmentAnswers.prefillDegree(q, b, "secondary");
+        assertTrue(b.isEmpty());
+        AbrAssessmentAnswers.prefillDegree(new AbrAssessmentAnswers.Questionnaire(java.util.Map.of(), "", MAPPER.createObjectNode()), b, "master");
+        assertTrue(b.isEmpty());
+    }
+
+    @Test
     void submissionDropsHiddenAnswers()
     {
         ObjectNode answers = json(COMPLETE);

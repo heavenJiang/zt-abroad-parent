@@ -28,6 +28,19 @@ public class AbrQuestionnaireCheck
     /** 题目数 */
     private int questionCount;
 
+    /** 服务的学段（逗号分隔，取自 degree_levels） */
+    private String degrees;
+
+    public String getDegrees()
+    {
+        return degrees;
+    }
+
+    public void setDegrees(String degrees)
+    {
+        this.degrees = degrees;
+    }
+
     /** 同编码同版本已存在时的发布状态（不存在为 null） */
     private String existingStatus;
 

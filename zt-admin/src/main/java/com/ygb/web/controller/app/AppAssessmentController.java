@@ -51,6 +51,26 @@ public class AppAssessmentController extends BaseController
     }
 
     /**
+     * 首屏：各学段的开放情况（可测评并出结果 / 可测评、结果由顾问评估 / 由顾问评估）
+     */
+    @RateLimiter(key = "app_questionnaire:", time = 60, count = 60, limitType = LimitType.IP)
+    @GetMapping("/degrees")
+    public AjaxResult degrees()
+    {
+        return success(assessmentService.selectDegrees());
+    }
+
+    /**
+     * 按学段取启用的问卷（首屏选学段后用）
+     */
+    @RateLimiter(key = "app_questionnaire:", time = 60, count = 60, limitType = LimitType.IP)
+    @GetMapping("/questionnaire/degree/{degree}")
+    public AjaxResult questionnaireByDegree(@PathVariable String degree)
+    {
+        return success(assessmentService.selectCurrentQuestionnaireByDegree(degree));
+    }
+
+    /**
      * 按版本取问卷（续答旧测评用）
      */
     @RateLimiter(key = "app_questionnaire:", time = 60, count = 60, limitType = LimitType.IP)

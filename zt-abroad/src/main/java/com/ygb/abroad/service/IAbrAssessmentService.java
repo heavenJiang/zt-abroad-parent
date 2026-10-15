@@ -6,6 +6,7 @@ import com.ygb.abroad.domain.AbrVisitor;
 import com.ygb.abroad.domain.vo.AppAnswersBody;
 import com.ygb.abroad.domain.vo.AppAssessmentBody;
 import com.ygb.abroad.domain.vo.AppAssessmentVo;
+import com.ygb.abroad.domain.vo.AppDegreeVo;
 import com.ygb.abroad.domain.vo.AppQuestionnaireVo;
 
 /**
@@ -20,6 +21,9 @@ public interface IAbrAssessmentService
     /** 选校测评问卷编码（学段框架 M3-09 之前的默认问卷） */
     public static final String DEFAULT_QUESTIONNAIRE_CODE = "abr_school_assessment";
 
+    /** 未选学段时的默认学段（1a 引擎只实现硕士） */
+    public static final String DEFAULT_DEGREE = "master";
+
     /**
      * 取某问卷当前启用的版本
      * 
@@ -27,6 +31,21 @@ public interface IAbrAssessmentService
      * @return 问卷；没有启用版本时抛出业务异常
      */
     public AppQuestionnaireVo selectCurrentQuestionnaire(String code);
+
+    /**
+     * 取服务某学段的启用问卷（首屏选学段后用）
+     * 
+     * @param degree 学段
+     * @return 问卷
+     */
+    public AppQuestionnaireVo selectCurrentQuestionnaireByDegree(String degree);
+
+    /**
+     * C 端首屏：各学段的开放情况（可测评并出结果 / 可测评、结果由顾问评估 / 由顾问评估）
+     * 
+     * @return 学段列表（按高中、本科、硕士、博士顺序）
+     */
+    public List<AppDegreeVo> selectDegrees();
 
     /**
      * 按版本ID取问卷（续答旧测评时使用；草稿不可取）

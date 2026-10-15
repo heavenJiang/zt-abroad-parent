@@ -69,7 +69,7 @@ final class AbrAssessmentAnswers
         {
             questions.put(q.path("id").asString(), q);
         }
-        return new Questionnaire(questions, root.path("consent").path("policy_code").asString(""));
+        return new Questionnaire(questions, root.path("consent").path("policy_code").asString(""), root);
     }
 
     /**
@@ -269,8 +269,9 @@ final class AbrAssessmentAnswers
      * 
      * @param questions 题目 id → 题目定义
      * @param policyCode 隐私政策编码
+     * @param root 问卷定义根节点（解析 options_ref 等顶层引用）
      */
-    record Questionnaire(Map<String, JsonNode> questions, String policyCode)
+    record Questionnaire(Map<String, JsonNode> questions, String policyCode, JsonNode root)
     {
     }
 
@@ -285,6 +286,32 @@ final class AbrAssessmentAnswers
      */
     record Outcome(ObjectNode set, List<String> removed, ObjectNode flags, boolean terminated, boolean clearAll)
     {
+    }
+
+    /**
+     * 首屏已选学段时，预填问卷的目标学位题（题目存在且有该选项、尚未预填时）
+     * 
+     * @param questionnaire 问卷
+     * @param answers 预填答案（会被修改）
+     * @param degree 学段
+     */
+    static void prefillDegree(Questionnaire questionnaire, ObjectNode answers, String degree)
+    {
+        JsonNode q = questionnaire.questions().get("target_degree");
+        if (q == null || answers.has("target_degree"))
+        {
+            return;
+        }
+        // 选项可以直接写在题目里，也可以用 options_ref 引用问卷顶层的列表（如 degree_levels）
+        JsonNode options = q.has("options") ? q.path("options") : questionnaire.root().path(q.path("options_ref").asString(""));
+        for (JsonNode option : options)
+        {
+            if (degree.equals(option.path("value").asString("")))
+            {
+                answers.put("target_degree", degree);
+                return;
+            }
+        }
     }
 
     /**
