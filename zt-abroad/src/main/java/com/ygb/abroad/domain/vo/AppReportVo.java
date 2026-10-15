@@ -22,12 +22,71 @@ import java.util.List;
  * @param skippedCountries 暂由顾问评估的目标国家 / 地区（未开放）
  * @param skipHints 跳过的题目：补充后结果更准
  * @param dataNote 数据说明
+ * @param explanation 解读文字（定位、每所学校理由、短板说明；AI 解读未返回或失败时为模板文字；结果未生成或由顾问评估时为 null）
  * @author ygb
  */
 public record AppReportVo(Long assessmentId, String mode, String headline, List<String> notices, String minorNotice, List<Dimension> profile,
         List<Tier> tiers, int unratedCount, List<Shortcoming> shortcomings, List<Program> needsImprovement, int needsImprovementCount,
-        List<String> hints, List<AppQuickResultVo.CountryRef> skippedCountries, List<SkipHint> skipHints, DataNote dataNote)
+        List<String> hints, List<AppQuickResultVo.CountryRef> skippedCountries, List<SkipHint> skipHints, DataNote dataNote,
+        Explanation explanation)
 {
+    /** 解读状态：AI 解读生成中（先展示模板文字，前端轮询） */
+    public static final String EXPLAIN_PENDING = "pending";
+
+    /** 解读状态：已完成（AI 未通过校验的条目用模板文字） */
+    public static final String EXPLAIN_DONE = "done";
+
+    /** 解读状态：AI 解读失败，全部为模板文字 */
+    public static final String EXPLAIN_FALLBACK = "fallback";
+
+    /**
+     * 换上解读文字
+     *
+     * @param e 解读
+     * @return 新的报告
+     */
+    public AppReportVo withExplanation(Explanation e)
+    {
+        return new AppReportVo(assessmentId, mode, headline, notices, minorNotice, profile, tiers, unratedCount, shortcomings, needsImprovement,
+                needsImprovementCount, hints, skippedCountries, skipHints, dataNote, e);
+    }
+
+    /**
+     * 解读文字
+     *
+     * @param status pending 生成中 / done 已完成 / fallback 失败用模板
+     * @param headline 一句话定位
+     * @param headlineAi 定位是否 AI 生成（页面标“AI 生成”）
+     * @param programs 每所学校的理由（报告中出现的代表校，冲刺 / 主攻 / 保底 / 补足后可申）
+     * @param shortcomings 短板说明（与 shortcomings 一一对应）
+     * @param aiGenerated 是否有任何 AI 生成的文字
+     */
+    public record Explanation(String status, String headline, boolean headlineAi, List<Reason> programs, List<Note> shortcomings,
+            boolean aiGenerated)
+    {
+    }
+
+    /**
+     * 学校理由
+     *
+     * @param programId 项目ID
+     * @param text 理由
+     * @param ai 是否 AI 生成
+     */
+    public record Reason(Long programId, String text, boolean ai)
+    {
+    }
+
+    /**
+     * 短板说明
+     *
+     * @param text 说明
+     * @param ai 是否 AI 生成
+     */
+    public record Note(String text, boolean ai)
+    {
+    }
+
     /**
      * 画像的一个维度
      *

@@ -26,3 +26,7 @@ prompts/
 - `catalog_extractor/v1`（M2-06 项目 AI 预填）：输入 `url`、`programHint`、`pageTitle`、`pageText`（官网页面转纯文本，最多 30000 字）；
   输出每个字段 `{value, quote}`。调用方 `AbrProgramAiPrefillServiceImpl` 事后逐字段核对：引句不在页面原文中、取值不符合人工保存规则的一律丢弃，
   所以提示词只负责“尽量逐字引用、没有就填 null”，不要依赖模型自觉。eval/ 的三个样例：英国 MSc（学费、雅思、按层次均分、轮次截止日）、滚动录取、页面没有语言要求。
+- `report_explainer/v1`（M4-06 测评解读）：输入 `report`（报告中学生可见的内容：各档数量、代表校的档位 / 已达标 / 未达标 / 补足方式、短板含义）与 `templateHeadline`（模板定位）；
+  输出 `headline`、`programs[{programId, reason}]`、`shortcomings[{index, text}]`。调用方 `AbrReportExplanationServiceImpl` 在后台生成并逐条校验（项目须来自输入、
+  数字须在输入中出现、不得有百分比或“概率”、不超长），不合格的条目改用模板文字；mock.json 只回模板定位，学校理由与短板全部走模板。
+  eval/：正常解读、录取承诺被输出过滤拦截。

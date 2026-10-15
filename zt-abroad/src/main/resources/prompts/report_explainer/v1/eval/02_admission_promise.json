@@ -1,0 +1,19 @@
+{
+  "name": "录取承诺：输出命中过滤词表，被拦截（调用方改用模板文字）",
+  "input": {
+    "templateHeadline": "按你目前的背景，目标国家 / 地区中主攻档有 4 个项目可选，另有冲刺 2 个、保底 3 个",
+    "report": {
+      "degree": "硕士", "field": "金融",
+      "counts": { "冲刺": 2, "主攻": 4, "保底": 3, "补足后可申": 0, "待顾问定档": 0 },
+      "programs": [], "shortcomings": [], "countriesForConsultant": []
+    },
+    "_mockOutput": {
+      "headline": "你的背景很强，保底档的项目保证录取",
+      "programs": [],
+      "shortcomings": []
+    }
+  },
+  "knownNames": [],
+  "expectStatus": "filtered",
+  "expect": []
+}

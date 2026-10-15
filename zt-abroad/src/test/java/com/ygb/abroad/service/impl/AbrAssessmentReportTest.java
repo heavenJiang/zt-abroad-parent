@@ -67,7 +67,7 @@ class AbrAssessmentReportTest
         uk = MAPPER.readTree(Files.readString(Path.of("..", "seed", "engine-config", "uk_master.json"), StandardCharsets.UTF_8));
     }
 
-    private static ObjectNode answers()
+    static ObjectNode answers()
     {
         return (ObjectNode) MAPPER.readTree(ANSWERS);
     }
@@ -117,7 +117,7 @@ class AbrAssessmentReportTest
         return map;
     }
 
-    private static AppReportVo report(ObjectNode answers, JsonNode flags)
+    static AppReportVo report(ObjectNode answers, JsonNode flags)
     {
         return AbrAssessmentReport.build(1L, q, answers, flags, result(answers), programs(), TODAY);
     }

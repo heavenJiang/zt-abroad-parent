@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrReportExplanationMapper">
+
+    <resultMap type="AbrReportExplanation" id="AbrReportExplanationResult">
+        <result property="explanationId"  column="explanation_id"  />
+        <result property="assessmentId"   column="assessment_id"   />
+        <result property="explainStatus"  column="explain_status"  />
+        <result property="claimToken"     column="claim_token"     />
+        <result property="aiOutput"       column="ai_output"       />
+        <result property="aiStatus"       column="ai_status"       />
+        <result property="callId"         column="call_id"         />
+        <result property="errorMsg"       column="error_msg"       />
+        <result property="current"        column="is_current"      />
+        <result property="createTime"     column="create_time"     />
+        <result property="updateTime"     column="update_time"     />
+    </resultMap>
+
+    <select id="selectAbrReportExplanationByAssessmentId" parameterType="Long" resultMap="AbrReportExplanationResult">
+        select e.explanation_id, e.assessment_id, e.explain_status, e.claim_token, cast(e.ai_output as text) as ai_output, e.ai_status,
+               e.call_id, e.error_msg, coalesce(e.result_computed_time = r.computed_time, false) as is_current, e.create_time, e.update_time
+        from abr_report_explanation e
+        left join abr_assessment_result r on r.assessment_id = e.assessment_id
+        where e.assessment_id = #{assessmentId}
+    </select>
+
+    <insert id="claimAbrReportExplanation">
+        insert into abr_report_explanation (assessment_id, result_computed_time, explain_status, claim_token, started_time, create_time, update_time)
+        select r.assessment_id, r.computed_time, 'running', #{claimToken}, now(), now(), now()
+        from abr_assessment_result r
+        where r.assessment_id = #{assessmentId} and r.computed_time is not null
+        on conflict (assessment_id)
+        do update set result_computed_time = excluded.result_computed_time,
+                      explain_status       = 'running',
+                      claim_token          = excluded.claim_token,
+                      ai_output            = null,
+                      ai_status            = null,
+                      call_id              = null,
+                      error_msg            = null,
+                      started_time         = now(),
+                      finished_time        = null,
+                      update_time          = now()
+        where abr_report_explanation.result_computed_time &lt;&gt; excluded.result_computed_time
+           or (abr_report_explanation.explain_status = 'running'
+               and abr_report_explanation.started_time &lt; now() - cast(#{staleSeconds} as integer) * interval '1 second')
+    </insert>
+
+    <update id="finishAbrReportExplanation" parameterType="AbrReportExplanation">
+        update abr_report_explanation
+        set explain_status = #{explainStatus},
+            ai_output      = cast(#{aiOutput} as jsonb),
+            ai_status      = #{aiStatus},
+            call_id        = #{callId},
+            error_msg      = #{errorMsg},
+            finished_time  = now(),
+            update_time    = now()
+        where assessment_id = #{assessmentId} and claim_token = #{claimToken}
+    </update>
+
+</mapper>

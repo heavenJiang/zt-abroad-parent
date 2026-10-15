@@ -33,6 +33,17 @@ class AiEvalRunnerTest
     }
 
     @Test
+    void reportExplainerEvalCasesPass()
+    {
+        FakeAiStore store = new FakeAiStore();
+        store.agent("report_explainer", AiConstants.POLICY_DIRECT_SAMPLE);
+        AiPipeline pipeline = AiTestSupport.pipeline(store);
+        AiEvalRunner.Report report = new AiEvalRunner(pipeline::invoke, AiTestSupport.LOADER, store).run("report_explainer", null, "eval");
+        assertEquals(2, report.getCases().size());
+        assertTrue(report.isPassed(), report.toMarkdown());
+    }
+
+    @Test
     void failingModelMakesReportFail()
     {
         FakeAiStore store = new FakeAiStore();
@@ -43,8 +54,8 @@ class AiEvalRunnerTest
         assertTrue(report.toMarkdown().contains("FAIL"));
 
         assertThrows(AiException.class, () -> new AiEvalRunner(pipeline::invoke, AiTestSupport.LOADER, store).run("nobody", null, "eval"));
-        store.agent("report_explainer", AiConstants.POLICY_DIRECT);
-        assertThrows(AiException.class, () -> new AiEvalRunner(pipeline::invoke, AiTestSupport.LOADER, store).run("report_explainer", null, "eval"));
+        store.agent("no_prompt_agent", AiConstants.POLICY_DIRECT);
+        assertThrows(AiException.class, () -> new AiEvalRunner(pipeline::invoke, AiTestSupport.LOADER, store).run("no_prompt_agent", null, "eval"));
     }
 
     @Test

@@ -32,11 +32,13 @@ import com.ygb.abroad.mapper.AbrProgramMapper;
 import com.ygb.abroad.mapper.AbrQuestionnaireMapper;
 import com.ygb.abroad.service.IAbrAssessmentService;
 import com.ygb.abroad.service.IAbrPolicyService;
+import com.ygb.abroad.service.IAbrReportExplanationService;
 import com.ygb.abroad.service.IAbrSelectionService;
 import com.ygb.abroad.service.IAbrVisitorService;
 import com.ygb.common.exception.ServiceException;
 import com.ygb.common.utils.DictUtils;
 import com.ygb.common.utils.StringUtils;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
@@ -74,6 +76,9 @@ public class AbrAssessmentServiceImpl implements IAbrAssessmentService
 
     @Autowired
     private AbrProgramMapper programMapper;
+
+    @Autowired
+    private IAbrReportExplanationService explanationService;
 
     /** 落地页显示测评人数的下限（人数少时不显示，避免冷启动期数字难看） */
     @Value("${abroad.app.landing-count-min:100}")
@@ -282,6 +287,18 @@ public class AbrAssessmentServiceImpl implements IAbrAssessmentService
             // 提交已成功；计算失败（如引擎配置有误）记日志，由顾问在管理端重新计算
             log.warn("测评提交后自动计算选校结果失败 assessmentId={}：{}", assessmentId, e.getMessage());
         }
+        if (ready)
+        {
+            try
+            {
+                // 提交后立即开始生成解读，学生打开报告页时多数已完成
+                selectReport(visitor, assessmentId);
+            }
+            catch (RuntimeException e)
+            {
+                log.warn("测评提交后启动解读失败 assessmentId={}：{}", assessmentId, e.getMessage());
+            }
+        }
         AppAssessmentVo vo = toVo(assessmentMapper.selectAbrAssessmentById(assessmentId));
         vo.setResultReady(ready);
         return vo;
@@ -307,8 +324,31 @@ public class AbrAssessmentServiceImpl implements IAbrAssessmentService
         {
             programMapper.selectAbrProgramByIds(ids).forEach(p -> programs.put(p.getProgramId(), p));
         }
-        return AbrAssessmentReport.build(assessmentId, questionnaire(questionnaire), AbrAssessmentAnswers.object(assessment.getAnswers()),
-                AbrAssessmentAnswers.object(assessment.getFlags()), result, programs, LocalDate.now(AbrLookupTools.BEIJING));
+        AbrAssessmentAnswers.Questionnaire q = questionnaire(questionnaire);
+        ObjectNode answers = AbrAssessmentAnswers.object(assessment.getAnswers());
+        AppReportVo report = AbrAssessmentReport.build(assessmentId, q, answers, AbrAssessmentAnswers.object(assessment.getFlags()), result, programs,
+                LocalDate.now(AbrLookupTools.BEIJING));
+        String degreeLabel = StringUtils.defaultIfBlank(DictUtils.getDictLabel("abr_degree", assessment.getDegree()), assessment.getDegree());
+        return explanationService.explain(report, degreeLabel, optionLabel(q, "target_field", answers.path("target_field").asString("")));
+    }
+
+    /**
+     * 单选题选项的名称（没有该选项时返回编码本身）
+     */
+    private static String optionLabel(AbrAssessmentAnswers.Questionnaire q, String questionId, String value)
+    {
+        JsonNode question = q.questions().get(questionId);
+        if (question != null)
+        {
+            for (JsonNode o : question.path("options"))
+            {
+                if (value.equals(o.path("value").asString()))
+                {
+                    return o.path("label").asString(value);
+                }
+            }
+        }
+        return value;
     }
 
     @Override

@@ -1,0 +1,34 @@
+{
+  "name": "正常解读：输出符合 Schema，定位沿用模板句的事实",
+  "input": {
+    "templateHeadline": "按你目前的背景，目标国家 / 地区中主攻档有 1 个项目可选，另有冲刺 1 个、保底 2 个",
+    "report": {
+      "degree": "硕士", "field": "管理",
+      "counts": { "冲刺": 1, "主攻": 1, "保底": 2, "补足后可申": 1, "待顾问定档": 0 },
+      "programs": [
+        { "programId": 1, "tier": "冲刺", "school": "Eastvale University", "program": "MSc Management", "country": "英国", "met": ["均分"], "missing": [],
+          "howToImprove": "增加 3 个月相关实习后有望进入主攻档", "infoUnverified": false },
+        { "programId": 5, "tier": "补足后可申", "school": "Northmoor University", "program": "MSc Marketing", "country": "英国", "met": ["均分"],
+          "missing": ["英语成绩要求 雅思 7.0，你目前 雅思 6.0"], "howToImprove": "雅思提高 1 分后可申", "infoUnverified": false }
+      ],
+      "shortcomings": [ { "index": 0, "meaning": "雅思提高 1 分，可让 1 个项目达到申请要求（约需 4 个月）" } ],
+      "countriesForConsultant": ["美国"]
+    },
+    "_mockOutput": {
+      "headline": "你在英国管理类硕士中主攻档有 1 个项目可选，另有 1 个冲刺、2 个保底",
+      "programs": [
+        { "programId": 1, "reason": "均分已达标，再补 3 个月相关实习就更有希望进入主攻档" },
+        { "programId": 5, "reason": "差在雅思：要求 7.0，你目前 6.0，提高 1 分后可申" }
+      ],
+      "shortcomings": [ { "index": 0, "text": "把雅思提高 1 分，可多申 1 个项目，约需 4 个月" } ]
+    }
+  },
+  "knownNames": [],
+  "expectStatus": "success",
+  "expect": [
+    { "path": "/headline", "contains": "主攻" },
+    { "path": "/programs/0/programId", "equals": 1 },
+    { "path": "/shortcomings/0/index", "equals": 0 },
+    { "path": "/probability", "notExists": true }
+  ]
+}

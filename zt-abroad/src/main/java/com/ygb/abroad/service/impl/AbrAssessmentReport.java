@@ -124,7 +124,7 @@ final class AbrAssessmentReport
             List<AppQuickResultVo.CountryRef> skipped = result == null ? List.of() : countries(result.getSkippedCountries(), labels);
             String headline = result == null ? "结果正在生成，顾问会为你重新计算后通知你" : "该学段的选校由顾问一对一评估，可预约免费解读";
             return new AppReportVo(assessmentId, mode, headline, notices, minorNotice, List.of(), emptyTiers(), 0, List.of(), List.of(), 0,
-                    List.of(), skipped, skipHints, new AppReportVo.DataNote(null, null, 0, computedTime(result)));
+                    List.of(), skipped, skipHints, new AppReportVo.DataNote(null, null, 0, computedTime(result)), null);
         }
         strings(result.getNotices()).forEach(n -> addOnce(notices, n));
 
@@ -172,7 +172,7 @@ final class AbrAssessmentReport
         return new AppReportVo(assessmentId, MODE_FULL, headline(counts, nz(result.getNeedsImprovementCount())), notices, minorNotice,
                 profile(object(result.getSubScores()), answers), tiers, unrated, shortcomings(rows, gaps), needsImprovement,
                 nz(result.getNeedsImprovementCount()), hints, countries(result.getSkippedCountries(), labels), skipHints,
-                dataNote(rows.values(), programs, today, result));
+                dataNote(rows.values(), programs, today, result), null);
     }
 
     /**

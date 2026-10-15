@@ -271,10 +271,10 @@ class AiPipelineTest
     @Test
     void missingPromptDirFailsCleanly()
     {
-        store.agent("report_explainer", AiConstants.POLICY_DIRECT_SAMPLE);
-        AiResult r = pipeline.invoke("report_explainer", input(null), ctx());
+        store.agent("no_prompt_agent", AiConstants.POLICY_DIRECT_SAMPLE);
+        AiResult r = pipeline.invoke("no_prompt_agent", input(null), ctx());
         assertEquals(AiConstants.STATUS_ERROR, r.getStatus());
-        assertTrue(r.getMessage().contains("提示词目录 prompts/report_explainer/v1/ 不存在"), r.getMessage());
+        assertTrue(r.getMessage().contains("提示词目录 prompts/no_prompt_agent/v1/ 不存在"), r.getMessage());
         AbrAiCallLog log = store.lastLog();
         assertEquals(AiConstants.STATUS_ERROR, log.getStatus());
         assertEquals("v1", log.getPromptVersion());
