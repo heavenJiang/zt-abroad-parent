@@ -10,6 +10,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import com.ygb.abroad.domain.AbrProgram;
 import com.ygb.abroad.domain.AbrRequirement;
+import com.ygb.abroad.domain.AbrSchool;
 import com.ygb.abroad.engine.ProgramFacts;
 
 /**
@@ -62,6 +63,34 @@ class AbrEngineInputsTest
         assertEquals("0", q.acceptCrossMajor());
         assertEquals("none", q.testRequirement());
         assertEquals("1", q.acceptPreSessional());
+    }
+
+    @Test
+    void listingFromProgramAndSchool()
+    {
+        AbrProgram p = program();
+        p.setTuition(new BigDecimal("32000"));
+        p.setCurrency("GBP");
+        p.setDurationMonths(12);
+        AbrSchool school = new AbrSchool();
+        school.setCity(" London ");
+        school.setRankings("[{\"list\":\"QS\",\"year\":2025,\"rank\":50},{\"list\":\"QS\",\"year\":2026,\"rank\":40},"
+                + "{\"list\":\"QS\",\"year\":2024,\"rank\":60},{\"list\":\"THE\",\"rank\":55},{\"list\":\"\",\"rank\":1},{\"list\":\"ARWU\"}]");
+        ProgramFacts.Listing l = AbrEngineInputs.programFacts(p, school, null).listing();
+        assertEquals(new BigDecimal("32000"), l.tuition());
+        assertEquals("GBP", l.currency());
+        assertEquals(12, l.durationMonths());
+        assertEquals("London", l.city());
+        assertEquals(Map.of("QS", 40, "THE", 55), l.ranks());
+
+        ProgramFacts.Listing none = AbrEngineInputs.programFacts(p, null).listing();
+        assertNull(none.city());
+        assertTrue(none.ranks().isEmpty());
+        school.setRankings(null);
+        school.setCity("");
+        assertTrue(AbrEngineInputs.programFacts(p, school, null).listing().ranks().isEmpty());
+        assertNull(AbrEngineInputs.programFacts(p, school, null).listing().city());
+        assertTrue(AbrEngineInputs.latestRanks("{}").isEmpty());
     }
 
     @Test

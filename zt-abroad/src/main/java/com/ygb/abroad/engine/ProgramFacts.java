@@ -14,11 +14,41 @@ import tools.jackson.databind.JsonNode;
  * @param teachingLanguage 授课语言（en / ja / ko / de / zh / other，缺省按 en）
  * @param apsRequired 项目是否标明需要 APS
  * @param requirement 当季申请要求（项目库没有记录时为 null）
+ * @param listing 偏好排序用的院校库信息（学费、学制、城市、排名；没有时为 null）
  * @author ygb
  */
 public record ProgramFacts(Long programId, String country, String difficulty, String teachingLanguage, boolean apsRequired,
-        Requirement requirement)
+        Requirement requirement, Listing listing)
 {
+    /**
+     * 不带院校库信息的项目事实（只做硬门槛、综合分与分档时使用）
+     *
+     * @param programId 项目ID
+     * @param country 国家 / 地区代码
+     * @param difficulty 难度档
+     * @param teachingLanguage 授课语言
+     * @param apsRequired 是否需要 APS
+     * @param requirement 当季申请要求
+     */
+    public ProgramFacts(Long programId, String country, String difficulty, String teachingLanguage, boolean apsRequired,
+            Requirement requirement)
+    {
+        this(programId, country, difficulty, teachingLanguage, apsRequired, requirement, null);
+    }
+
+    /**
+     * 偏好排序用的院校库信息（字段为空表示院校库没有该信息）
+     *
+     * @param tuition 学费（每年）
+     * @param currency 学费币种（ISO 4217）
+     * @param durationMonths 学制（月）
+     * @param city 院校所在城市
+     * @param ranks 榜单 → 最新一年名次（如 {"QS": 40}）
+     */
+    public record Listing(BigDecimal tuition, String currency, Integer durationMonths, String city, Map<String, Integer> ranks)
+    {
+    }
+
     /**
      * 申请要求（字段为空表示项目库没有该项要求）
      *

@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import com.ygb.abroad.domain.AbrProgram;
 import com.ygb.abroad.domain.AbrRequirement;
+import com.ygb.abroad.domain.AbrSchool;
 import com.ygb.abroad.engine.ProgramFacts;
 import com.ygb.common.utils.StringUtils;
 import tools.jackson.databind.JsonNode;
@@ -31,9 +32,54 @@ public final class AbrEngineInputs
      */
     public static ProgramFacts programFacts(AbrProgram program, AbrRequirement requirement)
     {
+        return programFacts(program, null, requirement);
+    }
+
+    /**
+     * 组装项目事实（含偏好排序用的学费、学制、城市、排名）
+     *
+     * @param program 项目
+     * @param school 所属院校（没有时城市、排名为空）
+     * @param requirement 当季申请要求（没有记录为 null）
+     * @return 引擎用的项目事实
+     */
+    public static ProgramFacts programFacts(AbrProgram program, AbrSchool school, AbrRequirement requirement)
+    {
+        ProgramFacts.Listing listing = new ProgramFacts.Listing(program.getTuition(), program.getCurrency(), program.getDurationMonths(),
+                school == null || StringUtils.isBlank(school.getCity()) ? null : school.getCity().trim(),
+                school == null ? Map.of() : latestRanks(school.getRankings()));
         return new ProgramFacts(program.getProgramId(), program.getCountry(), StringUtils.isBlank(program.getDifficulty()) ? null
                 : program.getDifficulty().trim(), StringUtils.isBlank(program.getTeachingLanguage()) ? "en" : program.getTeachingLanguage(),
-                "Y".equals(program.getApsRequired()), requirement == null ? null : requirement(requirement));
+                "Y".equals(program.getApsRequired()), requirement == null ? null : requirement(requirement), listing);
+    }
+
+    /**
+     * 榜单名次（[{"list":"QS","year":2026,"rank":40}]）→ 每个榜单最新一年的名次
+     */
+    static Map<String, Integer> latestRanks(String rankings)
+    {
+        Map<String, Integer> ranks = new LinkedHashMap<>();
+        Map<String, Integer> years = new LinkedHashMap<>();
+        JsonNode list = AbrJsonFields.parse(rankings, "榜单名次");
+        if (list == null || !list.isArray())
+        {
+            return ranks;
+        }
+        for (JsonNode r : list)
+        {
+            String name = r.path("list").asString("").trim();
+            if (name.isEmpty() || !r.path("rank").isNumber())
+            {
+                continue;
+            }
+            int year = r.path("year").asInt(0);
+            if (!years.containsKey(name) || year > years.get(name))
+            {
+                years.put(name, year);
+                ranks.put(name, r.path("rank").asInt());
+            }
+        }
+        return ranks;
     }
 
     private static ProgramFacts.Requirement requirement(AbrRequirement r)

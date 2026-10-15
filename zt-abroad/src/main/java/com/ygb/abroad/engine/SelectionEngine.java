@@ -36,6 +36,9 @@ public final class SelectionEngine
     /** 快测采集的题目 */
     public static final List<String> QUICK_QUESTIONS = List.of("undergrad_school", "gpa", "target_countries", "target_field");
 
+    /** 提示：快测仅按院校层次和均分估算（结果页须展示，见 M4-02） */
+    public static final String NOTICE_QUICK_ACADEMIC_ONLY = "quick_academic_only";
+
     /** 快测参与综合分的维度（其余维度未采集，权重按比例放大到这些维度上） */
     public static final Set<String> QUICK_DIMENSIONS = Set.of("academic");
 
@@ -83,7 +86,8 @@ public final class SelectionEngine
             }
             results.add(new ProgramEvaluation(program, config.path("version").asString(""), threshold, composite, estimate, group));
         }
-        return new Evaluation(quick ? MODE_QUICK : MODE_FULL, Collections.unmodifiableMap(subScores), List.copyOf(results));
+        return new Evaluation(quick ? MODE_QUICK : MODE_FULL, Collections.unmodifiableMap(subScores), List.copyOf(results),
+                quick ? List.of(NOTICE_QUICK_ACADEMIC_ONLY) : List.of());
     }
 
     /**
@@ -160,8 +164,10 @@ public final class SelectionEngine
      * @param mode full / quick
      * @param subScores 国家 / 地区代码 → 子分
      * @param results 各项目评估（按传入顺序）
+     * @param notices 需要向学生展示的提示码（快测：quick_academic_only，仅按院校层次和均分估算，未计入科研、实习、标化等）
      */
-    public record Evaluation(String mode, Map<String, SubScoreCalculator.Result> subScores, List<ProgramEvaluation> results)
+    public record Evaluation(String mode, Map<String, SubScoreCalculator.Result> subScores, List<ProgramEvaluation> results,
+            List<String> notices)
     {
         /**
          * 取某一分组的项目

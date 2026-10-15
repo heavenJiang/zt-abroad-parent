@@ -4,7 +4,7 @@
   "country": "KR",
   "country_name": "韩国",
   "degree": "master",
-  "version": "KR_MASTER-2026.10-draft.1",
+  "version": "KR_MASTER-2026.10-draft.2",
   "status": "draft",
   "launch_batch": {
     "value": 3,
@@ -365,6 +365,100 @@
     ],
     "notes": "设计文档 §5：默认 2 冲 + 4 稳 + 2 保，总预算不超、至少一所保底在首选国家"
   },
+  "preference": {
+    "dimensions": [
+      "budget",
+      "rank_or_employment",
+      "city",
+      "duration"
+    ],
+    "importance": {
+      "high": 2,
+      "normal": 1
+    },
+    "importance_notes": "问卷 priority_top2：选中的项为 high、未选为 normal（问卷草案「被选 = 高、未选 = 普通」）；分值 AI 草拟，需顾问确认",
+    "budget_buckets_wan": {
+      "lt20": 20,
+      "20_40": 40,
+      "40_60": 60,
+      "60_100": 100,
+      "gt100": null,
+      "unlimited": null
+    },
+    "budget_notes": "问卷 budget_total 各档的上限（万元人民币，null 为不限）；项目全程费用 = 学费 × 学制年数 × 汇率 + 月生活费 × 学制月数，超出上限的项目不进推荐组合（设计文档 §5「总预算不超」）",
+    "cost": {
+      "fx_to_cny": {
+        "KRW": 0.0052,
+        "CNY": 1
+      },
+      "living_cny_per_month": 7000
+    },
+    "cost_notes": "汇率与月生活费为 AI 草拟的粗略值，需顾问确认并定期按实际汇率更新；项目币种不在表中或缺学费、学制时费用记为未知（不排除，只提示）",
+    "ranking_list": "QS",
+    "ranking_points": [
+      [
+        1,
+        100
+      ],
+      [
+        10,
+        95
+      ],
+      [
+        50,
+        85
+      ],
+      [
+        100,
+        70
+      ],
+      [
+        200,
+        50
+      ],
+      [
+        500,
+        25
+      ],
+      [
+        1000,
+        5
+      ]
+    ],
+    "ranking_notes": "「排名优先 / 都看重」时按院校在该榜单最新一年的名次折线换算 0–100；院校库没有名次时不计这一项；AI 草拟，需顾问确认",
+    "employment_notes": "院校库暂无就业数据：学生选「就业优先」时这一项不计分，并提示顾问",
+    "metropolis_cities": [
+      "Seoul",
+      "首尔",
+      "Busan",
+      "釜山"
+    ],
+    "city_notes": "问卷 city_preference：院校所在城市在列表中为「国际大都市」，否则为「大学城 / 中小城市」；城市列表 AI 草拟，需顾问确认",
+    "duration_points": [
+      [
+        9,
+        100
+      ],
+      [
+        12,
+        100
+      ],
+      [
+        18,
+        70
+      ],
+      [
+        24,
+        40
+      ],
+      [
+        36,
+        20
+      ]
+    ],
+    "duration_notes": "学制（月）折线换算 0–100，越短分越高；AI 草拟，需顾问确认",
+    "notes": "设计文档 §5：每档内按「偏好匹配分」排序（预算、排名 vs 就业、城市、学制，重要程度由学生选择）；偏好只影响排序和组合，不进综合分"
+  },
   "gap_analysis": {
     "target": "match",
     "target_p": 0.35,
@@ -396,7 +490,9 @@
         "min_months": 3
       }
     ],
-    "notes": "设计文档 §6：对冲刺校反算进入主攻档所需最小提升，只在可改变的维度里找，并按剩余时间判断是否现实；各动作所需月数 AI 草拟，需顾问确认"
+    "notes": "设计文档 §6：对冲刺校反算进入主攻档所需最小提升，只在可改变的维度里找，并按剩余时间判断是否现实；各动作所需月数 AI 草拟，需顾问确认",
+    "application_lead_months": 6,
+    "application_lead_notes": "差距反算判断「来得及」：所选动作所需月数之和 ≤ 距入学月数 − 递交提前量；提前量 6 个月为 AI 草拟，需顾问确认"
   },
   "calibration": {
     "refit_min_samples_per_country": 200,

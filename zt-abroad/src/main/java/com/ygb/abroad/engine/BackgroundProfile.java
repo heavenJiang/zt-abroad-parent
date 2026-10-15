@@ -154,6 +154,64 @@ public class BackgroundProfile
     /** 需要顾问注意的提示码（如 gpa_low_confidence、tier_unknown、major_self_reported） */
     private List<String> warnings = new ArrayList<>();
 
+    /**
+     * 复制一份（列表字段另建新列表），供差距反算做“假如补足”的试算
+     * 
+     * @return 副本
+     */
+    public BackgroundProfile copy()
+    {
+        BackgroundProfile c = new BackgroundProfile();
+        c.undergradTier = undergradTier;
+        c.undergradUniversityId = undergradUniversityId;
+        c.gpaScale = gpaScale;
+        c.gpaRaw = gpaRaw;
+        c.gpaMax = gpaMax;
+        c.gpaPercent = gpaPercent;
+        c.classRank = classRank;
+        c.undergradMajor = undergradMajor;
+        c.majorRelevance = majorRelevance;
+        c.majorRelevanceSource = majorRelevanceSource;
+        c.missingPrereqCount = missingPrereqCount;
+        c.englishStatus = englishStatus;
+        c.englishTest = englishTest;
+        c.englishTotal = englishTotal;
+        c.englishMinSub = englishMinSub;
+        c.englishEstimated = englishEstimated;
+        c.ieltsEquivTotal = ieltsEquivTotal;
+        c.ieltsEquivMinSub = ieltsEquivMinSub;
+        c.stdTestType = stdTestType;
+        c.stdTestTotal = stdTestTotal;
+        c.stdTestEstimated = stdTestEstimated;
+        c.researchLevel = researchLevel;
+        c.researchCount = researchCount;
+        c.researchRelevant = researchRelevant;
+        c.workCount = workCount;
+        c.workMonths = workMonths;
+        c.workFulltimeMonths = workFulltimeMonths;
+        c.workCompanyTier = workCompanyTier;
+        c.workRelevant = workRelevant;
+        c.awardsLevel = awardsLevel;
+        c.awardsCount = awardsCount;
+        c.awardsRelevant = awardsRelevant;
+        c.courseMatchRatio = courseMatchRatio;
+        c.targetCountries = new ArrayList<>(targetCountries);
+        c.targetDegree = targetDegree;
+        c.targetField = targetField;
+        c.targetFieldGroup = targetFieldGroup;
+        c.intakeYear = intakeYear;
+        c.monthsToIntake = monthsToIntake;
+        c.budgetTotal = budgetTotal;
+        c.rankVsEmployment = rankVsEmployment;
+        c.cityPreference = cityPreference;
+        c.priorityTop2 = new ArrayList<>(priorityTop2);
+        c.jlptLevel = jlptLevel;
+        c.topikLevel = topikLevel;
+        c.deApsStatus = deApsStatus;
+        c.warnings = new ArrayList<>(warnings);
+        return c;
+    }
+
     public String getUndergradTier()
     {
         return undergradTier;
