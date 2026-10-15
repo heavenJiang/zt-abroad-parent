@@ -3,6 +3,7 @@ package com.ygb.abroad.service.impl;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +16,6 @@ import com.ygb.abroad.engine.AnswerVisibility;
 import com.ygb.abroad.engine.BackgroundProfile;
 import com.ygb.abroad.engine.NormalizationRules;
 import com.ygb.abroad.engine.ProfileNormalizer;
-import com.ygb.abroad.engine.SelectionEngine;
 import com.ygb.abroad.mapper.AbrAssessmentMapper;
 import com.ygb.abroad.mapper.AbrCnUniversityMapper;
 import com.ygb.abroad.mapper.AbrProfileMapper;
@@ -109,17 +109,17 @@ public class AbrProfileServiceImpl implements IAbrProfileService
     }
 
     @Override
-    public BackgroundProfile normalizeQuickAnswers(Long questionnaireId, Map<String, JsonNode> answers)
+    public BackgroundProfile normalizeToolAnswers(Long questionnaireId, Map<String, JsonNode> answers, List<String> questions)
     {
-        Map<String, JsonNode> quick = new LinkedHashMap<>();
-        for (String q : SelectionEngine.QUICK_QUESTIONS)
+        Map<String, JsonNode> picked = new LinkedHashMap<>();
+        for (String q : questions)
         {
             if (answers.get(q) != null)
             {
-                quick.put(q, answers.get(q));
+                picked.put(q, answers.get(q));
             }
         }
-        return ProfileNormalizer.normalize(quick, questionnaire(questionnaireId).rules(), this::tierOf, LocalDate.now(BEIJING));
+        return ProfileNormalizer.normalize(picked, questionnaire(questionnaireId).rules(), this::tierOf, LocalDate.now(BEIJING));
     }
 
     /**

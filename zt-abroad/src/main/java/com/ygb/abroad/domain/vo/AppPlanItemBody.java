@@ -13,7 +13,7 @@ public class AppPlanItemBody
     /** 项目ID */
     private Long programId;
 
-    /** 来源快测的运行ID（从快测结果加入时带上，档位由后端从该记录取得） */
+    /** 来源工具的运行ID（从工具结果加入时带上；快测的档位由后端从该记录取得） */
     private Long toolRunId;
 
     @NotNull(message = "缺少项目")
@@ -28,7 +28,7 @@ public class AppPlanItemBody
         this.programId = programId;
     }
 
-    @Positive(message = "快测记录不正确")
+    @Positive(message = "工具记录不正确")
     public Long getToolRunId()
     {
         return toolRunId;

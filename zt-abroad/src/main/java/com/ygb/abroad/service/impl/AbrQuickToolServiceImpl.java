@@ -116,7 +116,7 @@ public class AbrQuickToolServiceImpl implements IAbrQuickToolService
 
         Map<String, JsonNode> map = new LinkedHashMap<>();
         answers.properties().forEach(e -> map.put(e.getKey(), e.getValue()));
-        BackgroundProfile p = profileService.normalizeQuickAnswers(questionnaire.getQuestionnaireId(), map);
+        BackgroundProfile p = profileService.normalizeToolAnswers(questionnaire.getQuestionnaireId(), map, SelectionEngine.QUICK_QUESTIONS);
         IAbrSelectionService.QuickRun run = selectionService.computeQuick(p, d);
 
         AbrToolRun toolRun = new AbrToolRun();

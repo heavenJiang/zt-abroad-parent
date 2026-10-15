@@ -92,7 +92,7 @@ final class AbrQuickTool
         return out;
     }
 
-    private static JsonNode school(JsonNode v)
+    static JsonNode school(JsonNode v)
     {
         String kind = v.path("kind").asString("");
         String name = v.path("name").isString() ? v.path("name").asString().trim() : "";
@@ -166,7 +166,7 @@ final class AbrQuickTool
         return out;
     }
 
-    private static JsonNode countries(AbrAssessmentAnswers.Questionnaire q, JsonNode v)
+    static JsonNode countries(AbrAssessmentAnswers.Questionnaire q, JsonNode v)
     {
         Set<String> allowed = new HashSet<>();
         q.root().path("countries").forEach(c -> allowed.add(c.path("value").asString()));
@@ -197,7 +197,7 @@ final class AbrQuickTool
         return out;
     }
 
-    private static JsonNode field(JsonNode question, JsonNode v)
+    static JsonNode field(JsonNode question, JsonNode v)
     {
         String value = v.isString() ? v.asString() : "";
         for (JsonNode o : question.path("options"))

@@ -163,6 +163,25 @@ public class AbrSelectionServiceImpl implements IAbrSelectionService
         return new QuickRun(evaluation, plan, versions, List.copyOf(open), List.copyOf(skipped), candidates.byId());
     }
 
+    @Override
+    public CatalogSlice selectCatalogSlice(List<String> countries, String degree, String fieldGroup, boolean requireConfig)
+    {
+        List<String> open = new ArrayList<>();
+        List<String> skipped = new ArrayList<>();
+        Map<String, JsonNode> configs;
+        if (requireConfig)
+        {
+            configs = split(countries, engineConfigService.selectActiveConfigs(degree), open, skipped);
+        }
+        else
+        {
+            configs = Map.of();
+            open.addAll(countries);
+        }
+        Candidates candidates = candidates(open, degree, fieldGroup);
+        return new CatalogSlice(configs, List.copyOf(open), List.copyOf(skipped), candidates.facts(), candidates.byId(), candidates.requirements());
+    }
+
     /**
      * 目标国家 / 地区分为已开放（有启用配置）与暂未开放两组，返回已开放国家的配置（保持学生选择顺序）
      */
@@ -187,10 +206,10 @@ public class AbrSelectionServiceImpl implements IAbrSelectionService
         List<ProgramFacts> facts = new ArrayList<>();
         Map<Long, AbrProgram> byId = new HashMap<>();
         Map<Long, ProgramBenchmark> benchmarks = new HashMap<>();
+        Map<Long, AbrRequirement> requirements = new HashMap<>();
         if (!programs.isEmpty())
         {
             List<Long> ids = programs.stream().map(AbrProgram::getProgramId).toList();
-            Map<Long, AbrRequirement> requirements = new HashMap<>();
             requirementMapper.selectLatestAbrRequirementByProgramIds(ids).forEach(r -> requirements.put(r.getProgramId(), r));
             for (AbrProgramBenchmark b : benchmarkMapper.selectAbrProgramBenchmarkByProgramIds(ids))
             {
@@ -204,13 +223,14 @@ public class AbrSelectionServiceImpl implements IAbrSelectionService
                 byId.put(program.getProgramId(), program);
             }
         }
-        return new Candidates(facts, byId, benchmarks);
+        return new Candidates(facts, byId, benchmarks, requirements);
     }
 
     /**
      * 候选项目与参考线
      */
-    private record Candidates(List<ProgramFacts> facts, Map<Long, AbrProgram> byId, Map<Long, ProgramBenchmark> benchmarks)
+    private record Candidates(List<ProgramFacts> facts, Map<Long, AbrProgram> byId, Map<Long, ProgramBenchmark> benchmarks,
+            Map<Long, AbrRequirement> requirements)
     {
     }
 

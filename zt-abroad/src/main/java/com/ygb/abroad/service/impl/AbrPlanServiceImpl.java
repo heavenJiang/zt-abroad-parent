@@ -20,7 +20,7 @@ import com.ygb.common.utils.StringUtils;
 /**
  * 我的选校单 服务层实现
  * 
- * 档位不信任前端：从快测加入时由后端按运行记录取该项目的分组；直接加入（项目页等）不带档位，M4-10 再按最新档案计算。
+ * 档位不信任前端：从快测加入时由后端按运行记录取该项目的分组（其他工具不分档）；直接加入（项目页等）不带档位，M4-10 再按最新档案计算。
  * 
  * @author ygb
  */
@@ -29,6 +29,9 @@ public class AbrPlanServiceImpl implements IAbrPlanService
 {
     /** 来源：快测 */
     static final String SOURCE_QUICK = "quick";
+
+    /** 来源：其他入口工具（本校认可度、雅思够不够、现在还能申） */
+    static final String SOURCE_TOOL = "tool";
 
     /** 来源：项目页等直接加入 */
     static final String SOURCE_PROGRAM = "program";
@@ -66,11 +69,13 @@ public class AbrPlanServiceImpl implements IAbrPlanService
             AbrToolRun run = toolRunMapper.selectAbrToolRunOwned(body.getToolRunId(), visitor.getVisitorId());
             if (run == null)
             {
-                throw new ServiceException("快测记录不存在");
+                throw new ServiceException("工具记录不存在");
             }
-            item.setSource(SOURCE_QUICK);
+            boolean quick = AbrQuickTool.TOOL.equals(run.getTool());
+            item.setSource(quick ? SOURCE_QUICK : SOURCE_TOOL);
             item.setSourceRef(run.getToolRunId());
-            item.setTierSnapshot(AbrQuickTool.groupOf(run.getResult(), program.getProgramId()));
+            // 只有快测给出档位；其他工具不分档
+            item.setTierSnapshot(quick ? AbrQuickTool.groupOf(run.getResult(), program.getProgramId()) : null);
         }
         boolean exists = planItemMapper.selectAbrPlanItemsByVisitor(visitor.getVisitorId()).stream()
                 .anyMatch(i -> i.getProgramId().equals(program.getProgramId()));
