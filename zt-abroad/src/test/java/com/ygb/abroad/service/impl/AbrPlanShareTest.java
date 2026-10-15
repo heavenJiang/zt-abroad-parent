@@ -45,7 +45,7 @@ class AbrPlanShareTest
         }
         items.add(item(10, "学校X", "consultant", null));
         items.add(item(11, "学校Y", "offline", null));
-        return new AppPlanVo("full", items, Map.of("reach", 1, "match", 2, "safety", 6), List.of(new AppPlanVo.Hint("no_safety", 2)), List.of());
+        return new AppPlanVo("full", items, Map.of("reach", 1, "match", 2, "safety", 6), List.of(new AppPlanVo.Hint("no_safety", 2)), List.of(), null);
     }
 
     @Test
@@ -90,7 +90,7 @@ class AbrPlanShareTest
     @Test
     void cardWithoutTiers()
     {
-        AppPlanVo none = new AppPlanVo("none", List.of(item(1, "学校A", "need_profile", null)), Map.of(), List.of(), List.of("gpa"));
+        AppPlanVo none = new AppPlanVo("none", List.of(item(1, "学校A", "need_profile", null)), Map.of(), List.of(), List.of("gpa"), null);
         Card c = AbrPlanShare.card(none, "b", "u");
         assertEquals(List.of("选校单"), c.sections().stream().map(Card.Section::label).toList());
         assertTrue(c.extras().isEmpty());

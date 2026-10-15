@@ -157,6 +157,9 @@ abroad:
     url: ${ABR_APP_URL:http://localhost:5173/}
     # 品牌名（分享海报顶部）
     brand-name: ${ABR_BRAND_NAME:留学工作室}
+  moment:
+    # 转化时刻推荐：两次推荐展示的最小间隔（小时）；每类时刻每人只推荐一次，规则在管理端「转化时刻」配置
+    min-interval-hours: 24
   card:
     # 图卡字体族（为空时自动选第一个能显示中文的字体；Docker 镜像已安装文泉驿微米黑）
     font-family: ""

@@ -92,4 +92,12 @@ public interface AbrAssessmentMapper
      * @return 数量
      */
     public long countSubmittedAbrAssessment();
+
+    /**
+     * 访客是否有标记为未成年的测评（营销类推荐不展示给未成年人）
+     * 
+     * @param visitorId 访客ID
+     * @return 数量
+     */
+    public int countMinorAssessments(Long visitorId);
 }

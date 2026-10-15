@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrEventMapper">
+
+    <resultMap type="AbrEvent" id="AbrEventResult">
+        <id     property="eventId"          column="event_id"          />
+        <result property="eventType"        column="event_type"        />
+        <result property="visitorId"        column="visitor_id"        />
+        <result property="appUserId"        column="app_user_id"       />
+        <result property="refType"          column="ref_type"          />
+        <result property="refId"            column="ref_id"            />
+        <result property="dedupKey"         column="dedup_key"         />
+        <result property="payload"          column="payload"           />
+        <result property="recommendStatus"  column="recommend_status"  />
+        <result property="recommendLabel"   column="recommend_label"   />
+        <result property="shownTime"        column="shown_time"        />
+        <result property="handledTime"      column="handled_time"      />
+        <result property="createTime"       column="create_time"       />
+    </resultMap>
+
+    <insert id="insertAbrEvent" parameterType="AbrEvent" useGeneratedKeys="true" keyProperty="eventId" keyColumn="event_id">
+        insert into abr_event (event_type, visitor_id, app_user_id, ref_type, ref_id, dedup_key, payload, recommend_status, recommend_label, create_time)
+        values (#{eventType}, #{visitorId}, #{appUserId}, #{refType}, #{refId}, #{dedupKey}, cast(coalesce(#{payload}, '{}') as jsonb),
+                #{recommendStatus}, #{recommendLabel}, now())
+        on conflict (event_type, visitor_id, dedup_key) where dedup_key is not null do nothing
+    </insert>
+
+    <select id="selectMomentCodes" parameterType="Long" resultType="String">
+        select dedup_key from abr_event where visitor_id = #{visitorId} and event_type = 'plan_moment' and dedup_key is not null
+    </select>
+
+    <select id="selectPendingRecommendation" parameterType="Long" resultMap="AbrEventResult">
+        select event_id, event_type, visitor_id, app_user_id, ref_type, ref_id, dedup_key, cast(payload as text) as payload, recommend_status,
+               recommend_label, shown_time, handled_time, create_time
+        from abr_event
+        where visitor_id = #{visitorId} and event_type = 'plan_moment' and recommend_status = 'pending'
+        order by event_id
+        limit 1
+    </select>
+
+    <select id="selectLastShownTime" parameterType="Long" resultType="java.util.Date">
+        select max(shown_time) from abr_event where visitor_id = #{visitorId} and event_type = 'plan_moment' and shown_time is not null
+    </select>
+
+    <update id="markRecommendationShown" parameterType="Long">
+        update abr_event set recommend_status = 'shown', shown_time = now() where event_id = #{eventId} and recommend_status = 'pending'
+    </update>
+
+    <select id="selectEventTimes" resultType="java.util.Date">
+        select create_time from abr_event
+        where visitor_id = #{visitorId} and create_time &gt;= #{since} and event_type in
+        <foreach collection="eventTypes" item="t" open="(" separator="," close=")">
+            #{t}
+        </foreach>
+        order by create_time
+    </select>
+
+</mapper>

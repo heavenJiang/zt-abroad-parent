@@ -135,7 +135,7 @@ final class AbrPlanView
             JsonNode config = run.configs().get(main);
             mix = config == null ? null : config.path("portfolio").path("default_mix");
         }
-        return new AppPlanVo(basis, list, counts, hints(counts, mix), missingInfo);
+        return new AppPlanVo(basis, list, counts, hints(counts, mix), missingInfo, null);
     }
 
     /**

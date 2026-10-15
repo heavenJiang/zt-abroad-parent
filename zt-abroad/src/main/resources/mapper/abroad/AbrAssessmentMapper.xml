@@ -97,6 +97,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         limit 1
     </select>
 
+    <select id="countMinorAssessments" parameterType="Long" resultType="int">
+        select count(*) from abr_assessment where visitor_id = #{visitorId} and del_flag = '0' and flags ->> 'is_minor' = 'true'
+    </select>
+
     <insert id="insertAbrAssessment" parameterType="AbrAssessment" useGeneratedKeys="true" keyProperty="assessmentId" keyColumn="assessment_id">
         insert into abr_assessment (visitor_id, questionnaire_id, questionnaire_code, questionnaire_version, degree, request_id, channel_code, content_code,
                                     client_platform, policy_code, policy_version, consent_time, assessment_status, answers, flags,

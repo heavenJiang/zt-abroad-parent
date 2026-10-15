@@ -12,10 +12,36 @@ import java.util.Map;
  * @param tierCounts 各分组的项目数（reach / match / safety / unrated / needs_improvement / excluded）
  * @param hints 档位分布提示
  * @param missingInfo 背景信息不足时建议补充的题目 id（basis 为 none 时）
+ * @param recommendation 转化时刻推荐（每类时刻只出现一次，遵守频控；没有为 null）
  * @author ygb
  */
-public record AppPlanVo(String basis, List<Item> items, Map<String, Integer> tierCounts, List<Hint> hints, List<String> missingInfo)
+public record AppPlanVo(String basis, List<Item> items, Map<String, Integer> tierCounts, List<Hint> hints, List<String> missingInfo,
+        Recommendation recommendation)
 {
+    /**
+     * 换上转化时刻推荐
+     *
+     * @param r 推荐
+     * @return 新的选校单
+     */
+    public AppPlanVo withRecommendation(Recommendation r)
+    {
+        return new AppPlanVo(basis, items, tierCounts, hints, missingInfo, r);
+    }
+
+    /**
+     * 转化时刻推荐（服务来自转化时刻规则配置，不含价格）
+     *
+     * @param eventId 事件ID
+     * @param moment 时刻编码（imbalance / requirement_unmet / materials_behind / parent_view / repeated_edits）
+     * @param label 推荐的服务名称
+     * @param text 推荐文案
+     * @param product 产品编码（M5-06 产品配置；未配置为 null）
+     */
+    public record Recommendation(Long eventId, String moment, String label, String text, String product)
+    {
+    }
+
     /**
      * 选校单中的一个项目
      *

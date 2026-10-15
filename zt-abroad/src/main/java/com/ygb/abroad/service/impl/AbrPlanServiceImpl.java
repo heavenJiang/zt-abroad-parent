@@ -4,14 +4,18 @@ import java.net.URI;
 import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
-import java.util.Base64;
 import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -36,6 +40,7 @@ import com.ygb.abroad.engine.AnswerVisibility;
 import com.ygb.abroad.engine.BackgroundProfile;
 import com.ygb.abroad.engine.SelectionEngine;
 import com.ygb.abroad.mapper.AbrAssessmentMapper;
+import com.ygb.abroad.mapper.AbrEventMapper;
 import com.ygb.abroad.mapper.AbrMaterialTemplateMapper;
 import com.ygb.abroad.mapper.AbrPlanItemMapper;
 import com.ygb.abroad.mapper.AbrPlanMaterialMapper;
@@ -45,6 +50,7 @@ import com.ygb.abroad.mapper.AbrRequirementMapper;
 import com.ygb.abroad.mapper.AbrShareMapper;
 import com.ygb.abroad.mapper.AbrVisitorMapper;
 import com.ygb.abroad.mapper.AbrToolRunMapper;
+import com.ygb.abroad.service.IAbrEventService;
 import com.ygb.abroad.service.IAbrPlanService;
 import com.ygb.abroad.service.IAbrProfileService;
 import com.ygb.abroad.service.IAbrSelectionService;
@@ -71,6 +77,23 @@ import tools.jackson.databind.node.ObjectNode;
 public class AbrPlanServiceImpl implements IAbrPlanService
 {
     private static final ObjectMapper MAPPER = JsonMapper.builder().build();
+
+    private static final Logger log = LoggerFactory.getLogger(AbrPlanServiceImpl.class);
+
+    /** 事件：加入项目 */
+    static final String EVENT_ITEM_ADDED = "plan_item_added";
+
+    /** 事件：移除项目 */
+    static final String EVENT_ITEM_REMOVED = "plan_item_removed";
+
+    /** 事件：勾选材料 */
+    static final String EVENT_MATERIAL_UPDATED = "plan_material_updated";
+
+    /** 事件：开启家长只读视图 */
+    static final String EVENT_SHARE_CREATED = "plan_share_created";
+
+    /** 事件：撤销家长只读视图 */
+    static final String EVENT_SHARE_REVOKED = "plan_share_revoked";
 
     /** 来源：快测 */
     static final String SOURCE_QUICK = "quick";
@@ -140,6 +163,12 @@ public class AbrPlanServiceImpl implements IAbrPlanService
     @Autowired
     private AbrShareSupport shareSupport;
 
+    @Autowired
+    private IAbrEventService eventService;
+
+    @Autowired
+    private AbrEventMapper eventMapper;
+
     /** C 端地址（日历事件 UID 的域名部分取其主机名） */
     @Value("${abroad.app.url:http://localhost:5173/}")
     private String appUrl;
@@ -195,11 +224,105 @@ public class AbrPlanServiceImpl implements IAbrPlanService
             throw new ServiceException("选校单最多 " + MAX_ITEMS + " 个项目，请先移除一些");
         }
         planItemMapper.upsertAbrPlanItem(item);
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("source", item.getSource());
+        payload.put("tier", item.getTierSnapshot());
+        edited(visitor, EVENT_ITEM_ADDED, program.getProgramId(), payload);
         return selectPlanItems(visitor);
     }
 
     @Override
     public AppPlanVo selectPlan(AbrVisitor visitor)
+    {
+        AppPlanVo plan = plan(visitor);
+        try
+        {
+            detectOnPlanViewed(visitor, plan);
+        }
+        catch (RuntimeException e)
+        {
+            // 转化时刻只用于推荐与线索评分，判断失败不影响选校单
+            log.warn("转化时刻判断失败 visitorId={}：{}", visitor.getVisitorId(), e.getMessage());
+        }
+        return plan.withRecommendation(eventService.takeRecommendation(visitor));
+    }
+
+    /**
+     * 打开选校单时判断：冲保失衡、要求变化后不达标、截止前材料不齐（已记录过的时刻不再判断）
+     */
+    private void detectOnPlanViewed(AbrVisitor visitor, AppPlanVo plan)
+    {
+        Map<String, JsonNode> rules = eventService.activeMomentParams();
+        Set<String> done = eventService.recordedMoments(visitor.getVisitorId());
+        if (rules.containsKey(AbrPlanMoments.IMBALANCE) && !done.contains(AbrPlanMoments.IMBALANCE)
+                && AbrPlanMoments.imbalance(plan, rules.get(AbrPlanMoments.IMBALANCE)))
+        {
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("tierCounts", plan.tierCounts());
+            eventService.recordMoment(visitor, AbrPlanMoments.IMBALANCE, payload);
+        }
+        List<Long> ids = plan.items().stream().filter(i -> AbrPlanView.STATUS_OK.equals(i.status())).map(AppPlanVo.Item::programId).toList();
+        if (rules.containsKey(AbrPlanMoments.REQUIREMENT_UNMET) && !done.contains(AbrPlanMoments.REQUIREMENT_UNMET) && !ids.isEmpty())
+        {
+            Map<Long, Date> changed = new HashMap<>();
+            for (AbrRequirement r : requirementMapper.selectLatestAbrRequirementByProgramIds(ids))
+            {
+                changed.put(r.getProgramId(), r.getUpdateTime() != null ? r.getUpdateTime() : r.getCreateTime());
+            }
+            List<Long> affected = AbrPlanMoments.requirementUnmet(plan, changed);
+            if (!affected.isEmpty())
+            {
+                eventService.recordMoment(visitor, AbrPlanMoments.REQUIREMENT_UNMET, Map.of("programIds", affected));
+            }
+        }
+        if (rules.containsKey(AbrPlanMoments.MATERIALS_BEHIND) && !done.contains(AbrPlanMoments.MATERIALS_BEHIND) && !ids.isEmpty())
+        {
+            detectMaterialsBehind(visitor, materials(visitor.getVisitorId()), rules.get(AbrPlanMoments.MATERIALS_BEHIND));
+        }
+    }
+
+    /**
+     * 截止前材料不齐
+     */
+    private void detectMaterialsBehind(AbrVisitor visitor, AppMaterialsVo materials, JsonNode params)
+    {
+        List<Long> affected = AbrPlanMoments.materialsBehind(materials, LocalDate.now(AbrLookupTools.BEIJING), params);
+        if (!affected.isEmpty())
+        {
+            eventService.recordMoment(visitor, AbrPlanMoments.MATERIALS_BEHIND, Map.of("programIds", affected));
+        }
+    }
+
+    /**
+     * 加入或移除项目：记事件，并判断反复修改
+     */
+    private void edited(AbrVisitor visitor, String eventType, Long programId, Map<String, Object> payload)
+    {
+        eventService.recordAction(visitor, eventType, "program", programId, payload);
+        try
+        {
+            JsonNode params = eventService.activeMomentParams().get(AbrPlanMoments.REPEATED_EDITS);
+            if (params == null || eventService.recordedMoments(visitor.getVisitorId()).contains(AbrPlanMoments.REPEATED_EDITS))
+            {
+                return;
+            }
+            Date since = new Date(System.currentTimeMillis() - AbrPlanMoments.windowDays(params) * 86_400_000L);
+            List<Date> times = eventMapper.selectEventTimes(visitor.getVisitorId(), List.of(EVENT_ITEM_ADDED, EVENT_ITEM_REMOVED), since);
+            if (AbrPlanMoments.repeatedEdits(times, params))
+            {
+                eventService.recordMoment(visitor, AbrPlanMoments.REPEATED_EDITS, Map.of("edits", times.size()));
+            }
+        }
+        catch (RuntimeException e)
+        {
+            log.warn("反复修改判断失败 visitorId={}：{}", visitor.getVisitorId(), e.getMessage());
+        }
+    }
+
+    /**
+     * 选校单计算（不判断转化时刻、不取推荐；家长只读视图与分享卡也用它）
+     */
+    private AppPlanVo plan(AbrVisitor visitor)
     {
         List<AbrPlanItem> items = planItemMapper.selectAbrPlanItemsByVisitor(visitor.getVisitorId());
         List<Long> ids = items.stream().map(AbrPlanItem::getProgramId).toList();
@@ -273,7 +396,20 @@ public class AbrPlanServiceImpl implements IAbrPlanService
     @Override
     public AppMaterialsVo selectMaterials(AbrVisitor visitor)
     {
-        return materials(visitor.getVisitorId());
+        AppMaterialsVo vo = materials(visitor.getVisitorId());
+        try
+        {
+            JsonNode params = eventService.activeMomentParams().get(AbrPlanMoments.MATERIALS_BEHIND);
+            if (params != null && !eventService.recordedMoments(visitor.getVisitorId()).contains(AbrPlanMoments.MATERIALS_BEHIND))
+            {
+                detectMaterialsBehind(visitor, vo, params);
+            }
+        }
+        catch (RuntimeException e)
+        {
+            log.warn("转化时刻判断失败 visitorId={}：{}", visitor.getVisitorId(), e.getMessage());
+        }
+        return vo;
     }
 
     @Override
@@ -286,6 +422,10 @@ public class AbrPlanServiceImpl implements IAbrPlanService
             throw new ServiceException("材料不在当前清单中，请刷新后重试");
         }
         planMaterialMapper.upsertPlanMaterial(visitor.getVisitorId(), visitor.getAppUserId(), key, Boolean.TRUE.equals(body.getDone()));
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("key", key);
+        payload.put("done", Boolean.TRUE.equals(body.getDone()));
+        eventService.recordAction(visitor, EVENT_MATERIAL_UPDATED, null, null, payload);
         return materials(visitor.getVisitorId());
     }
 
@@ -293,6 +433,7 @@ public class AbrPlanServiceImpl implements IAbrPlanService
     public Map<String, Object> createPlanShare(AbrVisitor visitor)
     {
         shareSupport.shareCode(AbrPlanShare.KIND_VIEW, visitor.getVisitorId(), visitor.getVisitorId(), "{}");
+        eventService.recordAction(visitor, EVENT_SHARE_CREATED, "share", null, null);
         return planShareStatus(visitor);
     }
 
@@ -306,6 +447,7 @@ public class AbrPlanServiceImpl implements IAbrPlanService
     public Map<String, Object> revokePlanShare(AbrVisitor visitor)
     {
         shareMapper.revokeAbrShare(AbrPlanShare.KIND_VIEW, visitor.getVisitorId(), visitor.getVisitorId());
+        eventService.recordAction(visitor, EVENT_SHARE_REVOKED, "share", null, null);
         return planShareStatus(visitor);
     }
 
@@ -323,13 +465,21 @@ public class AbrPlanServiceImpl implements IAbrPlanService
             throw new ServiceException("分享链接已失效，请让孩子重新分享");
         }
         shareMapper.touchAbrShareView(share.getShareId());
-        return AbrPlanShare.view(selectPlan(owner), calendar(owner.getVisitorId()), materials(owner.getVisitorId()));
+        try
+        {
+            eventService.recordMoment(owner, AbrPlanMoments.PARENT_VIEW, Map.of("shareId", share.getShareId()));
+        }
+        catch (RuntimeException e)
+        {
+            log.warn("家长查看事件记录失败 visitorId={}：{}", owner.getVisitorId(), e.getMessage());
+        }
+        return AbrPlanShare.view(plan(owner), calendar(owner.getVisitorId()), materials(owner.getVisitorId()));
     }
 
     @Override
     public byte[] renderPlanCard(AbrVisitor visitor)
     {
-        AppPlanVo plan = selectPlan(visitor);
+        AppPlanVo plan = plan(visitor);
         if (plan.items().stream().allMatch(i -> AbrSelectionServiceImpl.PLAN_OFFLINE.equals(i.status())))
         {
             throw new ServiceException("选校单还是空的，先加几个项目再分享吧");
@@ -472,7 +622,10 @@ public class AbrPlanServiceImpl implements IAbrPlanService
     @Override
     public List<AppPlanItemVo> removePlanItem(AbrVisitor visitor, Long programId)
     {
-        planItemMapper.deleteAbrPlanItem(visitor.getVisitorId(), programId);
+        if (planItemMapper.deleteAbrPlanItem(visitor.getVisitorId(), programId) > 0)
+        {
+            edited(visitor, EVENT_ITEM_REMOVED, programId, null);
+        }
         return selectPlanItems(visitor);
     }
 

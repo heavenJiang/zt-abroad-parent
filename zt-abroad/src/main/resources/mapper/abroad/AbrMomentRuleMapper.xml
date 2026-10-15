@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrMomentRuleMapper">
+
+    <resultMap type="AbrMomentRule" id="AbrMomentRuleResult">
+        <id     property="ruleId"            column="rule_id"            />
+        <result property="momentCode"        column="moment_code"        />
+        <result property="momentName"        column="moment_name"        />
+        <result property="recommendProduct"  column="recommend_product"  />
+        <result property="recommendLabel"    column="recommend_label"    />
+        <result property="recommendText"     column="recommend_text"     />
+        <result property="ruleParams"        column="params"             />
+        <result property="status"            column="status"             />
+        <result property="createBy"          column="create_by"          />
+        <result property="createTime"        column="create_time"        />
+        <result property="updateBy"          column="update_by"          />
+        <result property="updateTime"        column="update_time"        />
+        <result property="remark"            column="remark"             />
+    </resultMap>
+
+    <sql id="selectAbrMomentRuleVo">
+        select rule_id, moment_code, moment_name, recommend_product, recommend_label, recommend_text, cast(params as text) as params, status,
+               create_by, create_time, update_by, update_time, remark
+        from abr_moment_rule
+    </sql>
+
+    <select id="selectAbrMomentRuleList" parameterType="AbrMomentRule" resultMap="AbrMomentRuleResult">
+        <include refid="selectAbrMomentRuleVo"/>
+        <where>
+            <if test="status != null and status != ''">and status = #{status}</if>
+        </where>
+        order by rule_id
+    </select>
+
+    <select id="selectAbrMomentRuleById" parameterType="Long" resultMap="AbrMomentRuleResult">
+        <include refid="selectAbrMomentRuleVo"/>
+        where rule_id = #{ruleId}
+    </select>
+
+    <update id="updateAbrMomentRule" parameterType="AbrMomentRule">
+        update abr_moment_rule
+        set recommend_product = #{recommendProduct},
+            recommend_label   = #{recommendLabel},
+            recommend_text    = #{recommendText},
+            params            = cast(coalesce(#{ruleParams}, '{}') as jsonb),
+            status            = coalesce(#{status}, '0'),
+            remark            = #{remark},
+            update_by         = #{updateBy},
+            update_time       = now()
+        where rule_id = #{ruleId}
+    </update>
+
+</mapper>
