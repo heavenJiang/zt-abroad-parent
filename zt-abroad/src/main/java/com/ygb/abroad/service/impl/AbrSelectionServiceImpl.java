@@ -109,18 +109,80 @@ public class AbrSelectionServiceImpl implements IAbrSelectionService
             return resultMapper.selectAbrAssessmentResultByAssessmentId(assessmentId);
         }
         Map<String, JsonNode> active = engineConfigService.selectActiveConfigs(degree);
-
         List<String> open = new ArrayList<>();
         List<String> skipped = new ArrayList<>();
-        for (String c : p.getTargetCountries())
+        Map<String, JsonNode> configs = split(p.getTargetCountries(), active, open, skipped);
+        Candidates candidates = candidates(open, degree, p.getTargetFieldGroup());
+        List<ProgramFacts> facts = candidates.facts();
+        Map<Long, AbrProgram> byId = candidates.byId();
+        Map<Long, ProgramBenchmark> benchmarks = candidates.benchmarks();
+
+        SelectionEngine.Evaluation evaluation;
+        RecommendationPlanner.Plan plan;
+        try
+        {
+            evaluation = SelectionEngine.evaluate(p, facts, configs, benchmarks, false);
+            plan = RecommendationPlanner.plan(p, evaluation, configs);
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new ServiceException("选校计算失败（引擎配置有误）：" + e.getMessage());
+        }
+        AbrAssessmentResult result = toResult(assessmentId, evaluation, plan, configs, skipped, byId);
+        result.setCreateBy(StringUtils.nvl(operator, ""));
+        resultMapper.upsertAbrAssessmentResult(result);
+        return resultMapper.selectAbrAssessmentResultByAssessmentId(assessmentId);
+    }
+
+    @Override
+    public QuickRun computeQuick(BackgroundProfile p, String degree)
+    {
+        DegreeStrategy strategy = DegreeStrategy.of(degree);
+        if (strategy == null || !strategy.implemented())
+        {
+            throw new ServiceException("该学段暂不支持快测，可预约顾问评估");
+        }
+        Map<String, JsonNode> active = engineConfigService.selectActiveConfigs(degree);
+        List<String> open = new ArrayList<>();
+        List<String> skipped = new ArrayList<>();
+        Map<String, JsonNode> configs = split(p.getTargetCountries(), active, open, skipped);
+        Candidates candidates = candidates(open, degree, p.getTargetFieldGroup());
+        SelectionEngine.Evaluation evaluation;
+        RecommendationPlanner.Plan plan;
+        try
+        {
+            evaluation = SelectionEngine.evaluate(p, candidates.facts(), configs, candidates.benchmarks(), true);
+            plan = RecommendationPlanner.plan(p, evaluation, configs);
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new ServiceException("快测计算失败（引擎配置有误），请稍后再试");
+        }
+        Map<String, String> versions = new LinkedHashMap<>();
+        configs.forEach((c, cfg) -> versions.put(c, cfg.path("version").asString("")));
+        return new QuickRun(evaluation, plan, versions, List.copyOf(open), List.copyOf(skipped), candidates.byId());
+    }
+
+    /**
+     * 目标国家 / 地区分为已开放（有启用配置）与暂未开放两组，返回已开放国家的配置（保持学生选择顺序）
+     */
+    private static Map<String, JsonNode> split(List<String> targets, Map<String, JsonNode> active, List<String> open, List<String> skipped)
+    {
+        for (String c : targets)
         {
             (active.containsKey(c) ? open : skipped).add(c);
         }
         Map<String, JsonNode> configs = new LinkedHashMap<>();
         open.forEach(c -> configs.put(c, active.get(c)));
+        return configs;
+    }
 
-        String fieldGroup = StringUtils.isBlank(p.getTargetFieldGroup()) || "undecided".equals(p.getTargetFieldGroup()) ? null
-                : p.getTargetFieldGroup();
+    /**
+     * 候选项目：已开放国家中学位一致、专业大类一致（未定方向时不限）的正常状态项目，申请要求取最新申请季
+     */
+    private Candidates candidates(List<String> open, String degree, String targetFieldGroup)
+    {
+        String fieldGroup = StringUtils.isBlank(targetFieldGroup) || "undecided".equals(targetFieldGroup) ? null : targetFieldGroup;
         List<AbrProgram> programs = open.isEmpty() ? List.of() : programMapper.selectEngineCandidates(open, degree, fieldGroup);
         List<ProgramFacts> facts = new ArrayList<>();
         Map<Long, AbrProgram> byId = new HashMap<>();
@@ -142,22 +204,14 @@ public class AbrSelectionServiceImpl implements IAbrSelectionService
                 byId.put(program.getProgramId(), program);
             }
         }
+        return new Candidates(facts, byId, benchmarks);
+    }
 
-        SelectionEngine.Evaluation evaluation;
-        RecommendationPlanner.Plan plan;
-        try
-        {
-            evaluation = SelectionEngine.evaluate(p, facts, configs, benchmarks, false);
-            plan = RecommendationPlanner.plan(p, evaluation, configs);
-        }
-        catch (IllegalArgumentException e)
-        {
-            throw new ServiceException("选校计算失败（引擎配置有误）：" + e.getMessage());
-        }
-        AbrAssessmentResult result = toResult(assessmentId, evaluation, plan, configs, skipped, byId);
-        result.setCreateBy(StringUtils.nvl(operator, ""));
-        resultMapper.upsertAbrAssessmentResult(result);
-        return resultMapper.selectAbrAssessmentResultByAssessmentId(assessmentId);
+    /**
+     * 候选项目与参考线
+     */
+    private record Candidates(List<ProgramFacts> facts, Map<Long, AbrProgram> byId, Map<Long, ProgramBenchmark> benchmarks)
+    {
     }
 
     /**

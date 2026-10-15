@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrToolRunMapper">
+
+    <resultMap type="AbrToolRun" id="AbrToolRunResult">
+        <id     property="toolRunId"       column="tool_run_id"      />
+        <result property="tool"            column="tool"             />
+        <result property="visitorId"       column="visitor_id"       />
+        <result property="degree"          column="degree"           />
+        <result property="questionnaireId" column="questionnaire_id" />
+        <result property="input"           column="input"            />
+        <result property="result"          column="result"           />
+        <result property="engineVersions"  column="engine_versions"  />
+        <result property="channelCode"     column="channel_code"     />
+        <result property="contentCode"     column="content_code"     />
+        <result property="clientPlatform"  column="client_platform"  />
+        <result property="policyCode"      column="policy_code"      />
+        <result property="policyVersion"   column="policy_version"   />
+        <result property="createTime"      column="create_time"      />
+    </resultMap>
+
+    <insert id="insertAbrToolRun" parameterType="AbrToolRun" useGeneratedKeys="true" keyProperty="toolRunId" keyColumn="tool_run_id">
+        insert into abr_tool_run (tool, visitor_id, degree, questionnaire_id, input, result, engine_versions, channel_code, content_code,
+                                  client_platform, policy_code, policy_version, create_time)
+        values (#{tool}, #{visitorId}, #{degree}, #{questionnaireId}, cast(#{input} as jsonb), cast(coalesce(#{result}, '{}') as jsonb),
+                cast(coalesce(#{engineVersions}, '{}') as jsonb), coalesce(#{channelCode}, 'direct'), coalesce(#{contentCode}, ''),
+                coalesce(#{clientPlatform}, ''), coalesce(#{policyCode}, ''), coalesce(#{policyVersion}, ''), now())
+    </insert>
+
+    <select id="selectAbrToolRunOwned" resultMap="AbrToolRunResult">
+        select tool_run_id, tool, visitor_id, degree, questionnaire_id, cast(input as text) as input, cast(result as text) as result,
+               cast(engine_versions as text) as engine_versions, channel_code, content_code, client_platform, policy_code, policy_version,
+               create_time
+        from abr_tool_run
+        where tool_run_id = #{toolRunId} and visitor_id = #{visitorId}
+    </select>
+
+</mapper>

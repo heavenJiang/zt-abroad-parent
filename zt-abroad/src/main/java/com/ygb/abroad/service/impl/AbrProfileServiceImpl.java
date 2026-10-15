@@ -15,6 +15,7 @@ import com.ygb.abroad.engine.AnswerVisibility;
 import com.ygb.abroad.engine.BackgroundProfile;
 import com.ygb.abroad.engine.NormalizationRules;
 import com.ygb.abroad.engine.ProfileNormalizer;
+import com.ygb.abroad.engine.SelectionEngine;
 import com.ygb.abroad.mapper.AbrAssessmentMapper;
 import com.ygb.abroad.mapper.AbrCnUniversityMapper;
 import com.ygb.abroad.mapper.AbrProfileMapper;
@@ -105,6 +106,20 @@ public class AbrProfileServiceImpl implements IAbrProfileService
         profile.setCreateBy(StringUtils.nvl(operator, ""));
         profileMapper.upsertAbrProfile(profile);
         return profileMapper.selectAbrProfileByAssessmentId(assessmentId);
+    }
+
+    @Override
+    public BackgroundProfile normalizeQuickAnswers(Long questionnaireId, Map<String, JsonNode> answers)
+    {
+        Map<String, JsonNode> quick = new LinkedHashMap<>();
+        for (String q : SelectionEngine.QUICK_QUESTIONS)
+        {
+            if (answers.get(q) != null)
+            {
+                quick.put(q, answers.get(q));
+            }
+        }
+        return ProfileNormalizer.normalize(quick, questionnaire(questionnaireId).rules(), this::tierOf, LocalDate.now(BEIJING));
     }
 
     /**

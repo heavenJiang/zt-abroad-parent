@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrPlanItemMapper">
+
+    <resultMap type="AbrPlanItem" id="AbrPlanItemResult">
+        <id     property="planItemId"    column="plan_item_id"  />
+        <result property="visitorId"     column="visitor_id"    />
+        <result property="appUserId"     column="app_user_id"   />
+        <result property="programId"     column="program_id"    />
+        <result property="source"        column="source"        />
+        <result property="sourceRef"     column="source_ref"    />
+        <result property="tierSnapshot"  column="tier_snapshot" />
+        <result property="sortOrder"     column="sort_order"    />
+        <result property="schoolName"    column="school_name"   />
+        <result property="programName"   column="program_name"  />
+        <result property="country"       column="country"       />
+        <result property="createTime"    column="create_time"   />
+        <result property="updateTime"    column="update_time"   />
+    </resultMap>
+
+    <select id="selectAbrPlanItemsByVisitor" parameterType="Long" resultMap="AbrPlanItemResult">
+        select i.plan_item_id, i.visitor_id, i.app_user_id, i.program_id, i.source, i.source_ref, i.tier_snapshot, i.sort_order,
+               s.school_name, p.program_name, s.country, i.create_time, i.update_time
+        from abr_plan_item i
+        join abr_program p on p.program_id = i.program_id
+        join abr_school s on s.school_id = p.school_id
+        where i.visitor_id = #{visitorId}
+          and p.del_flag = '0' and p.status = '0' and s.del_flag = '0' and s.status = '0'
+        order by i.sort_order, i.plan_item_id
+    </select>
+
+    <select id="countAbrPlanItemsByVisitor" parameterType="Long" resultType="int">
+        select count(*) from abr_plan_item where visitor_id = #{visitorId}
+    </select>
+
+    <insert id="upsertAbrPlanItem" parameterType="AbrPlanItem">
+        insert into abr_plan_item (visitor_id, app_user_id, program_id, source, source_ref, tier_snapshot, sort_order, create_time, update_time)
+        values (#{visitorId}, #{appUserId}, #{programId}, #{source}, #{sourceRef}, #{tierSnapshot}, coalesce(#{sortOrder}, 0), now(), now())
+        on conflict (visitor_id, program_id) do update
+        set source        = excluded.source,
+            source_ref    = excluded.source_ref,
+            tier_snapshot = excluded.tier_snapshot,
+            update_time   = now()
+    </insert>
+
+    <delete id="deleteAbrPlanItem">
+        delete from abr_plan_item where visitor_id = #{visitorId} and program_id = #{programId}
+    </delete>
+
+</mapper>

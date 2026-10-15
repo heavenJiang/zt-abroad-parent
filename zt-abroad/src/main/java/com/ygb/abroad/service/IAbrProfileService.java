@@ -1,6 +1,9 @@
 package com.ygb.abroad.service;
 
+import java.util.Map;
 import com.ygb.abroad.domain.AbrProfile;
+import com.ygb.abroad.engine.BackgroundProfile;
+import tools.jackson.databind.JsonNode;
 
 /**
  * 背景档案 服务层（归一化：测评答案 → 背景档案）
@@ -25,4 +28,13 @@ public interface IAbrProfileService
      * @return 背景档案
      */
     public AbrProfile normalizeAssessment(Long assessmentId, String operator);
+
+    /**
+     * 快测：只取快测题目（本科学校、均分、目标国家 / 地区、专业方向）的答案，按问卷版本的换算表归一化（不落库）
+     * 
+     * @param questionnaireId 问卷版本ID（换算表来自该版本）
+     * @param answers 答案（题目 id → 答案）
+     * @return 快测背景档案
+     */
+    public BackgroundProfile normalizeQuickAnswers(Long questionnaireId, Map<String, JsonNode> answers);
 }
