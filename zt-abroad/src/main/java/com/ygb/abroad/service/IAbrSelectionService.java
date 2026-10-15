@@ -45,6 +45,30 @@ public interface IAbrSelectionService
     public QuickRun computeQuick(BackgroundProfile p, String degree);
 
     /**
+     * 选校单：按背景档案评估给定项目（不限目标国家与专业方向；已下线、学段或国家未开放的项目不计算）
+     * 
+     * @param p 背景档案
+     * @param degree 学段（引擎未实现的学段全部视为由顾问评估）
+     * @param programIds 项目ID（保持顺序）
+     * @param quick 是否快测口径（档案只有院校与均分时只按学术估算）
+     * @return 评估结果
+     */
+    public PlanRun evaluatePrograms(BackgroundProfile p, String degree, List<Long> programIds, boolean quick);
+
+    /**
+     * 选校单评估结果
+     * 
+     * @param evaluation 引擎评估（只含可计算的项目）
+     * @param configs 所用引擎配置（国家 / 地区 → 配置）
+     * @param skipped 未计算的项目ID → 原因（offline 已下线 / consultant 由顾问评估）
+     * @param programs 项目ID → 项目（含已下线的；已删除的不在其中）
+     */
+    public record PlanRun(SelectionEngine.Evaluation evaluation, Map<String, JsonNode> configs, Map<Long, String> skipped,
+            Map<Long, AbrProgram> programs)
+    {
+    }
+
+    /**
      * 入口工具用的院校库切片：目标国家 / 地区中学位一致、专业大类一致（为空或未定时不限）的正常状态项目，及已开放国家的引擎配置
      * 
      * @param countries 国家 / 地区（保持顺序）

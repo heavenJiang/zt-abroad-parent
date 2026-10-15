@@ -4,6 +4,7 @@ import java.util.List;
 import com.ygb.abroad.domain.AbrVisitor;
 import com.ygb.abroad.domain.vo.AppPlanItemBody;
 import com.ygb.abroad.domain.vo.AppPlanItemVo;
+import com.ygb.abroad.domain.vo.AppPlanVo;
 
 /**
  * 我的选校单 服务层（M4-02：加入、查看、移除；排序、逐项达标、失衡提示在 M4-10）
@@ -40,4 +41,12 @@ public interface IAbrPlanService
      * @return 移除后的选校单
      */
     public List<AppPlanItemVo> removePlanItem(AbrVisitor visitor, Long programId);
+
+    /**
+     * 本人的选校单：按最新背景档案逐个项目计算当前分组与逐项达标，并给出档位分布提示
+     * 
+     * @param visitor 访客
+     * @return 选校单
+     */
+    public AppPlanVo selectPlan(AbrVisitor visitor);
 }

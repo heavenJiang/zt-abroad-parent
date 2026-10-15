@@ -16,6 +16,9 @@ public class AppPlanItemBody
     /** 来源工具的运行ID（从工具结果加入时带上；快测的档位由后端从该记录取得） */
     private Long toolRunId;
 
+    /** 来源测评ID（从报告推荐加入时带上；档位由后端从该测评的选校结果取得） */
+    private Long assessmentId;
+
     @NotNull(message = "缺少项目")
     @Positive(message = "项目不正确")
     public Long getProgramId()
@@ -37,5 +40,16 @@ public class AppPlanItemBody
     public void setToolRunId(Long toolRunId)
     {
         this.toolRunId = toolRunId;
+    }
+
+    @Positive(message = "测评不正确")
+    public Long getAssessmentId()
+    {
+        return assessmentId;
+    }
+
+    public void setAssessmentId(Long assessmentId)
+    {
+        this.assessmentId = assessmentId;
     }
 }

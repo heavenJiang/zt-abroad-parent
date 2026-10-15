@@ -53,6 +53,12 @@ public class AbrSelectionServiceImpl implements IAbrSelectionService
     /** 问卷未答学位时按硕士计算（1a 引擎只支持硕士，其余学段见 M3-09） */
     static final String DEFAULT_DEGREE = "master";
 
+    /** 选校单：项目已下线或删除 */
+    static final String PLAN_OFFLINE = "offline";
+
+    /** 选校单：学段或国家 / 地区暂未开放，由顾问评估 */
+    static final String PLAN_CONSULTANT = "consultant";
+
     /** 结果模式：该学段由顾问评估（引擎尚未实现） */
     static final String MODE_CONSULTANT = "consultant";
 
@@ -164,6 +170,49 @@ public class AbrSelectionServiceImpl implements IAbrSelectionService
     }
 
     @Override
+    public PlanRun evaluatePrograms(BackgroundProfile p, String degree, List<Long> programIds, boolean quick)
+    {
+        Map<Long, String> skipped = new LinkedHashMap<>();
+        Map<Long, AbrProgram> all = new HashMap<>();
+        if (!programIds.isEmpty())
+        {
+            programMapper.selectAbrProgramByIds(programIds).forEach(x -> all.put(x.getProgramId(), x));
+        }
+        DegreeStrategy strategy = DegreeStrategy.of(degree);
+        Map<String, JsonNode> active = strategy == null || !strategy.implemented() ? Map.of() : engineConfigService.selectActiveConfigs(degree);
+        List<AbrProgram> evaluable = new ArrayList<>();
+        for (Long id : programIds)
+        {
+            AbrProgram program = all.get(id);
+            if (program == null || !"0".equals(program.getStatus()))
+            {
+                skipped.put(id, PLAN_OFFLINE);
+            }
+            else if (!degree.equals(program.getDegree()) || !active.containsKey(program.getCountry()))
+            {
+                skipped.put(id, PLAN_CONSULTANT);
+            }
+            else
+            {
+                evaluable.add(program);
+            }
+        }
+        Candidates candidates = candidates(evaluable);
+        Map<String, JsonNode> configs = new LinkedHashMap<>();
+        evaluable.forEach(x -> configs.putIfAbsent(x.getCountry(), active.get(x.getCountry())));
+        SelectionEngine.Evaluation evaluation;
+        try
+        {
+            evaluation = SelectionEngine.evaluate(p, candidates.facts(), configs, candidates.benchmarks(), quick);
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new ServiceException("选校单计算失败（引擎配置有误），请稍后再试");
+        }
+        return new PlanRun(evaluation, configs, skipped, all);
+    }
+
+    @Override
     public CatalogSlice selectCatalogSlice(List<String> countries, String degree, String fieldGroup, boolean requireConfig)
     {
         List<String> open = new ArrayList<>();
@@ -202,7 +251,14 @@ public class AbrSelectionServiceImpl implements IAbrSelectionService
     private Candidates candidates(List<String> open, String degree, String targetFieldGroup)
     {
         String fieldGroup = StringUtils.isBlank(targetFieldGroup) || "undecided".equals(targetFieldGroup) ? null : targetFieldGroup;
-        List<AbrProgram> programs = open.isEmpty() ? List.of() : programMapper.selectEngineCandidates(open, degree, fieldGroup);
+        return candidates(open.isEmpty() ? List.of() : programMapper.selectEngineCandidates(open, degree, fieldGroup));
+    }
+
+    /**
+     * 给定项目的引擎输入：申请要求取最新申请季，附参考线
+     */
+    private Candidates candidates(List<AbrProgram> programs)
+    {
         List<ProgramFacts> facts = new ArrayList<>();
         Map<Long, AbrProgram> byId = new HashMap<>();
         Map<Long, ProgramBenchmark> benchmarks = new HashMap<>();

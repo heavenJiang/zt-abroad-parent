@@ -46,6 +46,9 @@ public class AbrPlanItem extends BaseEntity
     /** 国家 / 地区（查询时关联） */
     private String country;
 
+    /** 项目与院校是否正常（查询时计算；已下线、已删除为 false） */
+    private Boolean active;
+
     public void setPlanItemId(Long planItemId)
     {
         this.planItemId = planItemId;
@@ -156,6 +159,16 @@ public class AbrPlanItem extends BaseEntity
         return country;
     }
 
+    public Boolean getActive()
+    {
+        return active;
+    }
+
+    public void setActive(Boolean active)
+    {
+        this.active = active;
+    }
+
     @Override
     public String toString()
     {
@@ -171,6 +184,7 @@ public class AbrPlanItem extends BaseEntity
             .append("schoolName", getSchoolName())
             .append("programName", getProgramName())
             .append("country", getCountry())
+            .append("active", getActive())
             .append("createTime", getCreateTime())
             .append("updateTime", getUpdateTime())
             .toString();

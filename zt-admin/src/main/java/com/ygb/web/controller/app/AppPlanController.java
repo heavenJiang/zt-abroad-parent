@@ -37,7 +37,18 @@ public class AppPlanController extends BaseController
     private IAbrVisitorService visitorService;
 
     /**
-     * 本人的选校单
+     * 本人的选校单（按最新背景档案计算当前档位、逐项达标与档位分布提示）
+     */
+    @RateLimiter(key = "app_plan_read:", time = 60, count = 120, limitType = LimitType.IP)
+    @GetMapping
+    public AjaxResult plan(@RequestHeader(value = IAbrVisitorService.HEADER, required = false) String token)
+    {
+        AbrVisitor visitor = visitorService.resolveVisitor(token);
+        return success(planService.selectPlan(visitor));
+    }
+
+    /**
+     * 本人的选校单条目（不计算，只列加入时的档位）
      */
     @RateLimiter(key = "app_plan_read:", time = 60, count = 120, limitType = LimitType.IP)
     @GetMapping("/items")

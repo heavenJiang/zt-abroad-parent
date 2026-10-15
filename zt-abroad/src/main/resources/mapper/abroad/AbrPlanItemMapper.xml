@@ -16,18 +16,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="schoolName"    column="school_name"   />
         <result property="programName"   column="program_name"  />
         <result property="country"       column="country"       />
+        <result property="active"        column="active"        />
         <result property="createTime"    column="create_time"   />
         <result property="updateTime"    column="update_time"   />
     </resultMap>
 
     <select id="selectAbrPlanItemsByVisitor" parameterType="Long" resultMap="AbrPlanItemResult">
         select i.plan_item_id, i.visitor_id, i.app_user_id, i.program_id, i.source, i.source_ref, i.tier_snapshot, i.sort_order,
-               s.school_name, p.program_name, s.country, i.create_time, i.update_time
+               s.school_name, p.program_name, s.country, i.create_time, i.update_time,
+               (p.del_flag = '0' and p.status = '0' and s.del_flag = '0' and s.status = '0') as active
         from abr_plan_item i
         join abr_program p on p.program_id = i.program_id
         join abr_school s on s.school_id = p.school_id
         where i.visitor_id = #{visitorId}
-          and p.del_flag = '0' and p.status = '0' and s.del_flag = '0' and s.status = '0'
         order by i.sort_order, i.plan_item_id
     </select>
 
