@@ -23,7 +23,7 @@ import com.ygb.common.core.domain.AjaxResult;
 import com.ygb.common.enums.LimitType;
 
 /**
- * C 端-测评（匿名答题、分步保存、断点续答）
+ * C 端-测评（匿名答题、分步保存、断点续答、报告）
  * 
  * 匿名接口：身份来自请求头 X-Visitor-Token，只能读写本人的测评；按 IP 限流。
  * 
@@ -148,5 +148,17 @@ public class AppAssessmentController extends BaseController
     {
         AbrVisitor visitor = visitorService.resolveVisitor(token);
         return success(assessmentService.submitAssessment(visitor, assessmentId));
+    }
+
+    /**
+     * 取本人测评的报告（结构化部分：定位、画像、冲 / 稳 / 保代表校、短板、补足后可申、数据说明；不含综合分与录取概率）
+     */
+    @RateLimiter(key = "app_assessment_read:", time = 60, count = 120, limitType = LimitType.IP)
+    @GetMapping("/{assessmentId}/report")
+    public AjaxResult report(@RequestHeader(value = IAbrVisitorService.HEADER, required = false) String token,
+            @PathVariable Long assessmentId)
+    {
+        AbrVisitor visitor = visitorService.resolveVisitor(token);
+        return success(assessmentService.selectReport(visitor, assessmentId));
     }
 }

@@ -1,6 +1,8 @@
 package com.ygb.abroad.service.impl;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ygb.abroad.domain.AbrAssessment;
 import com.ygb.abroad.domain.AbrAssessmentResult;
 import com.ygb.abroad.domain.AbrEngineConfig;
+import com.ygb.abroad.domain.AbrProgram;
 import com.ygb.abroad.domain.AbrQuestionnaire;
 import com.ygb.abroad.domain.AbrVisitor;
 import com.ygb.abroad.domain.vo.AppAnswersBody;
@@ -21,9 +24,11 @@ import com.ygb.abroad.domain.vo.AppAssessmentBody;
 import com.ygb.abroad.domain.vo.AppAssessmentVo;
 import com.ygb.abroad.domain.vo.AppDegreeVo;
 import com.ygb.abroad.domain.vo.AppQuestionnaireVo;
+import com.ygb.abroad.domain.vo.AppReportVo;
 import com.ygb.abroad.engine.DegreeStrategy;
 import com.ygb.abroad.mapper.AbrAssessmentMapper;
 import com.ygb.abroad.mapper.AbrEngineConfigMapper;
+import com.ygb.abroad.mapper.AbrProgramMapper;
 import com.ygb.abroad.mapper.AbrQuestionnaireMapper;
 import com.ygb.abroad.service.IAbrAssessmentService;
 import com.ygb.abroad.service.IAbrPolicyService;
@@ -67,6 +72,9 @@ public class AbrAssessmentServiceImpl implements IAbrAssessmentService
     @Autowired
     private IAbrPolicyService policyService;
 
+    @Autowired
+    private AbrProgramMapper programMapper;
+
     /** 落地页显示测评人数的下限（人数少时不显示，避免冷启动期数字难看） */
     @Value("${abroad.app.landing-count-min:100}")
     private long landingCountMin;
@@ -106,6 +114,7 @@ public class AbrAssessmentServiceImpl implements IAbrAssessmentService
         // 同意的必须是当前启用的隐私政策版本（隐私政策更新后旧页面提交会被拒绝，学生需重新阅读）
         policyService.checkConsentVersion(q.policyCode(), body.getPolicyVersion());
         ObjectNode prefill = AbrAssessmentAnswers.prefill(q, AbrAssessmentAnswers.object(visitor.getProfile()));
+        List<String> prefilled = new ArrayList<>(prefill.propertyNames());
         AbrAssessmentAnswers.prefillDegree(q, prefill, degree);
 
         AbrAssessment assessment = new AbrAssessment();
@@ -131,7 +140,9 @@ public class AbrAssessmentServiceImpl implements IAbrAssessmentService
             // 同一请求并发提交：返回先写入的那一条
             return toVo(assessmentMapper.selectAbrAssessmentByRequest(visitor.getVisitorId(), body.getRequestId()));
         }
-        return toVo(assessmentMapper.selectAbrAssessmentById(assessment.getAssessmentId()));
+        AppAssessmentVo vo = toVo(assessmentMapper.selectAbrAssessmentById(assessment.getAssessmentId()));
+        vo.setPrefilled(prefilled);
+        return vo;
     }
 
     @Override
@@ -274,6 +285,30 @@ public class AbrAssessmentServiceImpl implements IAbrAssessmentService
         AppAssessmentVo vo = toVo(assessmentMapper.selectAbrAssessmentById(assessmentId));
         vo.setResultReady(ready);
         return vo;
+    }
+
+    @Override
+    public AppReportVo selectReport(AbrVisitor visitor, Long assessmentId)
+    {
+        AbrAssessment assessment = owned(visitor, assessmentId);
+        if (!AbrAssessment.STATUS_SUBMITTED.equals(assessment.getAssessmentStatus()))
+        {
+            throw new ServiceException("测评尚未提交，提交后才能查看报告");
+        }
+        AbrQuestionnaire questionnaire = questionnaireMapper.selectAbrQuestionnaireById(assessment.getQuestionnaireId());
+        if (questionnaire == null)
+        {
+            throw new ServiceException("问卷不存在");
+        }
+        AbrAssessmentResult result = selectionService.selectAbrAssessmentResult(assessmentId);
+        Map<Long, AbrProgram> programs = new HashMap<>();
+        List<Long> ids = AbrAssessmentReport.programIds(result);
+        if (!ids.isEmpty())
+        {
+            programMapper.selectAbrProgramByIds(ids).forEach(p -> programs.put(p.getProgramId(), p));
+        }
+        return AbrAssessmentReport.build(assessmentId, questionnaire(questionnaire), AbrAssessmentAnswers.object(assessment.getAnswers()),
+                AbrAssessmentAnswers.object(assessment.getFlags()), result, programs, LocalDate.now(AbrLookupTools.BEIJING));
     }
 
     @Override

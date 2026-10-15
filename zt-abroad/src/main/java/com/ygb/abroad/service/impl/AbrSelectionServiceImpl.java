@@ -258,7 +258,7 @@ public class AbrSelectionServiceImpl implements IAbrSelectionService
         return result;
     }
 
-    private static AbrAssessmentResult toResult(Long assessmentId, SelectionEngine.Evaluation evaluation, RecommendationPlanner.Plan plan,
+    static AbrAssessmentResult toResult(Long assessmentId, SelectionEngine.Evaluation evaluation, RecommendationPlanner.Plan plan,
             Map<String, JsonNode> configs, List<String> skipped, Map<Long, AbrProgram> programs)
     {
         // 按分组顺序输出：冲 → 稳 → 保 → 待定档 → 补足后可申 → 不在考虑范围；组内按推荐方案的排序

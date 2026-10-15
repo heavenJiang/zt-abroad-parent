@@ -87,4 +87,12 @@ public interface AbrProgramMapper
      */
     public List<AbrProgram> selectEngineCandidates(@Param("countries") List<String> countries, @Param("degree") String degree,
             @Param("fieldGroup") String fieldGroup);
+
+    /**
+     * 按ID批量查询项目（测评报告取院校、项目名称与核对日期；已删除的不返回）
+     *
+     * @param programIds 项目ID
+     * @return 项目集合
+     */
+    public List<AbrProgram> selectAbrProgramByIds(@Param("programIds") List<Long> programIds);
 }

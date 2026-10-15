@@ -1,6 +1,7 @@
 package com.ygb.abroad.domain.vo;
 
 import java.util.Date;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import tools.jackson.databind.JsonNode;
 
@@ -35,6 +36,9 @@ public class AppAssessmentVo
     /** 选校结果是否已生成（提交后自动计算；目标国家都未开放时为 false） */
     private Boolean resultReady;
 
+    /** 创建时从访客档案（快测等入口工具、上次测评）带入的题目 id（只在创建时返回，前端提示“已带入，可修改”） */
+    private List<String> prefilled;
+
     /** 创建时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createTime;
@@ -42,6 +46,16 @@ public class AppAssessmentVo
     /** 最近保存时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updateTime;
+
+    public List<String> getPrefilled()
+    {
+        return prefilled;
+    }
+
+    public void setPrefilled(List<String> prefilled)
+    {
+        this.prefilled = prefilled;
+    }
 
     public Boolean getResultReady()
     {

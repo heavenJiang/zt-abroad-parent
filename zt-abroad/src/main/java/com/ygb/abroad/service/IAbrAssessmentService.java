@@ -8,6 +8,7 @@ import com.ygb.abroad.domain.vo.AppAssessmentBody;
 import com.ygb.abroad.domain.vo.AppAssessmentVo;
 import com.ygb.abroad.domain.vo.AppDegreeVo;
 import com.ygb.abroad.domain.vo.AppQuestionnaireVo;
+import com.ygb.abroad.domain.vo.AppReportVo;
 
 /**
  * 测评 服务层（C 端：匿名可用、分步保存、断点续答）
@@ -107,6 +108,15 @@ public interface IAbrAssessmentService
      * @return 测评
      */
     public AppAssessmentVo submitAssessment(AbrVisitor visitor, Long assessmentId);
+
+    /**
+     * 取本人测评的报告结构化部分（只含学生可见字段；须已提交）
+     * 
+     * @param visitor 访客
+     * @param assessmentId 测评ID
+     * @return 报告
+     */
+    public AppReportVo selectReport(AbrVisitor visitor, Long assessmentId);
 
     /**
      * 管理端：查询测评列表（不含答案，带背景档案摘要）
