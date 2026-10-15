@@ -63,10 +63,33 @@ public record ProgramFacts(Long programId, String country, String difficulty, St
      * @param workYears 工作年限要求（年）
      * @param acceptCrossMajor 是否接受跨专业（0 不接受 / 1 接受 / 2 未知）
      * @param acceptPreSessional 是否接受语言班（0 不接受 / 1 接受 / 2 未知）
+     * @param gpaNoCutoff 官网明确不设均分线（为 true 时不套用兜底均分）
      */
     public record Requirement(Map<String, BigDecimal> minGpa, Set<String> tiersNotAccepted, BigDecimal ieltsOverall,
             BigDecimal ieltsMinSub, String testRequirement, JsonNode otherLanguage, String prerequisites, boolean prerequisitesRequired, Integer workYears,
-            String acceptCrossMajor, String acceptPreSessional)
+            String acceptCrossMajor, String acceptPreSessional, boolean gpaNoCutoff)
     {
+        /**
+         * 未注明是否设均分线的申请要求
+         *
+         * @param minGpa 本科层次 → 最低百分制均分
+         * @param tiersNotAccepted 不接受的本科层次
+         * @param ieltsOverall 雅思总分要求
+         * @param ieltsMinSub 雅思最低小分要求
+         * @param testRequirement 标化要求
+         * @param otherLanguage 其他语言要求
+         * @param prerequisites 先修课要求
+         * @param prerequisitesRequired 先修课是否硬性要求
+         * @param workYears 工作年限要求
+         * @param acceptCrossMajor 是否接受跨专业
+         * @param acceptPreSessional 是否接受语言班
+         */
+        public Requirement(Map<String, BigDecimal> minGpa, Set<String> tiersNotAccepted, BigDecimal ieltsOverall, BigDecimal ieltsMinSub,
+                String testRequirement, JsonNode otherLanguage, String prerequisites, boolean prerequisitesRequired, Integer workYears,
+                String acceptCrossMajor, String acceptPreSessional)
+        {
+            this(minGpa, tiersNotAccepted, ieltsOverall, ieltsMinSub, testRequirement, otherLanguage, prerequisites, prerequisitesRequired,
+                    workYears, acceptCrossMajor, acceptPreSessional, false);
+        }
     }
 }

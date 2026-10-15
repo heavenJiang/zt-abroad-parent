@@ -59,6 +59,7 @@ public class AbrProgramServiceImpl implements IAbrProgramService
         SOURCE_FIELDS.put("workYears", AbrRequirement::getWorkYears);
         SOURCE_FIELDS.put("acceptCrossMajor", AbrRequirement::getAcceptCrossMajor);
         SOURCE_FIELDS.put("acceptPreSessional", AbrRequirement::getAcceptPreSessional);
+        SOURCE_FIELDS.put("gpaNoCutoff", r -> "Y".equals(r.getGpaNoCutoff()) ? "Y" : null);
         SOURCE_FIELDS.put("deadlines", AbrRequirement::getDeadlines);
     }
 
@@ -265,6 +266,10 @@ public class AbrProgramServiceImpl implements IAbrProgramService
         requirement.setTestDetail(AbrJsonFields.requireObject(requirement.getTestDetail(), "标化分数要求"));
         requirement.setDeadlines(AbrJsonFields.requireObject(requirement.getDeadlines(), "截止日"));
         checkTiers(requirement.getTiersNotAccepted());
+        if ("Y".equals(requirement.getGpaNoCutoff()) && requirement.getMinGpa() != null)
+        {
+            throw new ServiceException("已选“官网不设均分线”，请清空各层次的最低均分");
+        }
         BigDecimal overall = requirement.getIeltsOverall();
         BigDecimal minSub = requirement.getIeltsMinSub();
         if (overall != null && minSub != null && minSub.compareTo(overall) > 0)

@@ -111,6 +111,9 @@ class AbrEngineCaseBenchTest
                 + "\nT-1,UK,master,business,D2,211,same,3.6,4,ielts,保,6.5,,86,6.5,,,\n", null);
         assertEquals(List.of(), filled.errors());
         assertEquals(List.of(List.of("a", "b,\"c\""), List.of("d", "")), AbrEngineCaseCsv.records("a,\"b,\"\"c\"\"\"\nd,\n"));
+        // req_min_gpa = none：官网不设均分线
+        AbrEngineCaseCsv.Parsed none = AbrEngineCaseCsv.parse(header + ",req_min_gpa\nT-1,UK,master,business,D2,211,same,85,100,ielts,保,6.5,,,,,,none\n", rules());
+        assertTrue(none.cases().get(0).program().requirement().gpaNoCutoff());
     }
 
     /** 报告打印到测试输出，便于在 CI 日志中查看 */

@@ -152,7 +152,7 @@ P     = 1 / (1 + exp(-a × (C − T_eff)))
 
 硬门槛由 `com.ygb.abroad.engine.HardThresholdChecker` 实现，输入为背景档案、项目事实 `engine.ProgramFacts`（由 `service.impl.AbrEngineInputs` 从 `abr_program` + 当季 `abr_requirement` 组装）和该项目所在国家的配置根节点。
 
-- **取值按项**：项目库某一项有值时只用项目库；该项为空（或 `min_gpa` 里没有学生所在层次）时，才用本文件按难度档的兜底值，并打 `requirement_unverified`（要求待核实）。项目未定难度档、又没有项目库要求时，该项记为“未判定”，打 `requirement_missing`。
+- **取值按项**：项目库某一项有值时只用项目库；该项为空（或 `min_gpa` 里没有学生所在层次）时，才用本文件按难度档的兜底值，并打 `requirement_unverified`（要求待核实）。项目库标了“官网不设均分线”（`gpa_no_cutoff = Y`，M3-08 测试台发现后补充）时，均分不套兜底，直接记达标。项目未定难度档、又没有项目库要求时，该项记为“未判定”，打 `requirement_missing`。
 - **结果**：`pass`（进入综合分与分档）、`on_fail` 的值（`needs_improvement`，补足后可申）、`excluded`（不在学生考虑范围：日本 / 韩国项目为日语 / 韩语授课，而学生选了“只考虑英语授课”）。`missing` 列出不达标的检查项，即“缺什么”。
 - **检查项**：
 

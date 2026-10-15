@@ -67,6 +67,9 @@ public class AbrRequirement extends BaseEntity
     /** 是否接受语言班（0不接受 1接受 2未知） */
     private String acceptPreSessional;
 
+    /** 官网不设均分线（Y是 N否） */
+    private String gpaNoCutoff;
+
     /** 截止日（JSON 对象） */
     private String deadlines;
 
@@ -238,6 +241,16 @@ public class AbrRequirement extends BaseEntity
         return acceptPreSessional;
     }
 
+    public void setGpaNoCutoff(String gpaNoCutoff)
+    {
+        this.gpaNoCutoff = gpaNoCutoff;
+    }
+
+    public String getGpaNoCutoff()
+    {
+        return gpaNoCutoff;
+    }
+
     public void setDeadlines(String deadlines)
     {
         this.deadlines = deadlines;
@@ -297,6 +310,7 @@ public class AbrRequirement extends BaseEntity
             .append("workYears", getWorkYears())
             .append("acceptCrossMajor", getAcceptCrossMajor())
             .append("acceptPreSessional", getAcceptPreSessional())
+            .append("gpaNoCutoff", getGpaNoCutoff())
             .append("deadlines", getDeadlines())
             .append("status", getStatus())
             .append("delFlag", getDelFlag())

@@ -480,6 +480,13 @@ public final class HardThresholdChecker
 
             BigDecimal min = null;
             String source = SOURCE_NONE;
+            String actualGpa = p.getGpaPercent() == null ? "未填写" : plain(p.getGpaPercent());
+            if (req != null && req.gpaNoCutoff() && (req.minGpa() == null || req.minGpa().get(tier) == null))
+            {
+                // 官网明确不设均分线：不套兜底均分
+                add("gpa", MET, "官网不设均分线", actualGpa, SOURCE_PROGRAM);
+                return;
+            }
             if (req != null && req.minGpa() != null && req.minGpa().get(tier) != null)
             {
                 min = req.minGpa().get(tier);
@@ -495,7 +502,7 @@ public final class HardThresholdChecker
                     usedDefault();
                 }
             }
-            String actual = p.getGpaPercent() == null ? "未填写" : plain(p.getGpaPercent());
+            String actual = actualGpa;
             if (min == null)
             {
                 flags.add("requirement_missing");

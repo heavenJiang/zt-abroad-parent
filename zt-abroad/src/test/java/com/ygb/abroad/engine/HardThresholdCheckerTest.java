@@ -204,6 +204,28 @@ class HardThresholdCheckerTest
     }
 
     @Test
+    void officialNoGpaCutoffSkipsFallback()
+    {
+        // 港大 MFin 一类：官网不设均分线，不套兜底均分（香港 D1 兜底 211 要求较高）
+        ProgramFacts.Requirement none = new ProgramFacts.Requirement(Map.of(), Set.of(), new BigDecimal("6.0"), new BigDecimal("5.5"), null, null,
+                null, false, null, "2", "2", true);
+        JsonNode hk = EngineSeeds.config("hk_master.json");
+        BackgroundProfile p = student();
+        p.setGpaPercent(new BigDecimal("70"));
+        Result r = HardThresholdChecker.check(p, program("HK", "D1", "en", false, none), hk);
+        assertEquals(new Item("gpa", "met", "官网不设均分线", "70", "program"), item(r, "gpa"));
+        assertEquals(HardThresholdChecker.PASS, r.status());
+        assertFalse(r.flags().contains("requirement_unverified"));
+        // 未注明：仍按难度档兜底
+        Result fallback = HardThresholdChecker.check(p, program("HK", "D1", "en", false, emptyReq()), hk);
+        assertEquals("not_met", outcome(fallback, "gpa"));
+        // 不设线但仍有不接收层次时照样检查层次
+        ProgramFacts.Requirement noneButTiers = new ProgramFacts.Requirement(Map.of(), Set.of("211"), null, null, null, null, null, false, null,
+                "2", "2", true);
+        assertEquals("not_met", outcome(HardThresholdChecker.check(p, program("HK", "D1", "en", false, noneButTiers), hk), "tier_accepted"));
+    }
+
+    @Test
     void tierNotAcceptedAndUnknownTier()
     {
         BackgroundProfile p = student();

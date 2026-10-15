@@ -161,13 +161,14 @@ final class AbrEngineCaseCsv
         p.setTopikLevel(blankToNull(r.get("topik_level")));
 
         ProgramFacts.Requirement req = null;
-        BigDecimal minGpa = decimal(r, "req_min_gpa");
+        boolean noCutoff = "none".equals(r.getOrDefault("req_min_gpa", ""));
+        BigDecimal minGpa = noCutoff ? null : decimal(r, "req_min_gpa");
         BigDecimal ieltsOverall = decimal(r, "req_ielts_overall");
         BigDecimal ieltsSub = decimal(r, "req_ielts_min_sub");
-        if (minGpa != null || ieltsOverall != null || ieltsSub != null)
+        if (noCutoff || minGpa != null || ieltsOverall != null || ieltsSub != null)
         {
             Map<String, BigDecimal> gpa = minGpa == null ? Map.of() : Map.of(tier, minGpa);
-            req = new ProgramFacts.Requirement(gpa, Set.of(), ieltsOverall, ieltsSub, null, null, null, false, null, "2", "2");
+            req = new ProgramFacts.Requirement(gpa, Set.of(), ieltsOverall, ieltsSub, null, null, null, false, null, "2", "2", noCutoff);
         }
         String lang = blankToNull(r.get("teaching_language"));
         ProgramFacts program = new ProgramFacts(rowNo, r.get("country"), r.get("program_difficulty"), lang == null ? "en" : lang, false, req);

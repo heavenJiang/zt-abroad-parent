@@ -46,6 +46,7 @@ class AbrEngineInputsTest
         r.setAcceptCrossMajor("0");
         r.setTestRequirement("none");
         r.setAcceptPreSessional("1");
+        r.setGpaNoCutoff("Y");
 
         ProgramFacts f = AbrEngineInputs.programFacts(program(), r);
         assertEquals(9L, f.programId());
@@ -63,6 +64,7 @@ class AbrEngineInputsTest
         assertEquals("0", q.acceptCrossMajor());
         assertEquals("none", q.testRequirement());
         assertEquals("1", q.acceptPreSessional());
+        assertTrue(q.gpaNoCutoff());
     }
 
     @Test
