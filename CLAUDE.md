@@ -18,7 +18,7 @@
 - 修改既有文件时匹配周边代码风格（大括号另起一行、中文 Javadoc、`@Autowired` 字段注入）。
 - `*.bat` 文件保持 GBK + CRLF，编辑时按字节处理（如 `LC_ALL=C sed`），不要用会转码的工具重写。
 - `@author ruoyi`、README 中的上游署名保留不改。
-- 前端分两端：**管理后台**为同级目录 `../zt-abroad-vue`（Vue3 + Vite + Element Plus，只给工作室员工），开发代理 `/dev-api` → `http://localhost:8090`，规范见 `../zt-abroad-vue/doc/前端开发规范.md`；**C 端**（学生、家长）为独立工程 `../zt-abroad-uniapp`（uni-app，先 H5 后小程序，M1-06 新建）；公开项目页由后端生成静态 HTML。端划分见 `doc/研发/04-模块拆分.md`「端划分」。
+- 前端分两端：**管理后台**为同级目录 `../zt-abroad-vue`（Vue3 + Vite + Element Plus，只给工作室员工），开发代理 `/dev-api` → `http://localhost:8090`，规范见 `../zt-abroad-vue/doc/前端开发规范.md`；**C 端**（学生、家长）为独立工程 `../zt-abroad-uniapp`（uni-app，先 H5 后小程序，M1-06 已建，规范见其 `doc/前端开发规范.md`）；公开项目页由后端生成静态 HTML。端划分见 `doc/研发/04-模块拆分.md`「端划分」。
 
 ## 构建与验证
 
