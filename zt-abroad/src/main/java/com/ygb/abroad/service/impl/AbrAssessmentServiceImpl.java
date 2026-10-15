@@ -1,10 +1,13 @@
 package com.ygb.abroad.service.impl;
 
+import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,13 +26,17 @@ import com.ygb.abroad.domain.vo.AppAnswersBody;
 import com.ygb.abroad.domain.vo.AppAssessmentBody;
 import com.ygb.abroad.domain.vo.AppAssessmentVo;
 import com.ygb.abroad.domain.vo.AppDegreeVo;
+import com.ygb.abroad.domain.vo.AppPosterBody;
 import com.ygb.abroad.domain.vo.AppQuestionnaireVo;
 import com.ygb.abroad.domain.vo.AppReportVo;
 import com.ygb.abroad.engine.DegreeStrategy;
+import com.ygb.abroad.growth.card.Card;
+import com.ygb.abroad.growth.card.CardRenderer;
 import com.ygb.abroad.mapper.AbrAssessmentMapper;
 import com.ygb.abroad.mapper.AbrEngineConfigMapper;
 import com.ygb.abroad.mapper.AbrProgramMapper;
 import com.ygb.abroad.mapper.AbrQuestionnaireMapper;
+import com.ygb.abroad.mapper.AbrShareMapper;
 import com.ygb.abroad.service.IAbrAssessmentService;
 import com.ygb.abroad.service.IAbrPolicyService;
 import com.ygb.abroad.service.IAbrReportExplanationService;
@@ -79,6 +86,31 @@ public class AbrAssessmentServiceImpl implements IAbrAssessmentService
 
     @Autowired
     private IAbrReportExplanationService explanationService;
+
+    /** 分享码字符（去掉易混的 0 O 1 l I） */
+    private static final String SHARE_CODE_CHARS = "23456789abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
+
+    /** 分享码长度 */
+    private static final int SHARE_CODE_LENGTH = 10;
+
+    private static final SecureRandom RANDOM = new SecureRandom();
+
+    @Autowired
+    private AbrShareMapper shareMapper;
+
+    /** C 端地址（分享海报二维码） */
+    @Value("${abroad.app.url:http://localhost:5173/}")
+    private String appUrl;
+
+    /** 品牌名（分享海报顶部） */
+    @Value("${abroad.app.brand-name:留学工作室}")
+    private String brandName;
+
+    /** 图卡字体族 */
+    @Value("${abroad.card.font-family:}")
+    private String cardFontFamily;
+
+    private volatile CardRenderer renderer;
 
     /** 落地页显示测评人数的下限（人数少时不显示，避免冷启动期数字难看） */
     @Value("${abroad.app.landing-count-min:100}")
@@ -307,6 +339,53 @@ public class AbrAssessmentServiceImpl implements IAbrAssessmentService
     @Override
     public AppReportVo selectReport(AbrVisitor visitor, Long assessmentId)
     {
+        ReportContext ctx = reportContext(visitor, assessmentId);
+        return explanationService.explain(ctx.report(), ctx.degreeLabel(), ctx.fieldLabel());
+    }
+
+    @Override
+    public byte[] renderPoster(AbrVisitor visitor, Long assessmentId, AppPosterBody body)
+    {
+        ReportContext ctx = reportContext(visitor, assessmentId);
+        if (!AbrAssessmentReport.MODE_FULL.equals(ctx.report().mode()))
+        {
+            throw new ServiceException("选校结果还没有生成，暂不能生成分享图");
+        }
+        boolean minor = ctx.flags().path("is_minor").asBoolean(false);
+        boolean showSchool = !minor && body.isShowSchool();
+        boolean showGpa = !minor && body.isShowGpa();
+        String options = "{\"showSchool\":" + showSchool + ",\"showGpa\":" + showGpa + "}";
+        String shareCode;
+        try
+        {
+            shareCode = shareMapper.upsertAbrShare(AbrReportPoster.KIND, visitor.getVisitorId(), assessmentId, newShareCode(), options);
+        }
+        catch (DuplicateKeyException e)
+        {
+            // 随机分享码与已有记录相同（极少见）：换一个再试
+            shareCode = shareMapper.upsertAbrShare(AbrReportPoster.KIND, visitor.getVisitorId(), assessmentId, newShareCode(), options);
+        }
+        Set<String> skipped = new HashSet<>();
+        ctx.report().skippedCountries().forEach(c -> skipped.add(c.country()));
+        List<String> countries = new ArrayList<>();
+        for (JsonNode c : ctx.answers().path("target_countries"))
+        {
+            if (!skipped.contains(c.asString("")))
+            {
+                countries.add(countryLabel(ctx.q(), c.asString("")));
+            }
+        }
+        String qrUrl = appUrl + (appUrl.contains("?") ? "&" : "?") + "ch=share&ct=" + shareCode;
+        Card card = AbrReportPoster.card(ctx.report(), ctx.answers(), minor, showSchool, showGpa, countries, ctx.fieldLabel(), ctx.degreeLabel(),
+                brandName, qrUrl);
+        return cardRenderer().png(card);
+    }
+
+    /**
+     * 报告与组装所需的上下文（本人、已提交）
+     */
+    private ReportContext reportContext(AbrVisitor visitor, Long assessmentId)
+    {
         AbrAssessment assessment = owned(visitor, assessmentId);
         if (!AbrAssessment.STATUS_SUBMITTED.equals(assessment.getAssessmentStatus()))
         {
@@ -326,10 +405,60 @@ public class AbrAssessmentServiceImpl implements IAbrAssessmentService
         }
         AbrAssessmentAnswers.Questionnaire q = questionnaire(questionnaire);
         ObjectNode answers = AbrAssessmentAnswers.object(assessment.getAnswers());
-        AppReportVo report = AbrAssessmentReport.build(assessmentId, q, answers, AbrAssessmentAnswers.object(assessment.getFlags()), result, programs,
-                LocalDate.now(AbrLookupTools.BEIJING));
+        ObjectNode flags = AbrAssessmentAnswers.object(assessment.getFlags());
+        AppReportVo report = AbrAssessmentReport.build(assessmentId, q, answers, flags, result, programs, LocalDate.now(AbrLookupTools.BEIJING));
         String degreeLabel = StringUtils.defaultIfBlank(DictUtils.getDictLabel("abr_degree", assessment.getDegree()), assessment.getDegree());
-        return explanationService.explain(report, degreeLabel, optionLabel(q, "target_field", answers.path("target_field").asString("")));
+        return new ReportContext(report, q, answers, flags, degreeLabel, optionLabel(q, "target_field", answers.path("target_field").asString("")));
+    }
+
+    /**
+     * 报告上下文
+     */
+    private record ReportContext(AppReportVo report, AbrAssessmentAnswers.Questionnaire q, ObjectNode answers, ObjectNode flags,
+            String degreeLabel, String fieldLabel)
+    {
+    }
+
+    /**
+     * 国家 / 地区名称（问卷顶层 countries）
+     */
+    private static String countryLabel(AbrAssessmentAnswers.Questionnaire q, String country)
+    {
+        for (JsonNode c : q.root().path("countries"))
+        {
+            if (country.equals(c.path("value").asString()))
+            {
+                return c.path("label").asString(country);
+            }
+        }
+        return country;
+    }
+
+    /**
+     * 新分享码：10 位随机字母数字
+     */
+    private static String newShareCode()
+    {
+        StringBuilder sb = new StringBuilder(SHARE_CODE_LENGTH);
+        for (int i = 0; i < SHARE_CODE_LENGTH; i++)
+        {
+            sb.append(SHARE_CODE_CHARS.charAt(RANDOM.nextInt(SHARE_CODE_CHARS.length())));
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 图卡渲染器（首次使用时选字体）
+     */
+    private CardRenderer cardRenderer()
+    {
+        CardRenderer r = renderer;
+        if (r == null)
+        {
+            r = new CardRenderer(cardFontFamily);
+            renderer = r;
+        }
+        return r;
     }
 
     /**

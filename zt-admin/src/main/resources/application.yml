@@ -153,6 +153,13 @@ abroad:
   app:
     # 落地页显示“已有 N 人完成测评”的人数下限：少于此数不显示（只显示真实人数）
     landing-count-min: 100
+    # C 端地址（分享海报二维码指向这里，带 ch=share&ct=分享码）；生产由环境变量 ABR_APP_URL 注入
+    url: ${ABR_APP_URL:http://localhost:5173/}
+    # 品牌名（分享海报顶部）
+    brand-name: ${ABR_BRAND_NAME:留学工作室}
+  card:
+    # 图卡字体族（为空时自动选第一个能显示中文的字体；Docker 镜像已安装文泉驿微米黑）
+    font-family: ""
   ai:
     filter:
       # 单个字符串字段最大长度，超过视为整篇文书并拦截

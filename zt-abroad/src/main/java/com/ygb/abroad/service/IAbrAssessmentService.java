@@ -7,6 +7,7 @@ import com.ygb.abroad.domain.vo.AppAnswersBody;
 import com.ygb.abroad.domain.vo.AppAssessmentBody;
 import com.ygb.abroad.domain.vo.AppAssessmentVo;
 import com.ygb.abroad.domain.vo.AppDegreeVo;
+import com.ygb.abroad.domain.vo.AppPosterBody;
 import com.ygb.abroad.domain.vo.AppQuestionnaireVo;
 import com.ygb.abroad.domain.vo.AppReportVo;
 
@@ -117,6 +118,16 @@ public interface IAbrAssessmentService
      * @return 报告
      */
     public AppReportVo selectReport(AbrVisitor visitor, Long assessmentId);
+
+    /**
+     * 生成本人测评的定位海报（PNG；默认只含档位与校名，带分享码二维码）
+     * 
+     * @param visitor 访客
+     * @param assessmentId 测评ID
+     * @param body 显示项（未成年人勾选无效）
+     * @return PNG 字节
+     */
+    public byte[] renderPoster(AbrVisitor visitor, Long assessmentId, AppPosterBody body);
 
     /**
      * 管理端：查询测评列表（不含答案，带背景档案摘要）

@@ -23,6 +23,12 @@
             <artifactId>zt-common</artifactId>
         </dependency>
 
+        <!-- 二维码（分享海报、图卡） -->
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>core</artifactId>
+        </dependency>
+
         <!-- 单元测试 -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>

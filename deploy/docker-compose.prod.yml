@@ -64,6 +64,8 @@ services:
       SPRINGDOC_API_DOCS_ENABLED: "false"
       SPRINGDOC_SWAGGER_UI_ENABLED: "false"
       ZT_PROFILE: /home/zt/uploadPath
+      ABR_APP_URL: https://${APP_DOMAIN}/
+      ABR_BRAND_NAME: ${BRAND_NAME:-留学工作室}
       TZ: Asia/Shanghai
     volumes:
       - abr-upload:/home/zt

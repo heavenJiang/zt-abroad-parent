@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrShareMapper">
+
+    <select id="upsertAbrShare" resultType="String" flushCache="true">
+        insert into abr_share (share_code, kind, visitor_id, ref_id, options, render_count, create_time, update_time)
+        values (#{shareCode}, #{kind}, #{visitorId}, #{refId}, cast(#{options} as jsonb), 1, now(), now())
+        on conflict (kind, visitor_id, ref_id)
+        do update set options      = excluded.options,
+                      render_count = abr_share.render_count + 1,
+                      update_time  = now()
+        returning share_code
+    </select>
+
+</mapper>

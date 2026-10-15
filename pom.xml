@@ -32,6 +32,7 @@
         <jaxb-api.version>2.3.1</jaxb-api.version>
         <springdoc.version>3.1.0</springdoc.version>
         <jacoco.version>0.8.13</jacoco.version>
+        <zxing.version>3.5.3</zxing.version>
     </properties>
 
     <!-- 依赖声明 -->
@@ -134,6 +135,13 @@
                 <groupId>pro.fessional</groupId>
                 <artifactId>kaptcha</artifactId>
                 <version>${kaptcha.version}</version>
+            </dependency>
+
+            <!-- 二维码（分享海报、图卡） -->
+            <dependency>
+                <groupId>com.google.zxing</groupId>
+                <artifactId>core</artifactId>
+                <version>${zxing.version}</version>
             </dependency>
 
             <!-- 定时任务-->

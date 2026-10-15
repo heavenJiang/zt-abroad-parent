@@ -1,6 +1,9 @@
 package com.ygb.web.controller.app;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ygb.abroad.domain.AbrVisitor;
 import com.ygb.abroad.domain.vo.AppAnswersBody;
 import com.ygb.abroad.domain.vo.AppAssessmentBody;
+import com.ygb.abroad.domain.vo.AppPosterBody;
 import com.ygb.abroad.service.IAbrAssessmentService;
 import com.ygb.abroad.service.IAbrVisitorService;
 import com.ygb.common.annotation.Anonymous;
@@ -23,7 +27,7 @@ import com.ygb.common.core.domain.AjaxResult;
 import com.ygb.common.enums.LimitType;
 
 /**
- * C 端-测评（匿名答题、分步保存、断点续答、报告）
+ * C 端-测评（匿名答题、分步保存、断点续答、报告、分享海报）
  * 
  * 匿名接口：身份来自请求头 X-Visitor-Token，只能读写本人的测评；按 IP 限流。
  * 
@@ -160,5 +164,18 @@ public class AppAssessmentController extends BaseController
     {
         AbrVisitor visitor = visitorService.resolveVisitor(token);
         return success(assessmentService.selectReport(visitor, assessmentId));
+    }
+
+    /**
+     * 生成本人测评的定位海报（PNG；默认只显示档位和校名，勾选后才显示本科学校、均分，未成年人勾选无效）
+     */
+    @RateLimiter(key = "app_assessment_poster:", time = 60, count = 20, limitType = LimitType.IP)
+    @PostMapping("/{assessmentId}/share-image")
+    public ResponseEntity<byte[]> shareImage(@RequestHeader(value = IAbrVisitorService.HEADER, required = false) String token,
+            @PathVariable Long assessmentId, @RequestBody(required = false) AppPosterBody body)
+    {
+        AbrVisitor visitor = visitorService.resolveVisitor(token);
+        byte[] png = assessmentService.renderPoster(visitor, assessmentId, body == null ? new AppPosterBody() : body);
+        return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).cacheControl(CacheControl.noStore()).body(png);
     }
 }
