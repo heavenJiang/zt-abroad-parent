@@ -1,7 +1,9 @@
 package com.ygb.abroad.service;
 
 import java.util.List;
+import java.util.Map;
 import com.ygb.abroad.domain.AbrVisitor;
+import com.ygb.abroad.domain.vo.AppCalendarVo;
 import com.ygb.abroad.domain.vo.AppPlanItemBody;
 import com.ygb.abroad.domain.vo.AppPlanItemVo;
 import com.ygb.abroad.domain.vo.AppPlanVo;
@@ -49,4 +51,28 @@ public interface IAbrPlanService
      * @return 选校单
      */
     public AppPlanVo selectPlan(AbrVisitor visitor);
+
+    /**
+     * 本人的申请日历：选校单中正常项目的申请轮次与截止日
+     * 
+     * @param visitor 访客
+     * @return 日历
+     */
+    public AppCalendarVo selectCalendar(AbrVisitor visitor);
+
+    /**
+     * 生成日历文件的一次性下载链接（10 分钟内有效；手机日历打开链接时无法带访客令牌请求头）
+     * 
+     * @param visitor 访客
+     * @return path 下载路径、expiresInSeconds 有效秒数
+     */
+    public Map<String, Object> createCalendarLink(AbrVisitor visitor);
+
+    /**
+     * 按下载链接生成日历文件
+     * 
+     * @param key 下载链接中的 key
+     * @return iCalendar 文本
+     */
+    public String renderCalendarIcs(String key);
 }

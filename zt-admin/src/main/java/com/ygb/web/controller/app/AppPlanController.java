@@ -1,6 +1,12 @@
 package com.ygb.web.controller.app;
 
+import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.ygb.abroad.domain.AbrVisitor;
 import com.ygb.abroad.domain.vo.AppPlanItemBody;
@@ -21,7 +28,7 @@ import com.ygb.common.core.domain.AjaxResult;
 import com.ygb.common.enums.LimitType;
 
 /**
- * C 端-我的选校单（匿名按访客保存，M4-04 登录后同步到学生账号）
+ * C 端-我的选校单与申请日历（匿名按访客保存，M4-04 登录后同步到学生账号）
  * 
  * @author ygb
  */
@@ -80,5 +87,42 @@ public class AppPlanController extends BaseController
     {
         AbrVisitor visitor = visitorService.resolveVisitor(token);
         return success(planService.removePlanItem(visitor, programId));
+    }
+
+    /**
+     * 本人的申请日历（选校单项目的轮次与截止日）
+     */
+    @RateLimiter(key = "app_plan_read:", time = 60, count = 120, limitType = LimitType.IP)
+    @GetMapping("/calendar")
+    public AjaxResult calendar(@RequestHeader(value = IAbrVisitorService.HEADER, required = false) String token)
+    {
+        AbrVisitor visitor = visitorService.resolveVisitor(token);
+        return success(planService.selectCalendar(visitor));
+    }
+
+    /**
+     * 生成日历文件的一次性下载链接（10 分钟内有效）
+     */
+    @RateLimiter(key = "app_plan_write:", time = 60, count = 60, limitType = LimitType.IP)
+    @PostMapping("/calendar/link")
+    public AjaxResult calendarLink(@RequestHeader(value = IAbrVisitorService.HEADER, required = false) String token)
+    {
+        AbrVisitor visitor = visitorService.resolveVisitor(token);
+        return success(planService.createCalendarLink(visitor));
+    }
+
+    /**
+     * 下载日历文件（凭一次性下载链接，不需要访客令牌；手机日历可直接导入）
+     */
+    @RateLimiter(key = "app_plan_ics:", time = 60, count = 30, limitType = LimitType.IP)
+    @GetMapping("/calendar.ics")
+    public ResponseEntity<byte[]> calendarIcs(@RequestParam(value = "key", required = false) String key)
+    {
+        byte[] body = planService.renderCalendarIcs(key).getBytes(StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .contentType(new MediaType("text", "calendar", StandardCharsets.UTF_8))
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline().filename("application-deadlines.ics").build().toString())
+                .cacheControl(CacheControl.noStore())
+                .body(body);
     }
 }

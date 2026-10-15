@@ -1,20 +1,28 @@
 package com.ygb.abroad.service.impl;
 
+import java.net.URI;
+import java.security.SecureRandom;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
+import java.util.Base64;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import com.ygb.abroad.domain.AbrAssessment;
 import com.ygb.abroad.domain.AbrAssessmentResult;
 import com.ygb.abroad.domain.AbrPlanItem;
 import com.ygb.abroad.domain.AbrProgram;
 import com.ygb.abroad.domain.AbrQuestionnaire;
+import com.ygb.abroad.domain.AbrRequirement;
 import com.ygb.abroad.domain.AbrToolRun;
 import com.ygb.abroad.domain.AbrVisitor;
+import com.ygb.abroad.domain.vo.AppCalendarVo;
 import com.ygb.abroad.domain.vo.AppPlanItemBody;
 import com.ygb.abroad.domain.vo.AppPlanItemVo;
 import com.ygb.abroad.domain.vo.AppPlanVo;
@@ -25,10 +33,12 @@ import com.ygb.abroad.mapper.AbrAssessmentMapper;
 import com.ygb.abroad.mapper.AbrPlanItemMapper;
 import com.ygb.abroad.mapper.AbrProgramMapper;
 import com.ygb.abroad.mapper.AbrQuestionnaireMapper;
+import com.ygb.abroad.mapper.AbrRequirementMapper;
 import com.ygb.abroad.mapper.AbrToolRunMapper;
 import com.ygb.abroad.service.IAbrPlanService;
 import com.ygb.abroad.service.IAbrProfileService;
 import com.ygb.abroad.service.IAbrSelectionService;
+import com.ygb.common.core.redis.RedisCache;
 import com.ygb.common.exception.ServiceException;
 import com.ygb.common.utils.DictUtils;
 import com.ygb.common.utils.StringUtils;
@@ -61,6 +71,14 @@ public class AbrPlanServiceImpl implements IAbrPlanService
     /** 来源：报告推荐 */
     static final String SOURCE_ASSESSMENT = "assessment";
 
+    /** 日历下载链接的缓存键前缀（值为访客ID） */
+    static final String CALENDAR_KEY = "abroad:plan:ics:";
+
+    /** 日历下载链接有效分钟数 */
+    static final int CALENDAR_LINK_MINUTES = 10;
+
+    private static final SecureRandom RANDOM = new SecureRandom();
+
     /** 目标学位题 */
     private static final String TARGET_DEGREE = "target_degree";
 
@@ -90,6 +108,16 @@ public class AbrPlanServiceImpl implements IAbrPlanService
 
     @Autowired
     private IAbrSelectionService selectionService;
+
+    @Autowired
+    private AbrRequirementMapper requirementMapper;
+
+    @Autowired
+    private RedisCache redisCache;
+
+    /** C 端地址（日历事件 UID 的域名部分取其主机名） */
+    @Value("${abroad.app.url:http://localhost:5173/}")
+    private String appUrl;
 
     @Override
     public List<AppPlanItemVo> selectPlanItems(AbrVisitor visitor)
@@ -183,6 +211,59 @@ public class AbrPlanServiceImpl implements IAbrPlanService
         return AbrPlanView.build(basis, items, programs, run,
                 c -> labels.computeIfAbsent(c, k -> StringUtils.defaultIfBlank(DictUtils.getDictLabel("abr_country", k), k)),
                 AbrPlanView.BASIS_NONE.equals(basis) ? missing : List.of(), LocalDate.now(AbrLookupTools.BEIJING));
+    }
+
+    @Override
+    public AppCalendarVo selectCalendar(AbrVisitor visitor)
+    {
+        return calendar(visitor.getVisitorId());
+    }
+
+    @Override
+    public Map<String, Object> createCalendarLink(AbrVisitor visitor)
+    {
+        byte[] bytes = new byte[24];
+        RANDOM.nextBytes(bytes);
+        String key = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        redisCache.setCacheObject(CALENDAR_KEY + key, String.valueOf(visitor.getVisitorId()), CALENDAR_LINK_MINUTES, TimeUnit.MINUTES);
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("path", "/app/plan/calendar.ics?key=" + key);
+        data.put("expiresInSeconds", CALENDAR_LINK_MINUTES * 60);
+        return data;
+    }
+
+    @Override
+    public String renderCalendarIcs(String key)
+    {
+        String visitorId = key == null || !key.matches("^[A-Za-z0-9_-]{32}$") ? null : redisCache.getCacheObject(CALENDAR_KEY + key);
+        if (visitorId == null)
+        {
+            throw new ServiceException("下载链接已失效，请回到申请日历重新导出");
+        }
+        String host = URI.create(appUrl).getHost();
+        return AbrPlanCalendar.ics(calendar(Long.valueOf(visitorId)), ZonedDateTime.now(AbrLookupTools.BEIJING),
+                StringUtils.defaultIfBlank(host, "localhost"));
+    }
+
+    /**
+     * 汇总某访客选校单的申请日历
+     */
+    private AppCalendarVo calendar(Long visitorId)
+    {
+        List<AbrPlanItem> items = planItemMapper.selectAbrPlanItemsByVisitor(visitorId).stream().filter(i -> Boolean.TRUE.equals(i.getActive()))
+                .toList();
+        List<Long> ids = items.stream().map(AbrPlanItem::getProgramId).toList();
+        Map<Long, AbrProgram> programs = new HashMap<>();
+        Map<Long, AbrRequirement> requirements = new HashMap<>();
+        if (!ids.isEmpty())
+        {
+            programMapper.selectAbrProgramByIds(ids).forEach(x -> programs.put(x.getProgramId(), x));
+            requirementMapper.selectLatestAbrRequirementByProgramIds(ids).forEach(r -> requirements.put(r.getProgramId(), r));
+        }
+        Map<String, String> labels = new LinkedHashMap<>();
+        return AbrPlanCalendar.build(items, programs, requirements,
+                c -> labels.computeIfAbsent(c, k -> StringUtils.defaultIfBlank(DictUtils.getDictLabel("abr_country", k), k)),
+                LocalDate.now(AbrLookupTools.BEIJING));
     }
 
     /**
