@@ -185,6 +185,7 @@ from (values
   ('配置导入',     2, 'abroad:engine:import',     'abroad:engine:list'),
   ('配置启用',     3, 'abroad:engine:activate',   'abroad:engine:list'),
   ('配置删除',     4, 'abroad:engine:remove',     'abroad:engine:list'),
+  ('引擎测试台',   5, 'abroad:engine:bench',      'abroad:engine:list'),
   ('参考线新增',   1, 'abroad:benchmark:add',     'abroad:benchmark:list'),
   ('参考线修改',   2, 'abroad:benchmark:edit',    'abroad:benchmark:list'),
   ('参考线删除',   3, 'abroad:benchmark:remove',  'abroad:benchmark:list'),

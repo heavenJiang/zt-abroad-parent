@@ -72,4 +72,13 @@ public interface IAbrEngineConfigService
      * @return 国家 / 地区代码 → 配置根节点
      */
     public Map<String, JsonNode> selectActiveConfigs(String degree);
+
+    /**
+     * 引擎测试台：用案例 CSV 批量运行引擎并统计命中率（草稿版本也可试算）
+     * 
+     * @param csv 案例 CSV
+     * @param configIds 国家 / 地区 → 配置ID（不填的国家用启用版本，没有时用最新导入的草稿）
+     * @return 报告：report（命中率与逐案例结果）、configs（各国所用版本）、errors（无法解析的行）、skipped（跳过的模板示例行数）
+     */
+    public Map<String, Object> runBench(String csv, Map<String, Long> configIds);
 }

@@ -74,7 +74,7 @@ public final class SelectionEngine
             CompositeScorer.Composite composite = CompositeScorer.compute(sub.scores(), config, p.getTargetFieldGroup(),
                     dropped(program, config, quick));
             AdmissionEstimator.Estimate estimate = AdmissionEstimator.estimate(composite.c(), program.difficulty(),
-                    benchmarks.get(program.programId()), config);
+                    program.programId() == null ? null : benchmarks.get(program.programId()), config);
             String group;
             if (HardThresholdChecker.PASS.equals(threshold.status()))
             {

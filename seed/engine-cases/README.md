@@ -3,6 +3,8 @@
 用已知结果的历史申请案例检验选校引擎。M0-06 由顾问整理 20–30 个案例；M3-08「引擎测试台」批量运行并计算命中率，验收标准为「`seed/engine-cases/` 全部通过」；M6-03 用它校准参数，直到达到创始人设定的命中率（上线门槛，见 `doc/研发/05-开发计划.md`）。
 
 - 模板：`cases_template.csv`（表头 + 3 行虚构示例，`case_id` 以 `EXAMPLE-` 开头）。
+- 示例集：`cases_sample.csv`（27 行，**AI 构造、没有真实录取结果**）：8 个真实项目按官网要求、8 位虚构学生，档位由 AI 按经验标注；来源、口径与首次运行结果见 `sample_sources.md`。只用于检验测试台和发现引擎口径问题，命中率不作为上线门槛。
+- 测试台（M3-08）：管理端「引擎配置 → 测试台」上传 CSV，可为每个国家选择配置版本（默认启用版本，没有时用最新草稿），只读不保存；`mvn test` 中 `AbrEngineCaseBenchTest` 用种子配置跑本目录的案例并打印报告。除下表的列外，还可以填 `req_min_gpa`、`req_ielts_overall`、`req_ielts_min_sub`（项目官网要求，引擎以此代替兜底值）与 `expected_threshold`（按官网要求判断的 `pass` / `needs_improvement`，用于统计硬门槛一致率），说明见 `sample_sources.md`。
 - 正式案例：复制模板为 `cases.csv`，删除 3 行示例后填写。测试台跳过所有 `EXAMPLE-` 开头的行。
 - 参数：`seed/engine-config/`；说明与算例：`doc/准备/M0-06-引擎参数草案说明.md`。
 

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.ygb.abroad.domain.AbrEngineConfig;
+import com.ygb.abroad.domain.vo.AbrEngineBenchBody;
 import com.ygb.abroad.domain.vo.AbrEngineConfigBody;
 import com.ygb.abroad.service.IAbrEngineConfigService;
 import com.ygb.common.annotation.Log;
@@ -96,5 +97,15 @@ public class AbrEngineConfigController extends BaseController
     public AjaxResult remove(@PathVariable Long[] configIds)
     {
         return toAjax(engineConfigService.deleteAbrEngineConfigByIds(configIds, getUsername()));
+    }
+
+    /**
+     * 引擎测试台：用案例 CSV 批量运行引擎并统计命中率（只读，不保存）
+     */
+    @PreAuthorize("@ss.hasPermi('abroad:engine:bench')")
+    @PostMapping("/bench")
+    public AjaxResult bench(@Validated @RequestBody AbrEngineBenchBody body)
+    {
+        return success(engineConfigService.runBench(body.getCsv(), body.getConfigIds()));
     }
 }

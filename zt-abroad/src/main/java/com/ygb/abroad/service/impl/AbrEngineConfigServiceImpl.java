@@ -8,8 +8,13 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ygb.abroad.domain.AbrEngineConfig;
+import com.ygb.abroad.domain.AbrQuestionnaire;
+import com.ygb.abroad.engine.CaseBench;
+import com.ygb.abroad.engine.NormalizationRules;
 import com.ygb.abroad.domain.vo.AbrEngineConfigCheck;
 import com.ygb.abroad.mapper.AbrEngineConfigMapper;
+import com.ygb.abroad.mapper.AbrQuestionnaireMapper;
+import com.ygb.abroad.service.IAbrAssessmentService;
 import com.ygb.abroad.service.IAbrEngineConfigService;
 import com.ygb.common.exception.ServiceException;
 import com.ygb.common.utils.StringUtils;
@@ -29,6 +34,9 @@ public class AbrEngineConfigServiceImpl implements IAbrEngineConfigService
 
     @Autowired
     private AbrEngineConfigMapper engineConfigMapper;
+
+    @Autowired
+    private AbrQuestionnaireMapper questionnaireMapper;
 
     @Override
     public List<AbrEngineConfig> selectAbrEngineConfigList(AbrEngineConfig config)
@@ -148,5 +156,69 @@ public class AbrEngineConfigServiceImpl implements IAbrEngineConfigService
             configs.put(c.getCountry(), MAPPER.readTree(c.getConfig()));
         }
         return configs;
+    }
+
+    @Override
+    public Map<String, Object> runBench(String csv, Map<String, Long> configIds)
+    {
+        AbrQuestionnaire questionnaire = questionnaireMapper.selectActiveAbrQuestionnaire(IAbrAssessmentService.DEFAULT_QUESTIONNAIRE_CODE);
+        NormalizationRules rules = questionnaire == null ? null : NormalizationRules.parse(MAPPER.readTree(questionnaire.getDefinition()));
+        AbrEngineCaseCsv.Parsed parsed = AbrEngineCaseCsv.parse(csv, rules);
+
+        Map<String, JsonNode> configs = new LinkedHashMap<>();
+        Map<String, String> versions = new LinkedHashMap<>();
+        for (CaseBench.BenchCase c : parsed.cases())
+        {
+            String country = c.program().country();
+            if (versions.containsKey(country))
+            {
+                continue;
+            }
+            AbrEngineConfig config = benchConfig(country, c.profile().getTargetDegree(), configIds == null ? null : configIds.get(country));
+            versions.put(country, config == null ? null : config.getVersion() + "（" + config.getPublishStatus() + "）");
+            if (config != null)
+            {
+                configs.put(country, MAPPER.readTree(config.getConfig()));
+            }
+        }
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("report", CaseBench.run(parsed.cases(), configs));
+        out.put("configs", versions);
+        out.put("errors", parsed.errors());
+        out.put("skipped", parsed.skipped());
+        return out;
+    }
+
+    /**
+     * 测试台用的配置：指定的版本 → 启用版本 → 最新导入的草稿
+     */
+    private AbrEngineConfig benchConfig(String country, String degree, Long configId)
+    {
+        if (configId != null)
+        {
+            AbrEngineConfig config = engineConfigMapper.selectAbrEngineConfigById(configId);
+            if (config == null || !country.equals(config.getCountry()))
+            {
+                throw new ServiceException("所选配置不存在或不是 " + country + " 的配置");
+            }
+            return config;
+        }
+        AbrEngineConfig query = new AbrEngineConfig();
+        query.setCountry(country);
+        query.setDegree(degree);
+        AbrEngineConfig pick = null;
+        for (AbrEngineConfig c : engineConfigMapper.selectAbrEngineConfigList(query))
+        {
+            if (AbrEngineConfig.STATUS_ACTIVE.equals(c.getPublishStatus()))
+            {
+                pick = c;
+                break;
+            }
+            if (pick == null && AbrEngineConfig.STATUS_DRAFT.equals(c.getPublishStatus()))
+            {
+                pick = c;
+            }
+        }
+        return pick == null ? null : engineConfigMapper.selectAbrEngineConfigById(pick.getConfigId());
     }
 }
