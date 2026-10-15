@@ -24,5 +24,6 @@
 
 - 需要 JDK 17+：`mvn -q -B package -Dmaven.test.skip=true`；本机只有 JDK 8 时用 Docker：
   `docker run --rm -v "$PWD":/src -v ~/.m2:/root/.m2 -w /src maven:3.9-eclipse-temurin-17 mvn -q -B package -Dmaven.test.skip=true`
+- 生产 / 测试部署：`deploy/`（`cp .env.example .env` 填写后 `./deploy.sh`，见 `deploy/README.md`）。
 - 本地运行：`docker compose up -d --build`（`abr-postgres` 5433 / `abr-redis` 6380 / `abr-admin` 8090，与 zt-vision-parent 错开）；数据在 `abr-pgdata` 卷，空库首次启动自动执行 `sql/zt_20261008_postgre.sql` + `sql/quartz_postgre.sql`。
 - 涉及 SQL 的改动，须在 PostgreSQL 上实际执行验证（建临时库验证后删除）；仅编译通过不算完成。

@@ -1,0 +1,90 @@
+# 按域名分流（《模块拆分·端划分》）：管理后台不代理 /app/**，C 端只代理 /app/**，项目页纯静态，回调与小程序走 API 域名
+# 本文件是 nginx 官方镜像的模板：启动时用环境变量 ADMIN_DOMAIN / APP_DOMAIN / WWW_DOMAIN / API_DOMAIN 生成配置
+# HTTPS：上线前把证书放到 deploy/certs/，按 README 在各 server 加 listen 443 ssl（小程序必须 HTTPS）
+
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+server_tokens off;
+client_max_body_size 20m;
+
+# 未匹配的域名（含直接用 IP 访问）：拒绝
+server {
+    listen 80 default_server;
+    server_name _;
+    return 444;
+}
+
+# 管理后台：只给员工；静态文件 + /prod-api → 后端（去掉前缀），不代理 C 端与回调接口
+server {
+    listen 80;
+    server_name ${ADMIN_DOMAIN};
+    root /usr/share/nginx/admin;
+
+    location ^~ /prod-api/app/      { return 404; }
+    location ^~ /prod-api/callback/ { return 404; }
+    location ^~ /prod-api/druid/    { return 404; }
+
+    location /prod-api/ {
+        proxy_pass http://abr-admin:8090/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+
+# C 端 H5：学生、家长；静态文件 + 只代理 /app/**
+server {
+    listen 80;
+    server_name ${APP_DOMAIN};
+    root /usr/share/nginx/app;
+
+    location /app/ {
+        proxy_pass http://abr-admin:8090;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+
+# 公开项目页：后端生成的静态 HTML（M7-08），不代理任何接口
+server {
+    listen 80;
+    server_name ${WWW_DOMAIN};
+    root /usr/share/nginx/www;
+
+    location / {
+        try_files $uri $uri/ $uri.html =404;
+    }
+}
+
+# API：第三方回调 /callback/**，小程序请求 /app/**；其他路径一律拒绝
+server {
+    listen 80;
+    server_name ${API_DOMAIN};
+
+    location ~ ^/(app|callback)/ {
+        proxy_pass http://abr-admin:8090;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        return 404;
+    }
+}
