@@ -146,3 +146,25 @@ P     = 1 / (1 + exp(-a × (C − T_eff)))
 - 子分由 `com.ygb.abroad.engine.SubScoreCalculator` 按本目录各文件的 `scoring` 节计算，参数缺失时直接报错（不默认）；单元测试用 `uk_master.json` 复现 M0-06 说明文档 §3.1 的算例（88 / 100 / 20 / 48 / 60），并对全部 8 个文件跑同一个学生检查子分在 0–100 内。
 - 归一化（答案 → 背景档案）由 `engine.AnswerVisibility`（剔除隐藏题）、`engine.NormalizationRules`（问卷 normalization 节）、`engine.ProfileNormalizer` 完成；`engine` 包行覆盖率由 JaCoCo 在 `mvn verify` 时检查，低于 90% 构建失败。
 
+
+## 实现（M3-04）
+
+硬门槛由 `com.ygb.abroad.engine.HardThresholdChecker` 实现，输入为背景档案、项目事实 `engine.ProgramFacts`（由 `service.impl.AbrEngineInputs` 从 `abr_program` + 当季 `abr_requirement` 组装）和该项目所在国家的配置根节点。
+
+- **取值按项**：项目库某一项有值时只用项目库；该项为空（或 `min_gpa` 里没有学生所在层次）时，才用本文件按难度档的兜底值，并打 `requirement_unverified`（要求待核实）。项目未定难度档、又没有项目库要求时，该项记为“未判定”，打 `requirement_missing`。
+- **结果**：`pass`（进入综合分与分档）、`on_fail` 的值（`needs_improvement`，补足后可申）、`excluded`（不在学生考虑范围：日本 / 韩国项目为日语 / 韩语授课，而学生选了“只考虑英语授课”）。`missing` 列出不达标的检查项，即“缺什么”。
+- **检查项**：
+
+| 键 | 规则 |
+| --- | --- |
+| `language_en` | 英语授课（缺省）。项目写了学生所考考试（托福 / PTE / 多邻国）的总分时直接比原始分；否则比雅思等效总分与最低小分。差距 ≤ `country_rules.pre_sessional.max_overall_gap`（英、澳）时记 `pre_sessional`（可读语言班），不判不达标。没考也估不出 → 未判定 + `language_pending`；预估分照常比较 + `language_estimated`；非雅思考试没有小分换算 → 只比总分 + `sub_score_unchecked` |
+| `language_ja` / `language_ko` | 日语 / 韩语授课：JLPT / TOPIK 等级，项目库 `other_language.jlpt|topik.level` 优先，否则 `teaching_language_thresholds` 按难度档 |
+| `language_de` | 德语授课：问卷 v1 不采集德语水平，只列出项目库要求，记未判定 + `german_to_verify` |
+| `tier_accepted`、`gpa` | 不接收的本科层次；层次对应最低均分（≥ 即达标，不容差）。层次待核定按双非计算 + `tier_unknown`；未填均分 → 未判定 |
+| `prerequisites` | 只取项目库。缺先修课：硬性要求判不达标，否则记风险；问卷 v1 不采集所修课程，非本专业时记风险 `prereq_to_verify` |
+| `work_years` | 只取项目库，按全职月数比较 |
+| `cross_major` | 只对跨专业学生检查：不接受 → 不达标；未知或无记录 → 风险 `cross_major_unknown` |
+| `aps`、`course_match` | 德国：APS 未办理（不了解按未办理）→ 不达标，审核中 → 达标 + `aps_in_progress`；课程匹配度低于兜底比例 → 不达标，未解析成绩单 → 未判定 |
+
+- 风险项和未判定项都**不筛掉项目**，只给顾问提示。课前语言目前按国家规则判断（项目库还没有“是否接受课前语言”字段）。
+- 测试复现 M0-06 说明文档 §3.3（项目 A / B 通过）与 §3.5（D1 项目因均分不够归入补足后可申；雅思差 0.5 在英国标“可读语言班”），并对 8 个国家各跑正、反、边界样例。
