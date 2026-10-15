@@ -7,6 +7,7 @@ import java.time.ZonedDateTime;
 import java.util.Base64;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import com.ygb.abroad.domain.AbrAssessment;
 import com.ygb.abroad.domain.AbrAssessmentResult;
+import com.ygb.abroad.domain.AbrMaterialTemplate;
 import com.ygb.abroad.domain.AbrPlanItem;
 import com.ygb.abroad.domain.AbrProgram;
 import com.ygb.abroad.domain.AbrQuestionnaire;
@@ -23,6 +25,8 @@ import com.ygb.abroad.domain.AbrRequirement;
 import com.ygb.abroad.domain.AbrToolRun;
 import com.ygb.abroad.domain.AbrVisitor;
 import com.ygb.abroad.domain.vo.AppCalendarVo;
+import com.ygb.abroad.domain.vo.AppMaterialBody;
+import com.ygb.abroad.domain.vo.AppMaterialsVo;
 import com.ygb.abroad.domain.vo.AppPlanItemBody;
 import com.ygb.abroad.domain.vo.AppPlanItemVo;
 import com.ygb.abroad.domain.vo.AppPlanVo;
@@ -30,7 +34,9 @@ import com.ygb.abroad.engine.AnswerVisibility;
 import com.ygb.abroad.engine.BackgroundProfile;
 import com.ygb.abroad.engine.SelectionEngine;
 import com.ygb.abroad.mapper.AbrAssessmentMapper;
+import com.ygb.abroad.mapper.AbrMaterialTemplateMapper;
 import com.ygb.abroad.mapper.AbrPlanItemMapper;
+import com.ygb.abroad.mapper.AbrPlanMaterialMapper;
 import com.ygb.abroad.mapper.AbrProgramMapper;
 import com.ygb.abroad.mapper.AbrQuestionnaireMapper;
 import com.ygb.abroad.mapper.AbrRequirementMapper;
@@ -114,6 +120,12 @@ public class AbrPlanServiceImpl implements IAbrPlanService
 
     @Autowired
     private RedisCache redisCache;
+
+    @Autowired
+    private AbrMaterialTemplateMapper templateMapper;
+
+    @Autowired
+    private AbrPlanMaterialMapper planMaterialMapper;
 
     /** C 端地址（日历事件 UID 的域名部分取其主机名） */
     @Value("${abroad.app.url:http://localhost:5173/}")
@@ -243,6 +255,52 @@ public class AbrPlanServiceImpl implements IAbrPlanService
         String host = URI.create(appUrl).getHost();
         return AbrPlanCalendar.ics(calendar(Long.valueOf(visitorId)), ZonedDateTime.now(AbrLookupTools.BEIJING),
                 StringUtils.defaultIfBlank(host, "localhost"));
+    }
+
+    @Override
+    public AppMaterialsVo selectMaterials(AbrVisitor visitor)
+    {
+        return materials(visitor.getVisitorId());
+    }
+
+    @Override
+    public AppMaterialsVo updateMaterial(AbrVisitor visitor, AppMaterialBody body)
+    {
+        AppMaterialsVo current = materials(visitor.getVisitorId());
+        String key = body.getKey().trim();
+        if (!AbrPlanMaterials.keys(current).contains(key))
+        {
+            throw new ServiceException("材料不在当前清单中，请刷新后重试");
+        }
+        planMaterialMapper.upsertPlanMaterial(visitor.getVisitorId(), visitor.getAppUserId(), key, Boolean.TRUE.equals(body.getDone()));
+        return materials(visitor.getVisitorId());
+    }
+
+    /**
+     * 汇总某访客选校单的材料清单
+     */
+    private AppMaterialsVo materials(Long visitorId)
+    {
+        List<AbrPlanItem> items = planItemMapper.selectAbrPlanItemsByVisitor(visitorId).stream().filter(i -> Boolean.TRUE.equals(i.getActive()))
+                .toList();
+        List<Long> ids = items.stream().map(AbrPlanItem::getProgramId).toList();
+        Map<Long, AbrProgram> programs = new HashMap<>();
+        Map<Long, AbrRequirement> requirements = new HashMap<>();
+        if (!ids.isEmpty())
+        {
+            programMapper.selectAbrProgramByIds(ids).forEach(x -> programs.put(x.getProgramId(), x));
+            requirementMapper.selectLatestAbrRequirementByProgramIds(ids).forEach(r -> requirements.put(r.getProgramId(), r));
+        }
+        Map<String, String> templates = new HashMap<>();
+        for (AbrMaterialTemplate t : templateMapper.selectActiveAbrMaterialTemplates())
+        {
+            templates.put(t.getCountry() + ":" + t.getDegree(), t.getItems());
+        }
+        Map<String, String> labels = new LinkedHashMap<>();
+        return AbrPlanMaterials.build(items, programs, requirements, templates, AbrMaterials.types(),
+                new HashSet<>(planMaterialMapper.selectDoneMaterialKeys(visitorId)),
+                c -> labels.computeIfAbsent(c, k -> StringUtils.defaultIfBlank(DictUtils.getDictLabel("abr_country", k), k)),
+                LocalDate.now(AbrLookupTools.BEIJING));
     }
 
     /**

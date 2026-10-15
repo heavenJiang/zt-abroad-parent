@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import com.ygb.abroad.domain.AbrVisitor;
 import com.ygb.abroad.domain.vo.AppCalendarVo;
+import com.ygb.abroad.domain.vo.AppMaterialBody;
+import com.ygb.abroad.domain.vo.AppMaterialsVo;
 import com.ygb.abroad.domain.vo.AppPlanItemBody;
 import com.ygb.abroad.domain.vo.AppPlanItemVo;
 import com.ygb.abroad.domain.vo.AppPlanVo;
@@ -75,4 +77,21 @@ public interface IAbrPlanService
      * @return iCalendar 文本
      */
     public String renderCalendarIcs(String key);
+
+    /**
+     * 本人的材料清单：按选校单项目的申请要求汇总材料与完成情况
+     * 
+     * @param visitor 访客
+     * @return 材料清单
+     */
+    public AppMaterialsVo selectMaterials(AbrVisitor visitor);
+
+    /**
+     * 勾选某项材料的完成状态（材料须在当前清单中）
+     * 
+     * @param visitor 访客
+     * @param body 材料键与完成状态
+     * @return 更新后的材料清单
+     */
+    public AppMaterialsVo updateMaterial(AbrVisitor visitor, AppMaterialBody body);
 }

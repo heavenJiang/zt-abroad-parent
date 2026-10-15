@@ -73,6 +73,9 @@ public class AbrRequirement extends BaseEntity
     /** 截止日（JSON 对象） */
     private String deadlines;
 
+    /** 申请材料（JSON 数组：[{code, count, note}]；不传表示不修改，传 [] 表示清空、改按国家默认模板） */
+    private String materials;
+
     /** 状态（0正常 1停用） */
     private String status;
 
@@ -251,6 +254,16 @@ public class AbrRequirement extends BaseEntity
         return gpaNoCutoff;
     }
 
+    public void setMaterials(String materials)
+    {
+        this.materials = materials;
+    }
+
+    public String getMaterials()
+    {
+        return materials;
+    }
+
     public void setDeadlines(String deadlines)
     {
         this.deadlines = deadlines;
@@ -312,6 +325,7 @@ public class AbrRequirement extends BaseEntity
             .append("acceptPreSessional", getAcceptPreSessional())
             .append("gpaNoCutoff", getGpaNoCutoff())
             .append("deadlines", getDeadlines())
+            .append("materials", getMaterials())
             .append("status", getStatus())
             .append("delFlag", getDelFlag())
             .append("sources", getSources())

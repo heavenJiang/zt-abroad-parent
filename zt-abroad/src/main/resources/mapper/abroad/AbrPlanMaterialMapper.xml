@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrPlanMaterialMapper">
+
+    <select id="selectDoneMaterialKeys" parameterType="Long" resultType="String">
+        select material_key from abr_plan_material where visitor_id = #{visitorId} and done = true
+    </select>
+
+    <insert id="upsertPlanMaterial">
+        insert into abr_plan_material (visitor_id, app_user_id, material_key, done, done_time, create_time, update_time)
+        values (#{visitorId}, #{appUserId}, #{materialKey}, #{done}, case when #{done} then now() end, now(), now())
+        on conflict (visitor_id, material_key)
+        do update set done        = excluded.done,
+                      done_time   = case when excluded.done then coalesce(abr_plan_material.done_time, now()) end,
+                      app_user_id = coalesce(excluded.app_user_id, abr_plan_material.app_user_id),
+                      update_time = now()
+    </insert>
+
+</mapper>

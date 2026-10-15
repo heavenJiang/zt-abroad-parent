@@ -61,6 +61,7 @@ public class AbrProgramServiceImpl implements IAbrProgramService
         SOURCE_FIELDS.put("acceptPreSessional", AbrRequirement::getAcceptPreSessional);
         SOURCE_FIELDS.put("gpaNoCutoff", r -> "Y".equals(r.getGpaNoCutoff()) ? "Y" : null);
         SOURCE_FIELDS.put("deadlines", AbrRequirement::getDeadlines);
+        SOURCE_FIELDS.put("materials", r -> r.getMaterials() == null || "[]".equals(r.getMaterials()) ? null : r.getMaterials());
     }
 
     @Autowired
@@ -265,6 +266,10 @@ public class AbrProgramServiceImpl implements IAbrProgramService
         requirement.setOtherLanguage(AbrJsonFields.requireObject(requirement.getOtherLanguage(), "其他语言要求"));
         requirement.setTestDetail(AbrJsonFields.requireObject(requirement.getTestDetail(), "标化分数要求"));
         requirement.setDeadlines(AbrJsonFields.requireObject(requirement.getDeadlines(), "截止日"));
+        if (requirement.getMaterials() != null)
+        {
+            requirement.setMaterials(AbrMaterials.normalize(requirement.getMaterials(), AbrMaterials.types().keySet()));
+        }
         checkTiers(requirement.getTiersNotAccepted());
         if ("Y".equals(requirement.getGpaNoCutoff()) && requirement.getMinGpa() != null)
         {

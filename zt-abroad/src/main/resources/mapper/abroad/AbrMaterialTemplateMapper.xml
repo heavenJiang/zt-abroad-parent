@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrMaterialTemplateMapper">
+
+    <resultMap type="AbrMaterialTemplate" id="AbrMaterialTemplateResult">
+        <id     property="templateId"  column="template_id"  />
+        <result property="country"     column="country"      />
+        <result property="degree"      column="degree"       />
+        <result property="items"       column="items"        />
+        <result property="status"      column="status"       />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"  column="create_time"  />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"  column="update_time"  />
+        <result property="remark"      column="remark"       />
+    </resultMap>
+
+    <sql id="selectAbrMaterialTemplateVo">
+        select template_id, country, degree, cast(items as text) as items, status, create_by, create_time, update_by, update_time, remark
+        from abr_material_template
+    </sql>
+
+    <select id="selectAbrMaterialTemplateList" parameterType="AbrMaterialTemplate" resultMap="AbrMaterialTemplateResult">
+        <include refid="selectAbrMaterialTemplateVo"/>
+        <where>
+            <if test="country != null and country != ''">and country = #{country}</if>
+            <if test="degree != null and degree != ''">and degree = #{degree}</if>
+            <if test="status != null and status != ''">and status = #{status}</if>
+        </where>
+        order by country, degree
+    </select>
+
+    <select id="selectAbrMaterialTemplateById" parameterType="Long" resultMap="AbrMaterialTemplateResult">
+        <include refid="selectAbrMaterialTemplateVo"/>
+        where template_id = #{templateId}
+    </select>
+
+    <select id="selectActiveAbrMaterialTemplates" resultMap="AbrMaterialTemplateResult">
+        <include refid="selectAbrMaterialTemplateVo"/>
+        where status = '0'
+    </select>
+
+    <select id="checkAbrMaterialTemplateUnique" parameterType="AbrMaterialTemplate" resultMap="AbrMaterialTemplateResult">
+        <include refid="selectAbrMaterialTemplateVo"/>
+        where country = #{country} and degree = #{degree} limit 1
+    </select>
+
+    <insert id="insertAbrMaterialTemplate" parameterType="AbrMaterialTemplate" useGeneratedKeys="true" keyProperty="templateId" keyColumn="template_id">
+        insert into abr_material_template (country, degree, items, status, create_by, create_time, remark)
+        values (#{country}, #{degree}, cast(#{items} as jsonb), coalesce(#{status}, '0'), #{createBy}, now(), #{remark})
+    </insert>
+
+    <update id="updateAbrMaterialTemplate" parameterType="AbrMaterialTemplate">
+        update abr_material_template
+        set country     = #{country},
+            degree      = #{degree},
+            items       = cast(#{items} as jsonb),
+            status      = coalesce(#{status}, '0'),
+            remark      = #{remark},
+            update_by   = #{updateBy},
+            update_time = now()
+        where template_id = #{templateId}
+    </update>
+
+    <delete id="deleteAbrMaterialTemplateByIds">
+        delete from abr_material_template where template_id in
+        <foreach collection="array" item="templateId" open="(" separator="," close=")">
+            #{templateId}
+        </foreach>
+    </delete>
+
+</mapper>

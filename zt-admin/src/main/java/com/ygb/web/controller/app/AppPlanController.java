@@ -12,12 +12,14 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.ygb.abroad.domain.AbrVisitor;
+import com.ygb.abroad.domain.vo.AppMaterialBody;
 import com.ygb.abroad.domain.vo.AppPlanItemBody;
 import com.ygb.abroad.service.IAbrPlanService;
 import com.ygb.abroad.service.IAbrVisitorService;
@@ -28,7 +30,7 @@ import com.ygb.common.core.domain.AjaxResult;
 import com.ygb.common.enums.LimitType;
 
 /**
- * C 端-我的选校单与申请日历（匿名按访客保存，M4-04 登录后同步到学生账号）
+ * C 端-我的选校单、申请日历与材料清单（匿名按访客保存，M4-04 登录后同步到学生账号）
  * 
  * @author ygb
  */
@@ -124,5 +126,28 @@ public class AppPlanController extends BaseController
                 .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline().filename("application-deadlines.ics").build().toString())
                 .cacheControl(CacheControl.noStore())
                 .body(body);
+    }
+
+    /**
+     * 本人的材料清单（按选校单项目的申请要求汇总，含完成情况）
+     */
+    @RateLimiter(key = "app_plan_read:", time = 60, count = 120, limitType = LimitType.IP)
+    @GetMapping("/materials")
+    public AjaxResult materials(@RequestHeader(value = IAbrVisitorService.HEADER, required = false) String token)
+    {
+        AbrVisitor visitor = visitorService.resolveVisitor(token);
+        return success(planService.selectMaterials(visitor));
+    }
+
+    /**
+     * 勾选材料完成状态
+     */
+    @RateLimiter(key = "app_plan_write:", time = 60, count = 60, limitType = LimitType.IP)
+    @PutMapping("/materials")
+    public AjaxResult updateMaterial(@RequestHeader(value = IAbrVisitorService.HEADER, required = false) String token,
+            @Validated @RequestBody AppMaterialBody body)
+    {
+        AbrVisitor visitor = visitorService.resolveVisitor(token);
+        return success(planService.updateMaterial(visitor, body));
     }
 }
