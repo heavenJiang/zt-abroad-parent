@@ -1,0 +1,24 @@
+{
+  "name": "原文没有可填内容（只有技能与自我评价）：全部为 null，不按常识补",
+  "input": {
+    "kind": "简历",
+    "text": "个人简历\n求职意向：数据分析\n技能：熟练使用 Excel、SQL、Python\n自我评价：认真负责，学习能力强，有团队合作精神",
+    "_mockOutput": {
+      "school": null,
+      "major": null,
+      "gpa": null,
+      "english": null,
+      "research": null,
+      "work": null,
+      "awards": null
+    }
+  },
+  "knownNames": [],
+  "expectStatus": "success",
+  "expect": [
+    { "path": "/school", "equals": null },
+    { "path": "/gpa", "equals": null },
+    { "path": "/english", "equals": null },
+    { "path": "/work", "equals": null }
+  ]
+}

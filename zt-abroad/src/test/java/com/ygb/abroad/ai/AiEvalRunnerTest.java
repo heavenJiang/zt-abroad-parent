@@ -44,6 +44,17 @@ class AiEvalRunnerTest
     }
 
     @Test
+    void resumeParserEvalCasesPass()
+    {
+        FakeAiStore store = new FakeAiStore();
+        store.agent("resume_parser", AiConstants.POLICY_USER_CONFIRM);
+        AiPipeline pipeline = AiTestSupport.pipeline(store);
+        AiEvalRunner.Report report = new AiEvalRunner(pipeline::invoke, AiTestSupport.LOADER, store).run("resume_parser", null, "eval");
+        assertEquals(3, report.getCases().size());
+        assertTrue(report.isPassed(), report.toMarkdown());
+    }
+
+    @Test
     void failingModelMakesReportFail()
     {
         FakeAiStore store = new FakeAiStore();

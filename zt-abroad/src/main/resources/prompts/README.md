@@ -30,3 +30,7 @@ prompts/
   输出 `headline`、`programs[{programId, reason}]`、`shortcomings[{index, text}]`。调用方 `AbrReportExplanationServiceImpl` 在后台生成并逐条校验（项目须来自输入、
   数字须在输入中出现、不得有百分比或“概率”、不超长），不合格的条目改用模板文字；mock.json 只回模板定位，学校理由与短板全部走模板。
   eval/：正常解读、录取承诺被输出过滤拦截。
+- `resume_parser/v1`（M4-07 简历解析）：输入 `kind`（简历 / 成绩单）与 `text`（PDF 文字层或文字识别结果，已去掉出生日期、住址、证件号、学号等，最多 12000 字；姓名、手机号等由网关替换为占位符）；
+  输出 `school{name, overseas}`、`major`、`gpa{type, total, max}`、`english{type, total, min_sub}`、`research{count, level}`、`work{count, total_months, fulltime_months}`、`awards{count, level}`，没有的填 null。
+  调用方 `AbrResumeServiceImpl` 逐项校验（校名、专业须在原文中逐字出现；分数须在原文中出现且符合问卷分制范围与步长；级别须是问卷选项），不合格的字段丢弃，结果只作建议值由学生确认。
+  mock.json 返回一份固定样例，校验会丢掉原文中没有的项。eval/：中文简历、成绩单只有 4 分制绩点、没有可填内容。

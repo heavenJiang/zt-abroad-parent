@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrAssessmentFileMapper">
+
+    <resultMap type="AbrAssessmentFile" id="AbrAssessmentFileResult">
+        <result property="fileId"        column="file_id"        />
+        <result property="assessmentId"  column="assessment_id"  />
+        <result property="visitorId"     column="visitor_id"     />
+        <result property="fileKind"      column="file_kind"      />
+        <result property="fileExt"       column="file_ext"       />
+        <result property="fileSize"      column="file_size"      />
+        <result property="originalName"  column="original_name"  />
+        <result property="storagePath"   column="storage_path"   />
+        <result property="consentId"     column="consent_id"     />
+        <result property="consentTime"   column="consent_time"   />
+        <result property="parseStatus"   column="parse_status"   />
+        <result property="claimToken"    column="claim_token"    />
+        <result property="textSource"    column="text_source"    />
+        <result property="textChars"     column="text_chars"     />
+        <result property="parsed"        column="parsed"         />
+        <result property="failReason"    column="fail_reason"    />
+        <result property="aiStatus"      column="ai_status"      />
+        <result property="callId"        column="call_id"        />
+        <result property="errorMsg"      column="error_msg"      />
+        <result property="startedTime"   column="started_time"   />
+        <result property="finishedTime"  column="finished_time"  />
+        <result property="purgeTime"     column="purge_time"     />
+        <result property="purgedTime"    column="purged_time"    />
+        <result property="delFlag"       column="del_flag"       />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectAbrAssessmentFileVo">
+        select file_id, assessment_id, visitor_id, file_kind, file_ext, file_size, original_name, storage_path, consent_id, consent_time,
+               parse_status, claim_token, text_source, text_chars, cast(parsed as text) as parsed, fail_reason, ai_status, call_id, error_msg,
+               started_time, finished_time, purge_time, purged_time, del_flag, create_time, update_time
+        from abr_assessment_file
+    </sql>
+
+    <select id="selectAbrAssessmentFileById" parameterType="Long" resultMap="AbrAssessmentFileResult">
+        <include refid="selectAbrAssessmentFileVo"/>
+        where file_id = #{fileId}
+    </select>
+
+    <select id="selectAbrAssessmentFileList" parameterType="Long" resultMap="AbrAssessmentFileResult">
+        <include refid="selectAbrAssessmentFileVo"/>
+        where assessment_id = #{assessmentId} and del_flag = '0'
+        order by create_time, file_id
+    </select>
+
+    <select id="countAbrAssessmentFileUploads" parameterType="Long" resultType="int">
+        select count(*) from abr_assessment_file where assessment_id = #{assessmentId}
+    </select>
+
+    <insert id="insertAbrAssessmentFile" parameterType="AbrAssessmentFile" useGeneratedKeys="true" keyProperty="fileId" keyColumn="file_id">
+        insert into abr_assessment_file (assessment_id, visitor_id, file_kind, file_ext, file_size, original_name, storage_path, consent_id,
+                                         consent_time, parse_status, claim_token, started_time, purge_time, del_flag, create_time, update_time)
+        values (#{assessmentId}, #{visitorId}, #{fileKind}, #{fileExt}, #{fileSize}, #{originalName}, #{storagePath}, #{consentId},
+                #{consentTime}, 'running', #{claimToken}, now(), #{purgeTime}, '0', now(), now())
+    </insert>
+
+    <update id="deleteAbrAssessmentFileById" parameterType="Long">
+        update abr_assessment_file
+        set del_flag      = '2',
+            original_name = null,
+            storage_path  = null,
+            purged_time   = coalesce(purged_time, now()),
+            update_time   = now()
+        where file_id = #{fileId} and del_flag = '0'
+    </update>
+
+    <update id="finishAbrAssessmentFile" parameterType="AbrAssessmentFile">
+        update abr_assessment_file
+        set parse_status  = #{parseStatus},
+            text_source   = #{textSource},
+            text_chars    = #{textChars},
+            parsed        = cast(#{parsed} as jsonb),
+            fail_reason   = #{failReason},
+            ai_status     = #{aiStatus},
+            call_id       = #{callId},
+            error_msg     = #{errorMsg},
+            finished_time = now(),
+            update_time   = now()
+        where file_id = #{fileId} and claim_token = #{claimToken} and parse_status = 'running'
+    </update>
+
+    <update id="failStaleAbrAssessmentFiles">
+        update abr_assessment_file
+        set parse_status  = 'failed',
+            fail_reason   = 'timeout',
+            error_msg     = '识别超时',
+            finished_time = now(),
+            update_time   = now()
+        where assessment_id = #{assessmentId} and del_flag = '0' and parse_status = 'running'
+          and started_time &lt; now() - cast(#{staleSeconds} as integer) * interval '1 second'
+    </update>
+
+    <select id="selectExpiredAbrAssessmentFiles" resultMap="AbrAssessmentFileResult">
+        <include refid="selectAbrAssessmentFileVo"/>
+        where purged_time is null and purge_time &lt; now()
+        order by purge_time, file_id
+        limit #{limit}
+    </select>
+
+    <update id="purgeAbrAssessmentFile" parameterType="Long">
+        update abr_assessment_file
+        set original_name = null,
+            storage_path  = null,
+            purged_time   = now(),
+            update_time   = now()
+        where file_id = #{fileId} and purged_time is null
+    </update>
+
+</mapper>

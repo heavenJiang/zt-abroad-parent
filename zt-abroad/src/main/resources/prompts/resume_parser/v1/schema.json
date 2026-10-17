@@ -1,0 +1,65 @@
+{
+  "type": "object",
+  "required": ["school", "major", "gpa", "english", "research", "work", "awards"],
+  "additionalProperties": false,
+  "properties": {
+    "school": {
+      "type": ["object", "null"],
+      "required": ["name", "overseas"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 2, "maxLength": 50 },
+        "overseas": { "type": "boolean" }
+      }
+    },
+    "major": { "type": ["string", "null"], "maxLength": 50 },
+    "gpa": {
+      "type": ["object", "null"],
+      "required": ["type", "total"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "enum": ["percent", "gpa4", "gpa5", "other"] },
+        "total": { "type": "number", "minimum": 0, "maximum": 100 },
+        "max": { "type": ["number", "null"], "minimum": 1, "maximum": 100 }
+      }
+    },
+    "english": {
+      "type": ["object", "null"],
+      "required": ["type", "total"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "enum": ["ielts", "toefl_ibt", "toefl_band", "pte", "duolingo"] },
+        "total": { "type": "number", "minimum": 0, "maximum": 160 },
+        "min_sub": { "type": ["number", "null"], "minimum": 0, "maximum": 160 }
+      }
+    },
+    "research": {
+      "type": ["object", "null"],
+      "required": ["count", "level"],
+      "additionalProperties": false,
+      "properties": {
+        "count": { "type": ["integer", "null"], "minimum": 1, "maximum": 20 },
+        "level": { "type": ["string", "null"], "enum": ["core_journal", "conference", "lab_project", null] }
+      }
+    },
+    "work": {
+      "type": ["object", "null"],
+      "required": ["count"],
+      "additionalProperties": false,
+      "properties": {
+        "count": { "type": ["integer", "null"], "minimum": 1, "maximum": 20 },
+        "total_months": { "type": ["integer", "null"], "minimum": 1, "maximum": 240 },
+        "fulltime_months": { "type": ["integer", "null"], "minimum": 0, "maximum": 240 }
+      }
+    },
+    "awards": {
+      "type": ["object", "null"],
+      "required": ["count", "level"],
+      "additionalProperties": false,
+      "properties": {
+        "count": { "type": ["integer", "null"], "minimum": 1, "maximum": 30 },
+        "level": { "type": ["string", "null"], "enum": ["international", "national", "provincial", "school", null] }
+      }
+    }
+  }
+}

@@ -33,6 +33,7 @@
         <springdoc.version>3.1.0</springdoc.version>
         <jacoco.version>0.8.13</jacoco.version>
         <zxing.version>3.5.3</zxing.version>
+        <pdfbox.version>3.0.7</pdfbox.version>
     </properties>
 
     <!-- 依赖声明 -->
@@ -142,6 +143,13 @@
                 <groupId>com.google.zxing</groupId>
                 <artifactId>core</artifactId>
                 <version>${zxing.version}</version>
+            </dependency>
+
+            <!-- PDF 文字提取（简历 / 成绩单解析） -->
+            <dependency>
+                <groupId>org.apache.pdfbox</groupId>
+                <artifactId>pdfbox</artifactId>
+                <version>${pdfbox.version}</version>
             </dependency>
 
             <!-- 定时任务-->

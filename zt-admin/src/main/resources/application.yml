@@ -160,6 +160,19 @@ abroad:
   moment:
     # 转化时刻推荐：两次推荐展示的最小间隔（小时）；每类时刻每人只推荐一次，规则在管理端「转化时刻」配置
     min-interval-hours: 24
+  resume:
+    # 简历 / 成绩单原件目录：必须是私有目录，不能放在 zt.profile 下（/profile/** 对外公开）；
+    # 为空时用 zt.profile 的同级目录 private/resume（Docker 中为 /home/zt/private/resume，在数据卷内）
+    dir: ${ABR_RESUME_DIR:}
+    # 单份大小上限（MB，同时受问卷 resume_upload.file.max_size_mb 限制）
+    max-size-mb: 10
+    # 每份测评累计最多上传次数（含重新上传）
+    max-uploads: 6
+    # 原件保存天数，到期由定时任务 abrResumeTask.purgeExpired() 删除（隐私政策：识别后 30 日）
+    retention-days: 30
+    # PDF 最多读取页数；去除敏感行后交给模型的最大字符数
+    max-pages: 10
+    max-chars: 12000
   card:
     # 图卡字体族（为空时自动选第一个能显示中文的字体；Docker 镜像已安装文泉驿微米黑）
     font-family: ""

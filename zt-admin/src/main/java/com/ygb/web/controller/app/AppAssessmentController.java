@@ -5,6 +5,7 @@ import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,11 +15,13 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import com.ygb.abroad.domain.AbrVisitor;
 import com.ygb.abroad.domain.vo.AppAnswersBody;
 import com.ygb.abroad.domain.vo.AppAssessmentBody;
 import com.ygb.abroad.domain.vo.AppPosterBody;
 import com.ygb.abroad.service.IAbrAssessmentService;
+import com.ygb.abroad.service.IAbrResumeService;
 import com.ygb.abroad.service.IAbrVisitorService;
 import com.ygb.common.annotation.Anonymous;
 import com.ygb.common.annotation.RateLimiter;
@@ -27,7 +30,7 @@ import com.ygb.common.core.domain.AjaxResult;
 import com.ygb.common.enums.LimitType;
 
 /**
- * C 端-测评（匿名答题、分步保存、断点续答、报告、分享海报）
+ * C 端-测评（匿名答题、分步保存、断点续答、上传简历自动填写、报告、分享海报）
  * 
  * 匿名接口：身份来自请求头 X-Visitor-Token，只能读写本人的测评；按 IP 限流。
  * 
@@ -43,6 +46,9 @@ public class AppAssessmentController extends BaseController
 
     @Autowired
     private IAbrVisitorService visitorService;
+
+    @Autowired
+    private IAbrResumeService resumeService;
 
     /**
      * 取当前启用的问卷（新测评用）
@@ -140,6 +146,43 @@ public class AppAssessmentController extends BaseController
     {
         AbrVisitor visitor = visitorService.resolveVisitor(token);
         return success(assessmentService.saveAnswers(visitor, assessmentId, body));
+    }
+
+    /**
+     * 上传简历或成绩单并开始识别（须勾选单独同意；PDF / JPG / PNG；同一类别再次上传会替换上一份）
+     */
+    @RateLimiter(key = "app_assessment_resume:", time = 60, count = 6, limitType = LimitType.IP)
+    @PostMapping("/{assessmentId}/resume")
+    public AjaxResult uploadResume(@RequestHeader(value = IAbrVisitorService.HEADER, required = false) String token,
+            @PathVariable Long assessmentId, @RequestParam("kind") String kind,
+            @RequestParam(value = "consent", required = false) Boolean consent, @RequestParam("file") MultipartFile file)
+    {
+        AbrVisitor visitor = visitorService.resolveVisitor(token);
+        return success(resumeService.uploadResume(visitor, assessmentId, kind, consent, file));
+    }
+
+    /**
+     * 取简历识别结果（轮询；只是建议值，学生确认后再按普通答案保存）
+     */
+    @RateLimiter(key = "app_assessment_read:", time = 60, count = 120, limitType = LimitType.IP)
+    @GetMapping("/{assessmentId}/resume-parse")
+    public AjaxResult resumeParse(@RequestHeader(value = IAbrVisitorService.HEADER, required = false) String token,
+            @PathVariable Long assessmentId)
+    {
+        AbrVisitor visitor = visitorService.resolveVisitor(token);
+        return success(resumeService.selectResumeParse(visitor, assessmentId));
+    }
+
+    /**
+     * 删除一份上传的简历或成绩单（原件立即删除）
+     */
+    @RateLimiter(key = "app_assessment_save:", time = 60, count = 120, limitType = LimitType.IP)
+    @DeleteMapping("/{assessmentId}/resume/{fileId}")
+    public AjaxResult deleteResume(@RequestHeader(value = IAbrVisitorService.HEADER, required = false) String token,
+            @PathVariable Long assessmentId, @PathVariable Long fileId)
+    {
+        AbrVisitor visitor = visitorService.resolveVisitor(token);
+        return success(resumeService.deleteResume(visitor, assessmentId, fileId));
     }
 
     /**

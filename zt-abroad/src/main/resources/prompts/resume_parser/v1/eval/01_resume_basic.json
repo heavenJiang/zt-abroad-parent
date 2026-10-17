@@ -1,0 +1,22 @@
+{
+  "name": "中文简历：学校、专业、均分、雅思、科研与实习照原文抽取，奖项没有写则为 null",
+  "input": {
+    "kind": "简历",
+    "text": "[姓名1]\n电话：[手机1] 邮箱：[邮箱1]\n出生年月：[已去除]\n教育背景\n2022.09-2026.06 北京大学 金融学 本科\n加权平均分：85.6/100 专业排名前 15%\n语言成绩\nIELTS 7.0（听力 7.5 阅读 8.0 写作 6.5 口语 6.5）\n科研经历\n2024.03-2024.12 参与导师国家自然科学基金课题，负责数据整理与回归分析\n实习经历\n2025.07-2025.10 某证券公司 研究所实习生\n2024.07-2024.11 某会计师事务所 审计实习生\n技能\nPython、Stata、Wind"
+  },
+  "knownNames": [],
+  "expectStatus": "success",
+  "expect": [
+    { "path": "/school/name", "equals": "北京大学" },
+    { "path": "/school/overseas", "equals": false },
+    { "path": "/major", "equals": "金融学" },
+    { "path": "/gpa/type", "equals": "percent" },
+    { "path": "/gpa/total", "equals": 85.6 },
+    { "path": "/english/type", "equals": "ielts" },
+    { "path": "/english/total", "equals": 7 },
+    { "path": "/english/min_sub", "equals": 6.5 },
+    { "path": "/research/level", "equals": "lab_project" },
+    { "path": "/work/count", "equals": 2 },
+    { "path": "/awards", "equals": null }
+  ]
+}

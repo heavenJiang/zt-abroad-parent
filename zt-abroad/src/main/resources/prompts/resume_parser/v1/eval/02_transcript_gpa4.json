@@ -1,0 +1,25 @@
+{
+  "name": "成绩单只有 4 分制绩点：按 gpa4 原样填写，不换算百分制；没有语言和经历",
+  "input": {
+    "kind": "成绩单",
+    "text": "某某大学本科生成绩单\n学号：[已去除]\n专业：国际经济与贸易\n课程 学分 成绩\n微观经济学 3 A\n计量经济学 3 A-\n国际贸易 2 B+\n累计平均学分绩点（GPA）：3.62 / 4.0",
+    "_mockOutput": {
+      "school": { "name": "某某大学", "overseas": false },
+      "major": "国际经济与贸易",
+      "gpa": { "type": "gpa4", "total": 3.62, "max": null },
+      "english": null,
+      "research": null,
+      "work": null,
+      "awards": null
+    }
+  },
+  "knownNames": [],
+  "expectStatus": "success",
+  "expect": [
+    { "path": "/gpa/type", "equals": "gpa4" },
+    { "path": "/gpa/total", "equals": 3.62 },
+    { "path": "/major", "equals": "国际经济与贸易" },
+    { "path": "/english", "equals": null },
+    { "path": "/research", "equals": null }
+  ]
+}

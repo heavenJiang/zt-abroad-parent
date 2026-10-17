@@ -1,0 +1,9 @@
+{
+  "school": { "name": "北京大学", "overseas": false },
+  "major": "金融学",
+  "gpa": { "type": "percent", "total": 85.6, "max": null },
+  "english": { "type": "ielts", "total": 7, "min_sub": 6.5 },
+  "research": { "count": 1, "level": "lab_project" },
+  "work": { "count": 2, "total_months": 8, "fulltime_months": 0 },
+  "awards": null
+}
