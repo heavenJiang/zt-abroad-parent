@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrLeadScoreRuleMapper">
+
+    <resultMap type="AbrLeadScoreRule" id="AbrLeadScoreRuleResult">
+        <id     property="ruleId"      column="rule_id"      />
+        <result property="ruleCode"    column="rule_code"    />
+        <result property="ruleName"    column="rule_name"    />
+        <result property="ruleParams"  column="params"       />
+        <result property="sortOrder"   column="sort_order"   />
+        <result property="status"      column="status"       />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"  column="create_time"  />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"  column="update_time"  />
+        <result property="remark"      column="remark"       />
+    </resultMap>
+
+    <sql id="selectAbrLeadScoreRuleVo">
+        select rule_id, rule_code, rule_name, cast(params as text) as params, sort_order, status, create_by, create_time, update_by, update_time, remark
+        from abr_lead_score_rule
+    </sql>
+
+    <select id="selectAbrLeadScoreRuleList" resultMap="AbrLeadScoreRuleResult">
+        <include refid="selectAbrLeadScoreRuleVo"/>
+        order by sort_order, rule_id
+    </select>
+
+    <select id="selectAbrLeadScoreRuleById" parameterType="Long" resultMap="AbrLeadScoreRuleResult">
+        <include refid="selectAbrLeadScoreRuleVo"/>
+        where rule_id = #{ruleId}
+    </select>
+
+    <update id="updateAbrLeadScoreRule" parameterType="AbrLeadScoreRule">
+        update abr_lead_score_rule
+        set params = cast(#{ruleParams} as jsonb), status = #{status}, remark = #{remark}, update_by = #{updateBy}, update_time = now()
+        where rule_id = #{ruleId}
+    </update>
+</mapper>

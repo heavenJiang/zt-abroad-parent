@@ -116,4 +116,87 @@ public interface AbrLeadMapper
      * @return 年龄段，没有为 null
      */
     public String selectVisitorAgeBand(Long visitorId);
+
+    /**
+     * 评分特征：转化时刻、入学年份、测评、近期工具使用、选校单、家长分享、来源
+     *
+     * @param leadId 线索ID
+     * @param visitorId 主访客ID（可为 null）
+     * @param appUserId 学生账号ID（可为 null）
+     * @param since 工具使用统计起点
+     * @return 特征
+     */
+    public Map<String, Object> selectScoreFeatures(@Param("leadId") Long leadId, @Param("visitorId") Long visitorId, @Param("appUserId") Long appUserId,
+            @Param("since") Date since);
+
+    /**
+     * 写入评分（顾问修改过等级的只更新分数、规则等级与理由）
+     *
+     * @param leadId 线索ID
+     * @param score 总分
+     * @param ruleGrade 规则等级
+     * @param reasons 理由（JSON 数组）
+     * @return 结果
+     */
+    public int updateScore(@Param("leadId") Long leadId, @Param("score") int score, @Param("ruleGrade") String ruleGrade, @Param("reasons") String reasons);
+
+    /**
+     * 顾问修改等级
+     *
+     * @param leadId 线索ID
+     * @param grade 等级
+     * @param reason 原因
+     * @param operator 操作人
+     * @return 结果
+     */
+    public int setOverride(@Param("leadId") Long leadId, @Param("grade") String grade, @Param("reason") String reason, @Param("operator") String operator);
+
+    /**
+     * 撤销顾问修改，恢复规则等级
+     *
+     * @param leadId 线索ID
+     * @param operator 操作人
+     * @return 结果
+     */
+    public int clearOverride(@Param("leadId") Long leadId, @Param("operator") String operator);
+
+    /**
+     * 写等级历史
+     *
+     * @param leadId 线索ID
+     * @param fromGrade 原等级
+     * @param toGrade 新等级
+     * @param score 规则总分
+     * @param ruleGrade 规则等级
+     * @param changeType 类型（rule / manual / reset）
+     * @param reason 原因
+     * @param operator 操作人
+     * @return 结果
+     */
+    public int insertScoreLog(@Param("leadId") Long leadId, @Param("fromGrade") String fromGrade, @Param("toGrade") String toGrade, @Param("score") Integer score,
+            @Param("ruleGrade") String ruleGrade, @Param("changeType") String changeType, @Param("reason") String reason, @Param("operator") String operator);
+
+    /**
+     * 等级历史
+     *
+     * @param leadId 线索ID
+     * @return 记录
+     */
+    public List<Map<String, Object>> selectScoreLog(Long leadId);
+
+    /**
+     * 需要重算的线索（未合并、未签约、未流失）
+     *
+     * @return 线索ID
+     */
+    public List<Long> selectScorableLeadIds();
+
+    /**
+     * 访客或学生账号对应的线索
+     *
+     * @param visitorId 访客ID（可为 null）
+     * @param appUserId 学生账号ID（可为 null）
+     * @return 线索ID，没有为 null
+     */
+    public Long selectLeadIdByVisitor(@Param("visitorId") Long visitorId, @Param("appUserId") Long appUserId);
 }

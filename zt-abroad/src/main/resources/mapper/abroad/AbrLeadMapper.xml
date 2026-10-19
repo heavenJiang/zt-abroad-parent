@@ -32,12 +32,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateBy"        column="update_by"         />
         <result property="updateTime"      column="update_time"       />
         <result property="remark"          column="remark"            />
+        <result property="ruleGrade"       column="rule_grade"        />
+        <result property="scoreReasons"    column="score_reasons"     />
+        <result property="scoredTime"      column="scored_time"       />
+        <result property="gradeOverride"   column="grade_override"    />
+        <result property="overrideReason"  column="override_reason"   />
+        <result property="overrideBy"      column="override_by"       />
+        <result property="overrideTime"    column="override_time"     />
     </resultMap>
 
     <sql id="selectAbrLeadVo">
         select lead_id, display_name, phone, phone_hash, unionid, app_user_id, visitor_id, minor, stage, grade, score, owner_user_id,
                first_source, first_channel, first_content, first_touch_time, last_source, last_channel, last_touch_time, touch_count,
-               merged_into, del_flag, create_by, create_time, update_by, update_time, remark
+               merged_into, del_flag, create_by, create_time, update_by, update_time, remark,
+               rule_grade, cast(score_reasons as text) as score_reasons, scored_time, grade_override, override_reason, override_by, override_time
         from abr_lead
     </sql>
 
@@ -144,5 +152,63 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectVisitorAgeBand" parameterType="Long" resultType="String">
         select profile ->> 'age_band' from abr_visitor where visitor_id = #{visitorId}
+    </select>
+
+    <select id="selectScoreFeatures" resultType="java.util.HashMap">
+        select
+          (select string_agg(distinct coalesce(payload ->> 'moment', dedup_key), ',') from abr_event
+            where event_type = 'plan_moment' and (visitor_id = #{visitorId} or app_user_id = #{appUserId})) as "moments",
+          (select profile ->> 'intake_year' from abr_visitor where visitor_id = #{visitorId}) as "intakeYear",
+          (select months_to_intake from abr_profile where visitor_id = #{visitorId} and months_to_intake is not null
+            order by profile_id desc limit 1) as "monthsToIntake",
+          (select count(*) from abr_assessment where visitor_id = #{visitorId} and assessment_status = 'submitted') as "submitted",
+          (select count(*) from abr_tool_run where visitor_id = #{visitorId} and create_time &gt;= #{since}) as "toolRuns",
+          (select count(*) from abr_plan_item where visitor_id = #{visitorId}) as "planItems",
+          (select count(*) from abr_share where visitor_id = #{visitorId} and kind = 'plan_view') as "shares",
+          (select coalesce(sum(view_count), 0) from abr_share where visitor_id = #{visitorId} and kind = 'plan_view') as "shareViews",
+          (select string_agg(distinct source, ',') from (select first_source as source from abr_lead where lead_id = #{leadId}
+            union select source from abr_lead_touch where lead_id = #{leadId}) s) as "sources"
+    </select>
+
+    <update id="updateScore">
+        update abr_lead
+        set score = #{score}, rule_grade = #{ruleGrade}, score_reasons = cast(#{reasons} as jsonb), scored_time = now(),
+            grade = case when grade_override = 'Y' then grade else #{ruleGrade} end
+        where lead_id = #{leadId}
+    </update>
+
+    <update id="setOverride">
+        update abr_lead
+        set grade = #{grade}, grade_override = 'Y', override_reason = #{reason}, override_by = #{operator}, override_time = now(),
+            update_by = #{operator}, update_time = now()
+        where lead_id = #{leadId}
+    </update>
+
+    <update id="clearOverride">
+        update abr_lead
+        set grade = rule_grade, grade_override = 'N', override_reason = '', override_by = #{operator}, override_time = now(),
+            update_by = #{operator}, update_time = now()
+        where lead_id = #{leadId}
+    </update>
+
+    <insert id="insertScoreLog">
+        insert into abr_lead_score_log (lead_id, from_grade, to_grade, score, rule_grade, change_type, reason, operator, create_time)
+        values (#{leadId}, #{fromGrade}, #{toGrade}, #{score}, #{ruleGrade}, #{changeType}, coalesce(#{reason}, ''), #{operator}, now())
+    </insert>
+
+    <select id="selectScoreLog" resultType="java.util.HashMap">
+        select log_id as "logId", from_grade as "fromGrade", to_grade as "toGrade", score as "score", rule_grade as "ruleGrade",
+               change_type as "changeType", reason as "reason", operator as "operator", to_char(create_time, 'YYYY-MM-DD HH24:MI:SS') as "time"
+        from abr_lead_score_log where lead_id = #{leadId} order by log_id desc limit 200
+    </select>
+
+    <select id="selectScorableLeadIds" resultType="Long">
+        select lead_id from abr_lead where merged_into is null and del_flag = '0' and stage not in ('won', 'lost') order by lead_id
+    </select>
+
+    <select id="selectLeadIdByVisitor" resultType="Long">
+        select lead_id from abr_lead
+        where merged_into is null and del_flag = '0' and (visitor_id = #{visitorId} or app_user_id = #{appUserId})
+        order by lead_id limit 1
     </select>
 </mapper>

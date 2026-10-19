@@ -92,6 +92,99 @@ public class AbrLead extends BaseEntity
     /** 删除标志 */
     private String delFlag;
 
+    /** 规则等级 */
+    private String ruleGrade;
+
+    /** 得分理由（JSON 数组） */
+    private String scoreReasons;
+
+    /** 最近评分时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date scoredTime;
+
+    /** 是否顾问修改过等级（Y / N） */
+    private String gradeOverride;
+
+    /** 顾问修改等级的原因 */
+    private String overrideReason;
+
+    /** 修改人 */
+    private String overrideBy;
+
+    /** 修改时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date overrideTime;
+
+    public String getRuleGrade()
+    {
+        return ruleGrade;
+    }
+
+    public void setRuleGrade(String ruleGrade)
+    {
+        this.ruleGrade = ruleGrade;
+    }
+
+    public String getScoreReasons()
+    {
+        return scoreReasons;
+    }
+
+    public void setScoreReasons(String scoreReasons)
+    {
+        this.scoreReasons = scoreReasons;
+    }
+
+    public Date getScoredTime()
+    {
+        return scoredTime;
+    }
+
+    public void setScoredTime(Date scoredTime)
+    {
+        this.scoredTime = scoredTime;
+    }
+
+    public String getGradeOverride()
+    {
+        return gradeOverride;
+    }
+
+    public void setGradeOverride(String gradeOverride)
+    {
+        this.gradeOverride = gradeOverride;
+    }
+
+    public String getOverrideReason()
+    {
+        return overrideReason;
+    }
+
+    public void setOverrideReason(String overrideReason)
+    {
+        this.overrideReason = overrideReason;
+    }
+
+    public String getOverrideBy()
+    {
+        return overrideBy;
+    }
+
+    public void setOverrideBy(String overrideBy)
+    {
+        this.overrideBy = overrideBy;
+    }
+
+    public Date getOverrideTime()
+    {
+        return overrideTime;
+    }
+
+    public void setOverrideTime(Date overrideTime)
+    {
+        this.overrideTime = overrideTime;
+    }
+
     public Long getLeadId()
     {
         return leadId;
@@ -333,6 +426,8 @@ public class AbrLead extends BaseEntity
             .append("lastChannel", getLastChannel())
             .append("lastTouchTime", getLastTouchTime())
             .append("touchCount", getTouchCount())
+            .append("ruleGrade", getRuleGrade())
+            .append("gradeOverride", getGradeOverride())
             .append("mergedInto", getMergedInto())
             .append("delFlag", getDelFlag())
             .append("createBy", getCreateBy())

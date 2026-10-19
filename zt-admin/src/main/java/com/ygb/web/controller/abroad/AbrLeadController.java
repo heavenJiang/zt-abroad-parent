@@ -1,12 +1,14 @@
 package com.ygb.web.controller.abroad;
 
 import java.util.List;
+import java.util.Map;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import com.ygb.abroad.domain.AbrLead;
 import com.ygb.abroad.domain.vo.AbrLeadImportRow;
+import com.ygb.abroad.service.IAbrLeadScoreService;
 import com.ygb.abroad.service.IAbrLeadService;
 import com.ygb.common.annotation.Log;
 import com.ygb.common.core.controller.BaseController;
@@ -33,6 +36,9 @@ public class AbrLeadController extends BaseController
 {
     @Autowired
     private IAbrLeadService leadService;
+
+    @Autowired
+    private IAbrLeadScoreService scoreService;
 
     /**
      * 查询线索列表（params[keyword] 为称呼，或 11 位手机号精确查找；params[beginTime] / params[endTime] 为首次触达日期）
@@ -113,5 +119,37 @@ public class AbrLeadController extends BaseController
         }
         ExcelUtil<AbrLeadImportRow> util = new ExcelUtil<AbrLeadImportRow>(AbrLeadImportRow.class);
         return success(leadService.importLeads(util.importExcel(file.getInputStream()), getUsername()));
+    }
+
+    /**
+     * 修改意向度（grade 为 A / B / C，须填原因 reason；grade 为空时撤销修改、恢复规则等级）
+     */
+    @PreAuthorize("@ss.hasPermi('abroad:lead:grade')")
+    @Log(title = "线索意向度", businessType = BusinessType.UPDATE)
+    @PutMapping("/grade/{leadId}")
+    public AjaxResult grade(@PathVariable Long leadId, @RequestBody Map<String, String> body)
+    {
+        return success(scoreService.override(leadId, body.get("grade"), body.get("reason"), getUsername()));
+    }
+
+    /**
+     * 立即重新评分
+     */
+    @PreAuthorize("@ss.hasPermi('abroad:lead:score')")
+    @Log(title = "线索意向度", businessType = BusinessType.OTHER)
+    @PostMapping("/score/{leadId}")
+    public AjaxResult score(@PathVariable Long leadId)
+    {
+        return success(scoreService.score(leadId, getUsername()));
+    }
+
+    /**
+     * 意向度历史
+     */
+    @PreAuthorize("@ss.hasPermi('abroad:lead:query')")
+    @GetMapping("/score/log/{leadId}")
+    public AjaxResult scoreLog(@PathVariable Long leadId)
+    {
+        return success(scoreService.scoreLog(leadId));
     }
 }
