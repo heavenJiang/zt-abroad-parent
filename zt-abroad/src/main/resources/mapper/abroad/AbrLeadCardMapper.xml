@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrLeadCardMapper">
+
+    <resultMap type="AbrLeadCard" id="AbrLeadCardResult">
+        <id     property="cardId"         column="card_id"         />
+        <result property="leadId"         column="lead_id"         />
+        <result property="cardStatus"     column="card_status"     />
+        <result property="basics"         column="basics"          />
+        <result property="aiContent"      column="ai_content"      />
+        <result property="inputDigest"    column="input_digest"    />
+        <result property="aiCallId"       column="ai_call_id"      />
+        <result property="aiStatus"       column="ai_status"       />
+        <result property="errorMsg"       column="error_msg"       />
+        <result property="triggerType"    column="trigger_type"    />
+        <result property="generatedTime"  column="generated_time"  />
+        <result property="createBy"       column="create_by"       />
+        <result property="createTime"     column="create_time"     />
+        <result property="updateBy"       column="update_by"       />
+        <result property="updateTime"     column="update_time"     />
+    </resultMap>
+
+    <select id="selectByLead" parameterType="Long" resultMap="AbrLeadCardResult">
+        select card_id, lead_id, card_status, cast(basics as text) as basics, cast(ai_content as text) as ai_content, input_digest, ai_call_id,
+               ai_status, error_msg, trigger_type, generated_time, create_by, create_time, update_by, update_time
+        from abr_lead_card where lead_id = #{leadId}
+    </select>
+
+    <insert id="upsertCard" parameterType="AbrLeadCard">
+        insert into abr_lead_card (lead_id, card_status, basics, ai_content, input_digest, ai_call_id, ai_status, error_msg, trigger_type,
+                                   generated_time, create_by, create_time, update_by, update_time)
+        values (#{leadId}, #{cardStatus}, cast(#{basics} as jsonb), cast(#{aiContent} as jsonb), coalesce(#{inputDigest}, ''), #{aiCallId},
+                coalesce(#{aiStatus}, ''), coalesce(#{errorMsg}, ''), coalesce(#{triggerType}, ''), now(), #{createBy}, now(), #{createBy}, now())
+        on conflict (lead_id) do update
+        set card_status = excluded.card_status, basics = excluded.basics, ai_content = excluded.ai_content, input_digest = excluded.input_digest,
+            ai_call_id = excluded.ai_call_id, ai_status = excluded.ai_status, error_msg = excluded.error_msg, trigger_type = excluded.trigger_type,
+            generated_time = now(), update_by = excluded.update_by, update_time = now()
+    </insert>
+
+    <select id="selectLatestResult" parameterType="Long" resultType="java.util.HashMap">
+        select r.reach_count as "reach", r.match_count as "match", r.safety_count as "safety", r.needs_improvement_count as "needsImprovement",
+               cast(r.programs as text) as "programs"
+        from abr_assessment_result r
+        join abr_assessment a on a.assessment_id = r.assessment_id
+        where a.visitor_id = #{visitorId}
+        order by r.result_id desc limit 1
+    </select>
+
+    <select id="selectLatestProfile" parameterType="Long" resultType="java.util.HashMap">
+        select undergrad_tier as "undergradTier", gpa_percent as "gpa", english_status as "englishStatus", ielts_equiv_total as "ieltsTotal",
+               ielts_equiv_min_sub as "ieltsMinSub", target_degree as "degree", target_field as "field", target_countries as "countries",
+               months_to_intake as "monthsToIntake"
+        from abr_profile where visitor_id = #{visitorId}
+        order by profile_id desc limit 1
+    </select>
+
+    <select id="selectPlanPrograms" parameterType="Long" resultType="java.util.HashMap">
+        select s.school_name as "school", p.program_name as "program"
+        from abr_plan_item i
+        join abr_program p on p.program_id = i.program_id
+        join abr_school s on s.school_id = p.school_id
+        where i.visitor_id = #{visitorId}
+        order by i.plan_item_id limit 8
+    </select>
+
+    <select id="selectToolCounts" parameterType="Long" resultType="java.util.HashMap">
+        select tool as "tool", count(*) as "count" from abr_tool_run where visitor_id = #{visitorId} group by tool order by tool
+    </select>
+
+    <select id="selectMoments" parameterType="Long" resultType="String">
+        select distinct coalesce(payload ->> 'moment', dedup_key) from abr_event where event_type = 'plan_moment' and visitor_id = #{visitorId}
+    </select>
+
+    <select id="selectProgramNames" resultType="java.util.HashMap">
+        select p.program_id as "programId", s.school_name as "school", p.program_name as "program"
+        from abr_program p join abr_school s on s.school_id = p.school_id
+        where p.program_id in
+        <foreach collection="programIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </select>
+</mapper>

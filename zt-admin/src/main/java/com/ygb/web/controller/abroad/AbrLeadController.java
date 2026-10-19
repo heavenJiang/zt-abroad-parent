@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.ygb.abroad.domain.AbrLead;
 import com.ygb.abroad.domain.AbrLeadFollow;
 import com.ygb.abroad.domain.vo.AbrLeadImportRow;
+import com.ygb.abroad.service.IAbrLeadCardService;
 import com.ygb.abroad.service.IAbrLeadScoreService;
 import com.ygb.abroad.service.IAbrLeadService;
 import com.ygb.common.annotation.Log;
@@ -40,6 +41,9 @@ public class AbrLeadController extends BaseController
 
     @Autowired
     private IAbrLeadScoreService scoreService;
+
+    @Autowired
+    private IAbrLeadCardService cardService;
 
     /**
      * 查询线索列表：默认按 意向度 → 下次联系时间 → 最近触达 排序。params[keyword] 为称呼或 11 位手机号；params[beginTime] / params[endTime]
@@ -213,5 +217,26 @@ public class AbrLeadController extends BaseController
         Object owner = body.get("ownerUserId");
         Long ownerUserId = owner instanceof Number n ? n.longValue() : null;
         return success(leadService.assign(leadId, ownerUserId, body.get("reason") == null ? null : String.valueOf(body.get("reason")), getUsername()));
+    }
+
+    /**
+     * 线索卡片（仅内部可见；没有时为空）
+     */
+    @PreAuthorize("@ss.hasPermi('abroad:lead:query')")
+    @GetMapping("/card/{leadId}")
+    public AjaxResult card(@PathVariable Long leadId)
+    {
+        return success().put(AjaxResult.DATA_TAG, cardService.selectByLead(leadId));
+    }
+
+    /**
+     * 重新生成线索卡片（强制重新调用模型）
+     */
+    @PreAuthorize("@ss.hasPermi('abroad:lead:card')")
+    @Log(title = "线索卡片", businessType = BusinessType.OTHER)
+    @PostMapping("/card/{leadId}")
+    public AjaxResult generateCard(@PathVariable Long leadId)
+    {
+        return success(cardService.generate(leadId, "manual", true, getUsername()));
     }
 }

@@ -1,0 +1,5 @@
+{
+  "summary": "这位同学目标{{profile.countries}}{{profile.field}}方向，来源{{lead.source}}，当前意向度 {{lead.grade}}。",
+  "concerns": [{ "text": "不确定选校单是否合理", "basis": "选校单与测评结果" }],
+  "openers": ["先聊聊选校单里最想去的项目和原因"]
+}

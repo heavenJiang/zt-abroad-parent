@@ -1,0 +1,24 @@
+{
+  "name": "基本卡片：顾虑有依据，不出现概率与姓名",
+  "input": {
+    "lead": { "grade": "A", "stage": "新线索", "source": "C 端", "channel": "xhstest", "minor": false, "daysSinceLastTouch": 0,
+      "scoreReasons": ["留了手机号", "转化时刻：截止前材料不齐", "入学时间近：距入学约 11 个月"] },
+    "profile": { "degree": "硕士", "field": "管理", "countries": ["英国"], "undergradTier": "211", "gpa": 85, "english": "雅思 6.5（小分 6.0）", "monthsToIntake": 11 },
+    "result": { "reach": 1, "match": 2, "safety": 2, "needsImprovement": 1, "programs": [ { "school": "Eastvale University", "program": "MSc Management", "tier": "主攻", "missing": [] } ] },
+    "plan": { "items": ["Eastvale University MSc Management"], "moments": ["截止前材料不齐"] },
+    "tools": ["使用 30 秒快测 2 次"],
+    "followUps": [],
+    "_mockOutput": {
+      "summary": "这位同学 211 本科、均分 85，目标英国管理类硕士，测评有 2 个主攻、2 个保底，距入学约 11 个月。",
+      "concerns": [ { "text": "担心截止前材料来不及准备", "basis": "转化时刻：截止前材料不齐" } ],
+      "openers": [ "看到你在准备 Eastvale 的 MSc Management，材料里最卡的是哪一项？" ]
+    }
+  },
+  "knownNames": [],
+  "expectStatus": "success",
+  "expect": [
+    { "path": "/concerns/0/basis", "contains": "材料" },
+    { "path": "/summary", "notContains": "%" },
+    { "path": "/summary", "notContains": "概率" }
+  ]
+}

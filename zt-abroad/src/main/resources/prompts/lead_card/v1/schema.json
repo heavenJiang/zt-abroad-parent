@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "required": ["summary", "concerns", "openers"],
+  "additionalProperties": false,
+  "properties": {
+    "summary": { "type": "string", "minLength": 10, "maxLength": 300 },
+    "concerns": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["text", "basis"],
+        "additionalProperties": false,
+        "properties": {
+          "text": { "type": "string", "minLength": 2, "maxLength": 100 },
+          "basis": { "type": "string", "minLength": 2, "maxLength": 100 }
+        }
+      }
+    },
+    "openers": { "type": "array", "maxItems": 3, "items": { "type": "string", "minLength": 4, "maxLength": 120 } }
+  }
+}
