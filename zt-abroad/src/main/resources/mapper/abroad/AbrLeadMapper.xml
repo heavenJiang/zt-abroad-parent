@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrLeadMapper">
+
+    <resultMap type="AbrLead" id="AbrLeadResult">
+        <id     property="leadId"          column="lead_id"           />
+        <result property="displayName"     column="display_name"      />
+        <result property="phone"           column="phone"             />
+        <result property="phoneHash"       column="phone_hash"        />
+        <result property="unionid"         column="unionid"           />
+        <result property="appUserId"       column="app_user_id"       />
+        <result property="visitorId"       column="visitor_id"        />
+        <result property="minor"           column="minor"             />
+        <result property="stage"           column="stage"             />
+        <result property="grade"           column="grade"             />
+        <result property="score"           column="score"             />
+        <result property="ownerUserId"     column="owner_user_id"     />
+        <result property="firstSource"     column="first_source"      />
+        <result property="firstChannel"    column="first_channel"     />
+        <result property="firstContent"    column="first_content"     />
+        <result property="firstTouchTime"  column="first_touch_time"  />
+        <result property="lastSource"      column="last_source"       />
+        <result property="lastChannel"     column="last_channel"      />
+        <result property="lastTouchTime"   column="last_touch_time"   />
+        <result property="touchCount"      column="touch_count"       />
+        <result property="mergedInto"      column="merged_into"       />
+        <result property="delFlag"         column="del_flag"          />
+        <result property="createBy"        column="create_by"         />
+        <result property="createTime"      column="create_time"       />
+        <result property="updateBy"        column="update_by"         />
+        <result property="updateTime"      column="update_time"       />
+        <result property="remark"          column="remark"            />
+    </resultMap>
+
+    <sql id="selectAbrLeadVo">
+        select lead_id, display_name, phone, phone_hash, unionid, app_user_id, visitor_id, minor, stage, grade, score, owner_user_id,
+               first_source, first_channel, first_content, first_touch_time, last_source, last_channel, last_touch_time, touch_count,
+               merged_into, del_flag, create_by, create_time, update_by, update_time, remark
+        from abr_lead
+    </sql>
+
+    <select id="selectAbrLeadList" parameterType="AbrLead" resultMap="AbrLeadResult">
+        <include refid="selectAbrLeadVo"/>
+        where merged_into is null and del_flag = '0'
+        <if test="stage != null and stage != ''">and stage = #{stage}</if>
+        <if test="firstSource != null and firstSource != ''">and first_source = #{firstSource}</if>
+        <if test="firstChannel != null and firstChannel != ''">and first_channel = #{firstChannel}</if>
+        <if test="minor != null and minor != ''">and minor = #{minor}</if>
+        <if test="grade != null and grade != ''">and grade = #{grade}</if>
+        <if test="params.keyword != null and params.keyword != ''">and display_name like concat('%', #{params.keyword}, '%')</if>
+        <if test="params.phoneHash != null and params.phoneHash != ''">and phone_hash = #{params.phoneHash}</if>
+        <if test="params.beginTime != null and params.beginTime != ''">and first_touch_time &gt;= cast(#{params.beginTime} as date)</if>
+        <if test="params.endTime != null and params.endTime != ''">and first_touch_time &lt; cast(#{params.endTime} as date) + interval '1 day'</if>
+        order by last_touch_time desc, lead_id desc
+    </select>
+
+    <select id="selectAbrLeadById" parameterType="Long" resultMap="AbrLeadResult">
+        <include refid="selectAbrLeadVo"/>
+        where lead_id = #{leadId} and del_flag = '0'
+    </select>
+
+    <select id="selectByIdentity" resultMap="AbrLeadResult">
+        <include refid="selectAbrLeadVo"/>
+        where del_flag = '0' and (false
+        <if test="appUserId != null">or app_user_id = #{appUserId}</if>
+        <if test="unionid != null and unionid != ''">or unionid = #{unionid}</if>
+        <if test="phoneHash != null and phoneHash != ''">or phone_hash = #{phoneHash}</if>
+        )
+        order by lead_id
+    </select>
+
+    <insert id="insertAbrLead" parameterType="AbrLead" useGeneratedKeys="true" keyProperty="leadId" keyColumn="lead_id">
+        insert into abr_lead (display_name, phone, phone_hash, unionid, app_user_id, visitor_id, minor, stage, first_source, first_channel, first_content,
+                              first_touch_time, last_source, last_channel, last_touch_time, touch_count, create_by, create_time)
+        values (coalesce(#{displayName}, ''), #{phone}, #{phoneHash}, #{unionid}, #{appUserId}, #{visitorId}, coalesce(#{minor}, 'N'), 'new',
+                #{firstSource}, coalesce(#{firstChannel}, ''), coalesce(#{firstContent}, ''), #{firstTouchTime}, #{firstSource},
+                coalesce(#{firstChannel}, ''), #{firstTouchTime}, 0, #{createBy}, now())
+    </insert>
+
+    <update id="fillIdentity" parameterType="AbrLead">
+        update abr_lead
+        set display_name = case when coalesce(display_name, '') = '' then coalesce(#{displayName}, '') else display_name end,
+            phone        = coalesce(phone, #{phone}),
+            phone_hash   = coalesce(phone_hash, #{phoneHash}),
+            unionid      = coalesce(unionid, #{unionid}),
+            app_user_id  = coalesce(app_user_id, #{appUserId}),
+            visitor_id   = coalesce(visitor_id, #{visitorId}),
+            minor        = case when #{minor} = 'Y' then 'Y' else minor end,
+            update_time  = now()
+        where lead_id = #{leadId}
+    </update>
+
+    <update id="recordTouch">
+        update abr_lead
+        set first_source     = case when #{time} &lt; first_touch_time then #{source} else first_source end,
+            first_channel    = case when #{time} &lt; first_touch_time then coalesce(#{channel}, '') else first_channel end,
+            first_content    = case when #{time} &lt; first_touch_time then coalesce(#{content}, '') else first_content end,
+            first_touch_time = least(first_touch_time, #{time}),
+            last_source      = case when #{time} &gt;= last_touch_time then #{source} else last_source end,
+            last_channel     = case when #{time} &gt;= last_touch_time and coalesce(#{channel}, '') &lt;&gt; '' then #{channel} else last_channel end,
+            last_touch_time  = greatest(last_touch_time, #{time}),
+            touch_count      = touch_count + #{count},
+            update_time      = now()
+        where lead_id = #{leadId}
+    </update>
+
+    <update id="markMerged">
+        update abr_lead set merged_into = #{intoId}, update_by = 'system', update_time = now() where lead_id = #{leadId} and merged_into is null
+    </update>
+
+    <insert id="insertTouch" parameterType="AbrLeadTouch">
+        insert into abr_lead_touch (lead_id, source, touch_type, channel_code, content_code, ref_type, ref_id, event_id, summary, occurred_time, create_by, create_time)
+        values (#{leadId}, #{source}, #{touchType}, coalesce(#{channelCode}, ''), coalesce(#{contentCode}, ''), coalesce(#{refType}, ''), #{refId}, #{eventId},
+                coalesce(#{summary}, ''), #{occurredTime}, coalesce(#{createBy}, ''), now())
+        on conflict (event_id) where event_id is not null do nothing
+    </insert>
+
+    <update id="moveTouches">
+        update abr_lead_touch set lead_id = #{toId} where lead_id = #{fromId}
+    </update>
+
+    <select id="selectTimeline" resultType="java.util.HashMap">
+        select * from (
+            select occurred_time as "time", 'touch' as "kind", touch_type as "type", source as "source", summary as "summary",
+                   channel_code as "channel", content_code as "content", ref_type as "refType", ref_id as "refId"
+            from abr_lead_touch where lead_id = #{leadId}
+            union all
+            select create_time, 'event', event_type, '', '', '', '', coalesce(ref_type, ''), ref_id
+            from abr_event
+            where (visitor_id = #{visitorId} or app_user_id = #{appUserId})
+              and event_type not in ('app_user_registered', 'app_user_phone_bound', 'plan_moment', 'plan_share_created')
+            union all
+            select create_time, 'tool', tool, '', '', coalesce(channel_code, ''), coalesce(content_code, ''), 'tool_run', tool_run_id
+            from abr_tool_run where visitor_id = #{visitorId}
+            union all
+            select create_time, 'assessment', assessment_status, '', '', coalesce(channel_code, ''), coalesce(content_code, ''), 'assessment', assessment_id
+            from abr_assessment where visitor_id = #{visitorId}
+        ) t
+        order by "time" desc
+        limit #{limit}
+    </select>
+
+    <select id="selectVisitorAgeBand" parameterType="Long" resultType="String">
+        select profile ->> 'age_band' from abr_visitor where visitor_id = #{visitorId}
+    </select>
+</mapper>
