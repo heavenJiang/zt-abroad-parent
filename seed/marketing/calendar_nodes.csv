@@ -1,0 +1,17 @@
+node_code,entry_name,month_day,repeat_yearly,degrees,playbook_code,source_hint,note
+season_start,新申请季开启（多数英港新项目开放网申）,09-01,Y,master,season_open,各校官网,大致时间；具体项目的开放日取院校库
+tuimian_result,推免录取结果确认,10-15,Y,master,season_open,中国研究生招生信息网,每年 9–10 月，以当年推免服务系统通知为准
+the_ranking,THE 世界大学排名发布,10-08,Y,,,Times Higher Education 官网,每年 10 月上旬，日期以发布方为准
+us_ed1_deadline,美本 ED1 / EA 截止,11-01,Y,bachelor,us_ug_ed,Common App 与各校官网,多数学校 11-01，少数 11-15
+us_ed1_result,美本 ED1 / EA 放榜,12-15,Y,bachelor,us_ug_results,各校官网,集中在 12 月中旬
+us_rd_deadline,美本 ED2 / RD 截止,01-01,Y,bachelor,us_ug_results,Common App 与各校官网,多数学校 01-01 至 01-15
+us_hs_deadline,美高申请截止,01-15,Y,secondary,us_ug_results,各校官网,多数寄宿高中 01-15 前后
+kaoyan_score,考研初试出分,02-24,Y,master,kaoyan_fail,中国研究生招生信息网 / 各省考试院,每年 2 月下旬，以当年通知为准
+us_hs_result,美高统一放榜日,03-10,Y,secondary,us_ug_results,各校官网,多数寄宿高中 03-10 放榜
+kaoyan_national_line,考研国家线公布,03-12,Y,master,kaoyan_fail,教育部 / 中国研究生招生信息网,每年 3 月中旬
+us_rd_result,美本 RD 放榜（含常春藤放榜日）,03-28,Y,bachelor,us_ug_results,各校官网,3 月下旬至 4 月初
+us_decision_day,美本录取确认截止,05-01,Y,bachelor,us_ug_results,各校官网,多数学校 05-01
+qs_ranking,QS 世界大学排名发布,06-10,Y,,,QS 官网,每年 6 月，日期以发布方为准
+graduation,本科毕业季,06-30,Y,master,language_sprint,—,
+common_app_open,Common App 新一季开放,08-01,Y,bachelor,us_ug_summer,Common App 官网,每年 08-01
+arwu_ranking,软科世界大学学术排名发布,08-15,Y,,,软科官网,每年 8 月中旬

@@ -1,0 +1,11 @@
+# 正则规则（M6-03 实现；现有网关词表不支持正则）
+# 格式：类别编码<TAB>动作<TAB>正则<TAB>说明
+# 动作：block 拦截 / cite 要求引用依据 / mask 先脱敏再继续（只用于对外内容里的个人信息）
+admission_promise	block	录取率\s*(达|高达|超过)?\s*\d{2,3}(\.\d+)?\s*%	“录取率 XX%”
+admission_promise	block	\d{2,3}(\.\d+)?\s*%\s*(的)?\s*(录取|上岸|拿到?\s*offer)	“98% 录取”“95% 拿 offer”
+admission_promise	block	(保|包|稳)\s*(拿|进|上|录)?\s*(G5|藤校|常春藤|名校|top\s*\d+|前\s*\d+\s*名?|[A-Za-z]{2,6})\s*(的)?\s*(录取|offer)	“保 G5 录取”“稳进 top30 offer”（不命中“保研录取”“包括录取”）
+fact_claim	cite	(累计|已|已经|成功)?\s*(帮助|服务|送出)\s*\d+\s*(余|多)?\s*(名|位|个)	“已帮助 3000 名学生”
+fact_claim	cite	(仅剩|只剩|最后)\s*\d+\s*(个)?\s*名额	名额紧张话术
+privacy	block	(?<!\d)1[3-9]\d{9}(?!\d)	手机号
+privacy	block	(?<![0-9Xx])\d{17}[0-9Xx](?![0-9Xx])	身份证号
+privacy	block	[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}	邮箱（站点自身的联系邮箱在例外中配置）

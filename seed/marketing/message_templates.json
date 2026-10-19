@@ -1,0 +1,188 @@
+{
+  "version": "draft-20261019",
+  "notes": [
+    "AI 草拟，待创始人确认；确认前不作为上线依据。说明见 doc/准备/M0-10-营销日历剧本与合规词表说明.md。",
+    "{变量} 只取院校库、选校引擎输出、预约记录和配置，不由大模型生成；{link} 为带 ch / ct 参数的短链接。",
+    "kind=service 为用户主动订阅或已发生业务的通知；kind=marketing 为营销消息，只发给已同意营销触达的成年人，受频控、免打扰与退订约束。",
+    "audience=parent 的模板用于美本、美高：学生未成年，营销只触达家长。",
+    "服务号模板消息、小程序订阅消息只用于 service 类；营销类走企业微信、服务号客服消息（48 小时互动窗口内）或短信。以 M0-09 核实的平台规则为准。",
+    "短信以【{brand}】开头；marketing 类短信结尾带“拒收请回复R”（《广告法》第四十三条：电子信息方式发送广告须提供拒绝方式）。"
+  ],
+  "variables": {
+    "brand": "品牌简称（配置，M0-02 定）",
+    "name": "称呼（只用用户自填的称呼；未填时用“同学”或“家长”）",
+    "school_name": "院校名（院校库）",
+    "program_name": "项目名（院校库）",
+    "round_name": "申请轮次名（院校库）",
+    "deadline_date": "截止日（院校库，yyyy-MM-dd）",
+    "open_date": "开放日（院校库）",
+    "days_left": "距截止天数（按北京时间计算）",
+    "change_summary": "要求变化摘要（情报变更记录的字段名 + 新旧值，模板拼接，不经大模型）",
+    "alt_count": "替代项目数量（选校引擎输出）",
+    "test_name": "考试名（如 雅思、托福）",
+    "advisor_name": "顾问称呼",
+    "booking_time": "预约时间（yyyy-MM-dd HH:mm）",
+    "booking_mode": "预约方式（线上 / 到店）",
+    "link": "带渠道码的链接"
+  },
+  "templates": [
+    {
+      "code": "follow_open",
+      "scene": "关注的项目开放申请",
+      "agent": "nurture_agent",
+      "task_card": "M8-05",
+      "kind": "service",
+      "audience": "adult_or_parent",
+      "channels": {
+        "subscribe": { "thing": "{program_name}", "time": "{open_date}", "tip": "已开放申请，以官网为准" },
+        "wecom": "{name}你好，你关注的 {school_name} {program_name} 已开放申请（{open_date}）。要求和截止日以官网为准，详情：{link}",
+        "sms": "【{brand}】你关注的{school_name}{program_name}已开放申请，详情 {link}"
+      }
+    },
+    {
+      "code": "follow_deadline_30",
+      "scene": "关注的项目截止前 30 天",
+      "agent": "nurture_agent",
+      "task_card": "M8-05",
+      "kind": "service",
+      "audience": "adult_or_parent",
+      "channels": {
+        "subscribe": { "thing": "{program_name}", "time": "{deadline_date}", "tip": "{round_name}还有{days_left}天截止" },
+        "wecom": "{name}你好，{school_name} {program_name} {round_name}将于 {deadline_date} 截止，还有 {days_left} 天。材料清单：{link}",
+        "sms": "【{brand}】{school_name}{program_name}{round_name}{deadline_date}截止，还有{days_left}天，材料清单 {link}"
+      }
+    },
+    {
+      "code": "follow_deadline_7",
+      "scene": "关注的项目截止前 7 天",
+      "agent": "nurture_agent",
+      "task_card": "M8-05",
+      "kind": "service",
+      "audience": "adult_or_parent",
+      "channels": {
+        "subscribe": { "thing": "{program_name}", "time": "{deadline_date}", "tip": "还有{days_left}天截止，请尽早递交" },
+        "wecom": "{name}你好，{school_name} {program_name} {round_name}还有 {days_left} 天截止（{deadline_date}）。还没递交的话，可以先对照材料清单查漏：{link}",
+        "sms": "【{brand}】{school_name}{program_name}还有{days_left}天截止（{deadline_date}），材料清单 {link}"
+      }
+    },
+    {
+      "code": "follow_requirement_changed",
+      "scene": "关注的项目要求变化",
+      "agent": "nurture_agent",
+      "task_card": "M8-05",
+      "kind": "service",
+      "audience": "adult_or_parent",
+      "channels": {
+        "subscribe": { "thing": "{program_name}", "tip": "申请要求有更新" },
+        "wecom": "{name}你好，{school_name} {program_name} 的申请要求有更新：{change_summary}。按你的背景重新匹配后，另有 {alt_count} 个项目可以看看：{link}",
+        "sms": "【{brand}】{school_name}{program_name}申请要求有更新，查看 {link}"
+      },
+      "rules": [
+        "{change_summary} 只来自情报变更记录（已生效的变化），注明“以官网为准”",
+        "替代项目只来自选校引擎；alt_count 为 0 时去掉后半句"
+      ]
+    },
+    {
+      "code": "retest_after_score",
+      "scene": "语言考试出分后重测提醒",
+      "agent": "nurture_agent",
+      "task_card": "M8-03",
+      "kind": "marketing",
+      "audience": "adult",
+      "channels": {
+        "wecom": "{name}你好，{test_name}出分了吗？把新分数填进去，30 秒就能看到能申的项目有没有变化：{link}",
+        "sms": "【{brand}】{test_name}出分后填入新分数，看看能申的项目有没有变化 {link} 拒收请回复R"
+      }
+    },
+    {
+      "code": "reactivate",
+      "scene": "观望线索再激活（剧本切换时）",
+      "agent": "nurture_agent",
+      "task_card": "M8-03",
+      "kind": "marketing",
+      "audience": "adult_or_parent",
+      "channels": {
+        "wecom": "{name}你好，你的选校单里有 {alt_count} 个项目更新了截止日或要求。打开看看现在的情况：{link}",
+        "sms": "【{brand}】你的选校单里有项目更新了截止日或要求，查看 {link} 拒收请回复R"
+      },
+      "rules": ["alt_count 为选校单中有变化的项目数，为 0 时不发"]
+    },
+    {
+      "code": "booking_invite",
+      "scene": "转化时刻后邀约咨询",
+      "agent": "booking_agent",
+      "task_card": "M8-04",
+      "kind": "marketing",
+      "audience": "adult_or_parent",
+      "channels": {
+        "wecom": "{name}你好，我是 {advisor_name}。看到你在整理选校单，如果需要，可以约 20 分钟免费聊聊你的情况，选个方便的时间：{link}",
+        "sms": "【{brand}】可预约20分钟免费选校咨询，选个方便的时间 {link} 拒收请回复R"
+      },
+      "rules": ["咨询时长与是否免费取产品配置（M5-06），不写死"]
+    },
+    {
+      "code": "booking_confirm",
+      "scene": "预约成功",
+      "agent": "booking_agent",
+      "task_card": "M8-04",
+      "kind": "service",
+      "audience": "adult_or_parent",
+      "channels": {
+        "template": { "first": "预约已确认", "keyword1": "{booking_time}", "keyword2": "{booking_mode}", "keyword3": "{advisor_name}", "remark": "需要改时间可点击详情" },
+        "wecom": "{name}你好，已为你约好 {booking_time}（{booking_mode}），顾问 {advisor_name}。需要改时间：{link}",
+        "sms": "【{brand}】已为你预约{booking_time}{booking_mode}咨询，顾问{advisor_name}，改约 {link}"
+      }
+    },
+    {
+      "code": "booking_reminder",
+      "scene": "预约前提醒（前一天、前 2 小时）",
+      "agent": "booking_agent",
+      "task_card": "M8-04",
+      "kind": "service",
+      "audience": "adult_or_parent",
+      "channels": {
+        "template": { "first": "咨询提醒", "keyword1": "{booking_time}", "keyword2": "{booking_mode}", "remark": "需要改时间可点击详情" },
+        "wecom": "{name}你好，提醒一下：{booking_time} 有一场{booking_mode}咨询。需要改时间：{link}",
+        "sms": "【{brand}】提醒：{booking_time}有一场{booking_mode}咨询，改约 {link}"
+      },
+      "rules": ["免打扰时段内不发；前 2 小时的提醒若落在免打扰时段，并入前一天的提醒"]
+    },
+    {
+      "code": "booking_rescheduled",
+      "scene": "改约成功",
+      "agent": "booking_agent",
+      "task_card": "M8-04",
+      "kind": "service",
+      "audience": "adult_or_parent",
+      "channels": {
+        "template": { "first": "预约时间已更改", "keyword1": "{booking_time}", "keyword2": "{booking_mode}", "keyword3": "{advisor_name}" },
+        "wecom": "{name}你好，预约已改到 {booking_time}（{booking_mode}），顾问 {advisor_name}。",
+        "sms": "【{brand}】预约已改到{booking_time}{booking_mode}，顾问{advisor_name}"
+      }
+    },
+    {
+      "code": "wecom_welcome",
+      "scene": "企业微信加好友欢迎语",
+      "agent": "engagement_agent",
+      "task_card": "M8-01",
+      "kind": "service",
+      "audience": "adult_or_parent",
+      "channels": {
+        "wecom": "你好，我是 {advisor_name}。发送你看到的内容口令，我把对应的资料发给你；也可以先用 30 秒快测看看能申哪些项目：{link}。回复“退订”不再接收提醒。"
+      }
+    },
+    {
+      "code": "unsubscribe_ack",
+      "scene": "退订确认",
+      "agent": "engagement_agent",
+      "task_card": "M8-01",
+      "kind": "service",
+      "audience": "adult_or_parent",
+      "channels": {
+        "wecom": "已退订，之后不再给你发提醒。你关注的项目仍可以在“我的申请规划”里查看。",
+        "sms": "【{brand}】已退订，之后不再给你发营销短信"
+      },
+      "rules": ["退订立即生效（频控闸）；退订确认本身不计入触达次数"]
+    }
+  ]
+}
