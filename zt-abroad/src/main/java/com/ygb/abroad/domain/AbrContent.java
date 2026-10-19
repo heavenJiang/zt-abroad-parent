@@ -129,6 +129,19 @@ public class AbrContent extends BaseEntity
     /** 是否被抽检（Y / N） */
     private String sampled;
 
+    /** 生成稿件的模型输入（JSON 文本） */
+    private String aiInput;
+
+    public String getAiInput()
+    {
+        return aiInput;
+    }
+
+    public void setAiInput(String aiInput)
+    {
+        this.aiInput = aiInput;
+    }
+
     public String getSampled()
     {
         return sampled;

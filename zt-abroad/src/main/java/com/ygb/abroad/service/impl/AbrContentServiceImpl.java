@@ -100,6 +100,7 @@ public class AbrContentServiceImpl implements IAbrContentService
         content.setAiCallId(null);
         content.setRequiresConfirm("N");
         content.setSampled("N");
+        content.setAiInput(null);
         return insert(content);
     }
 

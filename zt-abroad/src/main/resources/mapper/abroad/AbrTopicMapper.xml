@@ -130,4 +130,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where p.del_flag = '0' and p.status = '0' and p.verified_time &gt;= cast(#{verifiedSince} as date)
         order by p.program_id
     </select>
+
+    <select id="selectDueTopics" resultMap="AbrTopicResult">
+        <include refid="selectAbrTopicVo"/>
+        where t.status = 'planned' and t.content_id is null
+          and t.plan_date &gt;= cast(#{from} as date) and t.plan_date &lt;= cast(#{to} as date)
+          and a.status = '0' and coalesce(a.paused, 'N') &lt;&gt; 'Y'
+        order by t.plan_date, t.account_id, t.slot_no
+        limit #{limit}
+    </select>
+
+    <update id="markDrafted">
+        update abr_topic
+        set status = 'drafted', content_id = #{contentId}, update_by = #{operator}, update_time = now()
+        where topic_id = #{topicId} and content_id is null
+    </update>
 </mapper>

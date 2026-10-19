@@ -110,4 +110,24 @@ public interface AbrTopicMapper
      * @return [{programId, schoolName, programName, country, deadlines, changedTime}]
      */
     public List<Map<String, Object>> selectCatalogForTopics(@Param("verifiedSince") Date verifiedSince);
+
+    /**
+     * 到期待写稿的选题（计划日期在区间内、还没写稿、账号在用且未暂停），按日期、条次排序
+     *
+     * @param from 开始日期（含）
+     * @param to 结束日期（含）
+     * @param limit 最多条数
+     * @return 选题
+     */
+    public List<AbrTopic> selectDueTopics(@Param("from") Date from, @Param("to") Date to, @Param("limit") int limit);
+
+    /**
+     * 记为已写稿（只更新还没写稿的）
+     *
+     * @param topicId 选题ID
+     * @param contentId 内容ID
+     * @param operator 操作人
+     * @return 影响行数
+     */
+    public int markDrafted(@Param("topicId") Long topicId, @Param("contentId") Long contentId, @Param("operator") String operator);
 }

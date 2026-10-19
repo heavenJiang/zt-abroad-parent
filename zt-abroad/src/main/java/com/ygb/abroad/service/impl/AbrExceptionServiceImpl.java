@@ -141,7 +141,7 @@ public class AbrExceptionServiceImpl implements IAbrExceptionService
                 AbrContent c = contentMapper.selectAbrContentById(e.contentId());
                 JsonNode gate = AiJson.parseOrNull(c.getGateResult());
                 enqueue(AiConstants.QUEUE_EXCEPTION, REASON_GATE_BLOCKED, c.getAgentCode(), BIZ_CONTENT, bizId, c.getAiCallId(), snapshot(c),
-                        gate == null ? "[]" : gate.path("blocked").toString(), null);
+                        gate == null ? "[]" : gate.path("blocked").toString(), c.getAiInput());
             }
             else
             {
@@ -158,7 +158,7 @@ public class AbrExceptionServiceImpl implements IAbrExceptionService
             AbrContent c = contentMapper.selectAbrContentById(e.contentId());
             if ("Y".equals(c.getSampled()))
             {
-                enqueue(AiConstants.QUEUE_SAMPLE, REASON_AUTO_SAMPLE, c.getAgentCode(), BIZ_CONTENT, bizId, c.getAiCallId(), snapshot(c), "[]", null);
+                enqueue(AiConstants.QUEUE_SAMPLE, REASON_AUTO_SAMPLE, c.getAgentCode(), BIZ_CONTENT, bizId, c.getAiCallId(), snapshot(c), "[]", c.getAiInput());
             }
         }
     }

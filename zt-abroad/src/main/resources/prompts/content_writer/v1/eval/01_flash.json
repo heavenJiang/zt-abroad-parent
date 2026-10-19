@@ -1,0 +1,31 @@
+{
+  "name": "快讯：数字取自输入的院校库事实，不写引流与 AI 标识",
+  "input": {
+    "platform": "小红书",
+    "persona": "工作室号",
+    "kind": "flash",
+    "kindLabel": "变化快讯与限时信息",
+    "topic": { "title": "Eastvale 管理学硕士第一轮截止临近", "angle": "提醒第一轮递交时间，列出材料准备顺序" },
+    "playbook": { "name": "港新英分轮截止", "audience": "已开始准备申请的学生" },
+    "hook": "现在还能申",
+    "programs": [
+      { "programId": 5, "school": "Eastvale University", "program": "MSc Management", "country": "英国",
+        "facts": { "雅思": "雅思 7.0（小分 6.5）", "截止": "2026-11-15（Round 1）；2027-01-31（Round 2）", "学费": "35,000 英镑 / 年", "学制": "12 个月" },
+        "verified": "2026-10-15" }
+    ],
+    "feedback": [],
+    "_mockOutput": {
+      "title": "Eastvale 管理学硕士第一轮截止",
+      "body": "Eastvale University 的 MSc Management 第一轮截止日是 2026-11-15，第二轮是 2027-01-31。\n\n语言要求雅思 7.0（小分 6.5），学制 12 个月。\n\n准备顺序：先定推荐人，再写个人陈述，最后整理成绩单和语言成绩。",
+      "hashtags": ["英国硕士", "申请季"]
+    }
+  },
+  "knownNames": [],
+  "expectStatus": "success",
+  "expect": [
+    { "path": "/body", "contains": "2026-11-15" },
+    { "path": "/body", "notContains": "加V" },
+    { "path": "/body", "notContains": "AI 辅助生成" },
+    { "path": "/title", "notContains": "保录" }
+  ]
+}

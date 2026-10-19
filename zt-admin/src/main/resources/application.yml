@@ -163,6 +163,18 @@ abroad:
   content:
     # AI 生成标识：AI 生成的内容通过合规闸门前须在正文中带上这段文字
     ai-label: 本文由 AI 辅助生成
+    # 写稿（M7-03）：提前几天为选题写稿、每轮最多几条
+    write-ahead-days: 2
+    write-batch: 10
+    # 文末引导（按平台，{codeword} 私信口令、{hook} 工具名称）：由系统追加，不由大模型写；导流方式以各平台当期规则为准
+    closing:
+      xiaohongshu: 想知道按你的背景能申哪些项目？私信发送口令「{codeword}」，用「{hook}」测一下。
+      douyin: 想知道自己能申哪些项目？私信发送口令「{codeword}」，用「{hook}」测一下。
+      channels: 用「{hook}」测一下，入口在视频下方。
+      zhihu: 私信发送口令「{codeword}」，获取「{hook}」的入口。
+      wechat_oa: 点击文末“阅读原文”，用「{hook}」测一下。
+      wecom: 用「{hook}」测一下，入口见下方。
+      default: 用「{hook}」测一下。
   topic:
     # 选题排期（M7-02）：从明天起排几天、每个账号每天几条（不超过账号的每天发布上限）
     days: 7
