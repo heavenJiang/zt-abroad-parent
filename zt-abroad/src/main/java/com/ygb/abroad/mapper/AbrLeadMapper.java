@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ibatis.annotations.Param;
 import com.ygb.abroad.domain.AbrLead;
+import com.ygb.abroad.domain.AbrLeadFollow;
 import com.ygb.abroad.domain.AbrLeadTouch;
 
 /**
@@ -199,4 +200,68 @@ public interface AbrLeadMapper
      * @return 线索ID，没有为 null
      */
     public Long selectLeadIdByVisitor(@Param("visitorId") Long visitorId, @Param("appUserId") Long appUserId);
+
+    /**
+     * 修改称呼与备注
+     *
+     * @param lead 线索（leadId、displayName、remark、updateBy）
+     * @return 结果
+     */
+    public int updateBasic(AbrLead lead);
+
+    /**
+     * 记跟进：最近跟进时间、下次联系时间；新线索第一次跟进后进入“已联系”
+     *
+     * @param leadId 线索ID
+     * @param nextFollowTime 下次联系时间（可为 null）
+     * @param operator 操作人
+     * @return 结果
+     */
+    public int recordFollow(@Param("leadId") Long leadId, @Param("nextFollowTime") Date nextFollowTime, @Param("operator") String operator);
+
+    /**
+     * 改阶段（签约、流失时清空下次联系时间）
+     *
+     * @param leadId 线索ID
+     * @param stage 阶段
+     * @param lostReason 流失原因（其他阶段为空串）
+     * @param operator 操作人
+     * @return 结果
+     */
+    public int updateStage(@Param("leadId") Long leadId, @Param("stage") String stage, @Param("lostReason") String lostReason,
+            @Param("operator") String operator);
+
+    /**
+     * 改负责人
+     *
+     * @param leadId 线索ID
+     * @param ownerUserId 负责人（sys_user）
+     * @param operator 操作人
+     * @return 结果
+     */
+    public int updateOwner(@Param("leadId") Long leadId, @Param("ownerUserId") Long ownerUserId, @Param("operator") String operator);
+
+    /**
+     * 新增跟进记录
+     *
+     * @param follow 记录
+     * @return 结果
+     */
+    public int insertFollow(AbrLeadFollow follow);
+
+    /**
+     * 线索的跟进记录（最近 500 条）
+     *
+     * @param leadId 线索ID
+     * @return 记录
+     */
+    public List<AbrLeadFollow> selectFollows(Long leadId);
+
+    /**
+     * 员工是否在用
+     *
+     * @param userId 员工ID
+     * @return 1 在用，0 不存在或已停用
+     */
+    public int countActiveUser(Long userId);
 }

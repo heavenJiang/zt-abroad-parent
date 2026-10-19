@@ -3,6 +3,7 @@ package com.ygb.abroad.service;
 import java.util.List;
 import java.util.Map;
 import com.ygb.abroad.domain.AbrLead;
+import com.ygb.abroad.domain.AbrLeadFollow;
 import com.ygb.abroad.domain.vo.AbrLeadCapture;
 import com.ygb.abroad.domain.vo.AbrLeadImportRow;
 
@@ -82,4 +83,53 @@ public interface IAbrLeadService
      * @return 新建数、记入已有线索数、失败的行与原因
      */
     public Map<String, Object> importLeads(List<AbrLeadImportRow> rows, String operator);
+
+    /**
+     * 修改称呼与备注
+     *
+     * @param lead 线索（leadId、displayName、remark）
+     * @param operator 操作人
+     * @return 结果
+     */
+    public int updateBasic(AbrLead lead, String operator);
+
+    /**
+     * 记跟进（方式、内容、下次联系时间；可同时改阶段）；新线索第一次跟进后进入“已联系”
+     *
+     * @param leadId 线索ID
+     * @param follow 跟进
+     * @param operator 操作人
+     * @return 跟进后的线索
+     */
+    public AbrLead follow(Long leadId, AbrLeadFollow follow, String operator);
+
+    /**
+     * 改阶段（流失须填原因；签约、流失后不再提醒下次联系）
+     *
+     * @param leadId 线索ID
+     * @param stage 阶段（字典 abr_lead_stage）
+     * @param lostReason 流失原因
+     * @param operator 操作人
+     * @return 修改后的线索
+     */
+    public AbrLead changeStage(Long leadId, String stage, String lostReason, String operator);
+
+    /**
+     * 转给同事（须为在用员工；记一条转交记录）
+     *
+     * @param leadId 线索ID
+     * @param ownerUserId 新负责人
+     * @param reason 原因（可空）
+     * @param operator 操作人
+     * @return 修改后的线索
+     */
+    public AbrLead assign(Long leadId, Long ownerUserId, String reason, String operator);
+
+    /**
+     * 跟进记录
+     *
+     * @param leadId 线索ID
+     * @return 记录（按时间倒序）
+     */
+    public List<AbrLeadFollow> follows(Long leadId);
 }

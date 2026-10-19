@@ -185,6 +185,87 @@ public class AbrLead extends BaseEntity
         this.overrideTime = overrideTime;
     }
 
+    /** 下次联系时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date nextFollowTime;
+
+    /** 最近跟进时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date lastFollowTime;
+
+    /** 进入当前阶段的时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date stageTime;
+
+    /** 流失原因 */
+    private String lostReason;
+
+    /** 负责顾问姓名（查询带出） */
+    private String ownerName;
+
+    /** 目标国家 / 地区（取主访客档案，JSON 数组文本，查询带出） */
+    private String targetCountries;
+
+    public Date getNextFollowTime()
+    {
+        return nextFollowTime;
+    }
+
+    public void setNextFollowTime(Date nextFollowTime)
+    {
+        this.nextFollowTime = nextFollowTime;
+    }
+
+    public Date getLastFollowTime()
+    {
+        return lastFollowTime;
+    }
+
+    public void setLastFollowTime(Date lastFollowTime)
+    {
+        this.lastFollowTime = lastFollowTime;
+    }
+
+    public Date getStageTime()
+    {
+        return stageTime;
+    }
+
+    public void setStageTime(Date stageTime)
+    {
+        this.stageTime = stageTime;
+    }
+
+    public String getLostReason()
+    {
+        return lostReason;
+    }
+
+    public void setLostReason(String lostReason)
+    {
+        this.lostReason = lostReason;
+    }
+
+    public String getOwnerName()
+    {
+        return ownerName;
+    }
+
+    public void setOwnerName(String ownerName)
+    {
+        this.ownerName = ownerName;
+    }
+
+    public String getTargetCountries()
+    {
+        return targetCountries;
+    }
+
+    public void setTargetCountries(String targetCountries)
+    {
+        this.targetCountries = targetCountries;
+    }
+
     public Long getLeadId()
     {
         return leadId;
@@ -428,6 +509,8 @@ public class AbrLead extends BaseEntity
             .append("touchCount", getTouchCount())
             .append("ruleGrade", getRuleGrade())
             .append("gradeOverride", getGradeOverride())
+            .append("nextFollowTime", getNextFollowTime())
+            .append("lostReason", getLostReason())
             .append("mergedInto", getMergedInto())
             .append("delFlag", getDelFlag())
             .append("createBy", getCreateBy())

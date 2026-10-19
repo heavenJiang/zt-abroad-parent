@@ -39,13 +39,22 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="overrideReason"  column="override_reason"   />
         <result property="overrideBy"      column="override_by"       />
         <result property="overrideTime"    column="override_time"     />
+        <result property="nextFollowTime"  column="next_follow_time"  />
+        <result property="lastFollowTime"  column="last_follow_time"  />
+        <result property="stageTime"       column="stage_time"        />
+        <result property="lostReason"      column="lost_reason"       />
+        <result property="ownerName"       column="owner_name"        />
+        <result property="targetCountries" column="target_countries"  />
     </resultMap>
 
     <sql id="selectAbrLeadVo">
         select lead_id, display_name, phone, phone_hash, unionid, app_user_id, visitor_id, minor, stage, grade, score, owner_user_id,
                first_source, first_channel, first_content, first_touch_time, last_source, last_channel, last_touch_time, touch_count,
                merged_into, del_flag, create_by, create_time, update_by, update_time, remark,
-               rule_grade, cast(score_reasons as text) as score_reasons, scored_time, grade_override, override_reason, override_by, override_time
+               rule_grade, cast(score_reasons as text) as score_reasons, scored_time, grade_override, override_reason, override_by, override_time,
+               next_follow_time, last_follow_time, stage_time, lost_reason,
+               (select u.nick_name from sys_user u where u.user_id = abr_lead.owner_user_id) as owner_name,
+               (select cast(v.profile -> 'target_countries' as text) from abr_visitor v where v.visitor_id = abr_lead.visitor_id) as target_countries
         from abr_lead
     </sql>
 
@@ -61,7 +70,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="params.phoneHash != null and params.phoneHash != ''">and phone_hash = #{params.phoneHash}</if>
         <if test="params.beginTime != null and params.beginTime != ''">and first_touch_time &gt;= cast(#{params.beginTime} as date)</if>
         <if test="params.endTime != null and params.endTime != ''">and first_touch_time &lt; cast(#{params.endTime} as date) + interval '1 day'</if>
-        order by last_touch_time desc, lead_id desc
+        <if test="ownerUserId != null">and owner_user_id = #{ownerUserId}</if>
+        <if test="params.unassigned != null and params.unassigned != ''">and owner_user_id is null</if>
+        <if test="params.due != null and params.due != ''">and next_follow_time is not null and next_follow_time &lt;= now() and stage not in ('won', 'lost')</if>
+        order by case grade when 'A' then 1 when 'B' then 2 when 'C' then 3 else 4 end, next_follow_time nulls last, last_touch_time desc, lead_id desc
     </select>
 
     <select id="selectAbrLeadById" parameterType="Long" resultMap="AbrLeadResult">
@@ -140,6 +152,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             where (visitor_id = #{visitorId} or app_user_id = #{appUserId})
               and event_type not in ('app_user_registered', 'app_user_phone_bound', 'plan_moment', 'plan_share_created')
             union all
+            select create_time, 'follow', follow_kind, method, content, '', '', 'follow', follow_id
+            from abr_lead_follow where lead_id = #{leadId}
+            union all
             select create_time, 'tool', tool, '', '', coalesce(channel_code, ''), coalesce(content_code, ''), 'tool_run', tool_run_id
             from abr_tool_run where visitor_id = #{visitorId}
             union all
@@ -210,5 +225,47 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select lead_id from abr_lead
         where merged_into is null and del_flag = '0' and (visitor_id = #{visitorId} or app_user_id = #{appUserId})
         order by lead_id limit 1
+    </select>
+
+    <update id="updateBasic" parameterType="AbrLead">
+        update abr_lead set display_name = coalesce(#{displayName}, ''), remark = #{remark}, update_by = #{updateBy}, update_time = now()
+        where lead_id = #{leadId}
+    </update>
+
+    <update id="recordFollow">
+        update abr_lead
+        set last_follow_time = now(), next_follow_time = #{nextFollowTime},
+            stage = case when stage = 'new' then 'contacted' else stage end,
+            stage_time = case when stage = 'new' then now() else stage_time end,
+            update_by = #{operator}, update_time = now()
+        where lead_id = #{leadId}
+    </update>
+
+    <update id="updateStage">
+        update abr_lead
+        set stage = #{stage}, stage_time = now(), lost_reason = #{lostReason},
+            next_follow_time = case when #{stage} in ('won', 'lost') then null else next_follow_time end,
+            update_by = #{operator}, update_time = now()
+        where lead_id = #{leadId}
+    </update>
+
+    <update id="updateOwner">
+        update abr_lead set owner_user_id = #{ownerUserId}, update_by = #{operator}, update_time = now() where lead_id = #{leadId}
+    </update>
+
+    <insert id="insertFollow" parameterType="AbrLeadFollow" useGeneratedKeys="true" keyProperty="followId" keyColumn="follow_id">
+        insert into abr_lead_follow (lead_id, follow_kind, method, content, next_follow_time, stage_from, stage_to, owner_from, owner_to, create_by, create_time)
+        values (#{leadId}, #{followKind}, coalesce(#{method}, ''), coalesce(#{content}, ''), #{nextFollowTime}, #{stageFrom}, #{stageTo},
+                #{ownerFrom}, #{ownerTo}, #{createBy}, now())
+    </insert>
+
+    <select id="selectFollows" parameterType="Long" resultType="AbrLeadFollow">
+        select follow_id as followId, lead_id as leadId, follow_kind as followKind, method, content, next_follow_time as nextFollowTime,
+               stage_from as stageFrom, stage_to as stageTo, owner_from as ownerFrom, owner_to as ownerTo, create_by as createBy, create_time as createTime
+        from abr_lead_follow where lead_id = #{leadId} order by follow_id desc limit 500
+    </select>
+
+    <select id="countActiveUser" parameterType="Long" resultType="int">
+        select count(*) from sys_user where user_id = #{userId} and status = '0' and del_flag = '0'
     </select>
 </mapper>

@@ -56,6 +56,20 @@ class AbrLeadRulesTest
         assertEquals("提交完整测评", AbrLeadRules.label("assessment", "submitted", ""));
         assertEquals("开始完整测评", AbrLeadRules.label("assessment", "in_progress", ""));
         assertEquals("讲座报名", AbrLeadRules.label("touch", "import", "讲座报名"));
+        assertEquals("员工录入", AbrLeadRules.label("touch", "manual", ""));
         assertTrue(AbrLeadRules.STAFF_SOURCES.stream().allMatch(AbrLeadRules.ALL_SOURCES::contains));
+    }
+
+    @Test
+    void followLabelsAndNextFollow()
+    {
+        assertEquals("跟进：电话沟通", AbrLeadRules.label("follow", "follow", "电话沟通"));
+        assertEquals("阶段变更：预算不够", AbrLeadRules.label("follow", "stage", "预算不够"));
+        assertEquals("转给同事", AbrLeadRules.label("follow", "assign", ""));
+        Date now = new Date(1_800_000_000_000L);
+        AbrLeadRules.checkNextFollow(null, now);
+        AbrLeadRules.checkNextFollow(new Date(now.getTime() - 60_000), now);
+        assertThrows(ServiceException.class, () -> AbrLeadRules.checkNextFollow(new Date(now.getTime() - 3_600_000), now));
+        assertThrows(ServiceException.class, () -> AbrLeadRules.checkNextFollow(new Date(now.getTime() + 400L * 24 * 3600 * 1000), now));
     }
 }

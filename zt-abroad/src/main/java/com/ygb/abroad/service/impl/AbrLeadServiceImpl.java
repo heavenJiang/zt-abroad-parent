@@ -17,6 +17,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import com.ygb.abroad.domain.AbrAppUser;
 import com.ygb.abroad.domain.AbrEvent;
 import com.ygb.abroad.domain.AbrLead;
+import com.ygb.abroad.domain.AbrLeadFollow;
 import com.ygb.abroad.domain.AbrLeadTouch;
 import com.ygb.abroad.domain.vo.AbrLeadCapture;
 import com.ygb.abroad.domain.vo.AbrLeadImportRow;
@@ -464,6 +465,154 @@ public class AbrLeadServiceImpl implements IAbrLeadService
         r.put("leads", leads.size());
         r.put("failed", failed);
         return r;
+    }
+
+    @Override
+    public int updateBasic(AbrLead lead, String operator)
+    {
+        AbrLead l = live(lead.getLeadId());
+        String name = StringUtils.trimToEmpty(lead.getDisplayName());
+        if (name.length() > 64)
+        {
+            throw new ServiceException("称呼最多 64 个字");
+        }
+        if (StringUtils.isNotBlank(lead.getRemark()) && lead.getRemark().length() > 500)
+        {
+            throw new ServiceException("备注最多 500 个字");
+        }
+        AbrLead u = new AbrLead();
+        u.setLeadId(l.getLeadId());
+        u.setDisplayName(name);
+        u.setRemark(StringUtils.trimToNull(lead.getRemark()));
+        u.setUpdateBy(operator);
+        return leadMapper.updateBasic(u);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public AbrLead follow(Long leadId, AbrLeadFollow f, String operator)
+    {
+        AbrLead l = live(leadId);
+        String method = StringUtils.trimToEmpty(f.getMethod());
+        if (!AbrPlaybookServiceImpl.dictValues("abr_follow_method").contains(method))
+        {
+            throw new ServiceException("跟进方式“" + method + "”不是可选值");
+        }
+        String content = StringUtils.trimToEmpty(f.getContent());
+        if (content.isEmpty() || content.length() > 2000)
+        {
+            throw new ServiceException("请填写跟进内容（最多 2000 字）");
+        }
+        AbrLeadRules.checkNextFollow(f.getNextFollowTime(), DateUtils.getNowDate());
+        AbrLeadFollow row = new AbrLeadFollow();
+        row.setLeadId(l.getLeadId());
+        row.setFollowKind(AbrLeadFollow.KIND_FOLLOW);
+        row.setMethod(method);
+        row.setContent(content);
+        row.setNextFollowTime(f.getNextFollowTime());
+        row.setCreateBy(operator);
+        leadMapper.insertFollow(row);
+        leadMapper.recordFollow(l.getLeadId(), f.getNextFollowTime(), operator);
+        if (AbrLead.STAGE_NEW.equals(l.getStage()))
+        {
+            stageRow(l.getLeadId(), AbrLead.STAGE_NEW, "contacted", "第一次跟进后进入已联系", operator);
+        }
+        String to = StringUtils.trimToNull(f.getStageTo());
+        if (to != null)
+        {
+            changeStage(l.getLeadId(), to, f.getLostReason(), operator);
+        }
+        return selectAbrLeadById(l.getLeadId());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public AbrLead changeStage(Long leadId, String stage, String lostReason, String operator)
+    {
+        AbrLead l = live(leadId);
+        String to = StringUtils.trimToEmpty(stage);
+        if (!AbrPlaybookServiceImpl.dictValues("abr_lead_stage").contains(to))
+        {
+            throw new ServiceException("阶段“" + to + "”不是可选值");
+        }
+        String reason = StringUtils.trimToEmpty(lostReason);
+        if (AbrLeadRules.STAGE_LOST.equals(to) && reason.isEmpty())
+        {
+            throw new ServiceException("改为流失须填写原因");
+        }
+        if (reason.length() > 500)
+        {
+            throw new ServiceException("流失原因最多 500 字");
+        }
+        if (to.equals(l.getStage()) && !AbrLeadRules.STAGE_LOST.equals(to))
+        {
+            return selectAbrLeadById(l.getLeadId());
+        }
+        leadMapper.updateStage(l.getLeadId(), to, AbrLeadRules.STAGE_LOST.equals(to) ? reason : "", operator);
+        stageRow(l.getLeadId(), l.getStage(), to, reason, operator);
+        return selectAbrLeadById(l.getLeadId());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public AbrLead assign(Long leadId, Long ownerUserId, String reason, String operator)
+    {
+        AbrLead l = live(leadId);
+        if (ownerUserId == null || leadMapper.countActiveUser(ownerUserId) == 0)
+        {
+            throw new ServiceException("接手的同事不存在或已停用");
+        }
+        if (ownerUserId.equals(l.getOwnerUserId()))
+        {
+            throw new ServiceException("已经是这位同事负责");
+        }
+        String text = StringUtils.trimToEmpty(reason);
+        if (text.length() > 500)
+        {
+            throw new ServiceException("原因最多 500 字");
+        }
+        leadMapper.updateOwner(l.getLeadId(), ownerUserId, operator);
+        AbrLeadFollow row = new AbrLeadFollow();
+        row.setLeadId(l.getLeadId());
+        row.setFollowKind(AbrLeadFollow.KIND_ASSIGN);
+        row.setContent(text);
+        row.setOwnerFrom(l.getOwnerUserId());
+        row.setOwnerTo(ownerUserId);
+        row.setCreateBy(operator);
+        leadMapper.insertFollow(row);
+        return selectAbrLeadById(l.getLeadId());
+    }
+
+    @Override
+    public List<AbrLeadFollow> follows(Long leadId)
+    {
+        return leadMapper.selectFollows(live(leadId).getLeadId());
+    }
+
+    private void stageRow(Long leadId, String from, String to, String content, String operator)
+    {
+        AbrLeadFollow row = new AbrLeadFollow();
+        row.setLeadId(leadId);
+        row.setFollowKind(AbrLeadFollow.KIND_STAGE);
+        row.setStageFrom(from);
+        row.setStageTo(to);
+        row.setContent(content);
+        row.setCreateBy(operator);
+        leadMapper.insertFollow(row);
+    }
+
+    /**
+     * 未合并、未删除的线索（已合并的换成保留的一条）
+     */
+    private AbrLead live(Long leadId)
+    {
+        AbrLead l = leadId == null ? null : leadMapper.selectAbrLeadById(leadId);
+        l = l == null ? null : root(l);
+        if (l == null)
+        {
+            throw new ServiceException("线索不存在");
+        }
+        return l;
     }
 
     private static AbrLead masked(AbrLead l)

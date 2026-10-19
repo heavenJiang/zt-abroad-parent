@@ -1,6 +1,7 @@
 package com.ygb.abroad.service.impl;
 
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -16,6 +17,12 @@ import com.ygb.common.utils.StringUtils;
  */
 final class AbrLeadRules
 {
+    /** 阶段：流失 */
+    static final String STAGE_LOST = "lost";
+
+    /** 下次联系时间最多约到多久之后 */
+    static final long MAX_FOLLOW_AHEAD_MS = 366L * 24 * 3600 * 1000;
+
     /** 来源：C 端（自动收口） */
     static final String SOURCE_H5 = "h5";
 
@@ -53,6 +60,10 @@ final class AbrLeadRules
             Map.entry("assessment_resume_uploaded", "上传简历 / 成绩单"),
             Map.entry("assessment_resume_deleted", "删除简历 / 成绩单"),
             Map.entry("content_published", "内容发布"));
+
+    /** 触达记录类型的说明（摘要为空时显示） */
+    static final Map<String, String> TOUCH_LABELS = Map.of("registered", "C 端注册", "phone_bound", "绑定手机号", "plan_moment", "转化时刻",
+            "plan_share", "分享选校单", "manual", "员工录入", "import", "表格导入", "api", "接口接入", "merged", "线索合并");
 
     /** 时间线中工具的说明 */
     static final Map<String, String> TOOL_LABELS = Map.of("quick", "使用 30 秒快测", "recognition", "查询本校认可度", "ielts", "查询雅思够不够",
@@ -102,6 +113,28 @@ final class AbrLeadRules
     }
 
     /**
+     * 下次联系时间：可为空；不能早于现在（留 5 分钟误差），不能晚于一年后
+     *
+     * @param next 下次联系时间
+     * @param now 现在
+     */
+    static void checkNextFollow(Date next, Date now)
+    {
+        if (next == null)
+        {
+            return;
+        }
+        if (next.getTime() < now.getTime() - 5 * 60 * 1000L)
+        {
+            throw new ServiceException("下次联系时间不能早于现在");
+        }
+        if (next.getTime() > now.getTime() + MAX_FOLLOW_AHEAD_MS)
+        {
+            throw new ServiceException("下次联系时间不能晚于一年后");
+        }
+    }
+
+    /**
      * 时间线条目的说明
      *
      * @param kind 类别（touch / event / tool / assessment）
@@ -116,7 +149,13 @@ final class AbrLeadRules
             case "event" -> EVENT_LABELS.getOrDefault(type, type);
             case "tool" -> TOOL_LABELS.getOrDefault(type, "使用工具 " + type);
             case "assessment" -> "submitted".equals(type) ? "提交完整测评" : "开始完整测评";
-            default -> StringUtils.defaultString(summary);
+            case "follow" -> switch (type)
+            {
+                case "stage" -> "阶段变更" + (StringUtils.isBlank(summary) ? "" : "：" + summary);
+                case "assign" -> "转给同事" + (StringUtils.isBlank(summary) ? "" : "：" + summary);
+                default -> "跟进：" + StringUtils.defaultString(summary);
+            };
+            default -> StringUtils.isNotBlank(summary) ? summary : TOUCH_LABELS.getOrDefault(type, type);
         };
     }
 }

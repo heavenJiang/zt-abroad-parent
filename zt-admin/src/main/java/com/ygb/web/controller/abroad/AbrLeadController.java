@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import com.ygb.abroad.domain.AbrLead;
+import com.ygb.abroad.domain.AbrLeadFollow;
 import com.ygb.abroad.domain.vo.AbrLeadImportRow;
 import com.ygb.abroad.service.IAbrLeadScoreService;
 import com.ygb.abroad.service.IAbrLeadService;
@@ -41,12 +42,17 @@ public class AbrLeadController extends BaseController
     private IAbrLeadScoreService scoreService;
 
     /**
-     * 查询线索列表（params[keyword] 为称呼，或 11 位手机号精确查找；params[beginTime] / params[endTime] 为首次触达日期）
+     * 查询线索列表：默认按 意向度 → 下次联系时间 → 最近触达 排序。params[keyword] 为称呼或 11 位手机号；params[beginTime] / params[endTime]
+     * 为首次触达日期；params[mine]=1 只看我负责的，params[unassigned]=1 只看未分配的，params[due]=1 只看到期待联系的；ownerUserId 按负责人
      */
     @PreAuthorize("@ss.hasPermi('abroad:lead:list')")
     @GetMapping("/list")
     public TableDataInfo list(AbrLead lead)
     {
+        if (lead.getParams().get("mine") != null && !"".equals(lead.getParams().get("mine")))
+        {
+            lead.setOwnerUserId(getUserId());
+        }
         startPage();
         List<AbrLead> list = leadService.selectAbrLeadList(lead);
         return getDataTable(list);
@@ -151,5 +157,61 @@ public class AbrLeadController extends BaseController
     public AjaxResult scoreLog(@PathVariable Long leadId)
     {
         return success(scoreService.scoreLog(leadId));
+    }
+
+    /**
+     * 修改称呼与备注
+     */
+    @PreAuthorize("@ss.hasPermi('abroad:lead:edit')")
+    @Log(title = "线索", businessType = BusinessType.UPDATE)
+    @PutMapping
+    public AjaxResult edit(@RequestBody AbrLead lead)
+    {
+        return toAjax(leadService.updateBasic(lead, getUsername()));
+    }
+
+    /**
+     * 记跟进（method、content、nextFollowTime；可带 stageTo / lostReason 同时改阶段）
+     */
+    @PreAuthorize("@ss.hasPermi('abroad:lead:follow')")
+    @Log(title = "线索跟进", businessType = BusinessType.INSERT)
+    @PostMapping("/follow/{leadId}")
+    public AjaxResult follow(@PathVariable Long leadId, @RequestBody AbrLeadFollow follow)
+    {
+        return success(leadService.follow(leadId, follow, getUsername()));
+    }
+
+    /**
+     * 跟进记录
+     */
+    @PreAuthorize("@ss.hasPermi('abroad:lead:query')")
+    @GetMapping("/follow/{leadId}")
+    public AjaxResult follows(@PathVariable Long leadId)
+    {
+        return success(leadService.follows(leadId));
+    }
+
+    /**
+     * 改阶段（stage；流失须填 lostReason）
+     */
+    @PreAuthorize("@ss.hasPermi('abroad:lead:stage')")
+    @Log(title = "线索阶段", businessType = BusinessType.UPDATE)
+    @PutMapping("/stage/{leadId}")
+    public AjaxResult stage(@PathVariable Long leadId, @RequestBody Map<String, String> body)
+    {
+        return success(leadService.changeStage(leadId, body.get("stage"), body.get("lostReason"), getUsername()));
+    }
+
+    /**
+     * 转给同事（ownerUserId、reason）
+     */
+    @PreAuthorize("@ss.hasPermi('abroad:lead:assign')")
+    @Log(title = "线索转交", businessType = BusinessType.UPDATE)
+    @PutMapping("/owner/{leadId}")
+    public AjaxResult owner(@PathVariable Long leadId, @RequestBody Map<String, Object> body)
+    {
+        Object owner = body.get("ownerUserId");
+        Long ownerUserId = owner instanceof Number n ? n.longValue() : null;
+        return success(leadService.assign(leadId, ownerUserId, body.get("reason") == null ? null : String.valueOf(body.get("reason")), getUsername()));
     }
 }
