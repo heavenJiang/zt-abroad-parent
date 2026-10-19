@@ -66,9 +66,15 @@ services:
       ZT_PROFILE: /home/zt/uploadPath
       ABR_APP_URL: https://${APP_DOMAIN}/
       ABR_BRAND_NAME: ${BRAND_NAME:-留学工作室}
+      ABR_SITE_DIR: /home/zt/site
+      ABR_SITE_URL: https://${WWW_DOMAIN}/
+      ABR_SITE_BAIDU_TOKEN: ${SITE_BAIDU_TOKEN:-}
+      ABR_SITE_INDEXNOW_KEY: ${SITE_INDEXNOW_KEY:-}
       TZ: Asia/Shanghai
     volumes:
       - abr-upload:/home/zt
+      # 公开项目页（M7-08）：后端生成，Nginx 只读提供
+      - ./site/www:/home/zt/site
     healthcheck:
       test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8090' || exit 1"]
       interval: 10s

@@ -189,6 +189,23 @@ abroad:
     # PDF 最多读取页数；去除敏感行后交给模型的最大字符数
     max-pages: 10
     max-chars: 12000
+  site:
+    # 公开项目页（M7-08，定时任务 abrSiteTask.refresh() 每 5 分钟检查院校库与日期，有变化时只重写变化的页面）
+    # 生成目录（Nginx www 域名的根目录）；为空时用 zt.profile 的同级目录 site（Docker 中为 /home/zt/site）
+    dir: ${ABR_SITE_DIR:}
+    # 站点地址（规范链接、站点地图、收录提交用，以 / 结尾）；生产由 ABR_SITE_URL 注入
+    url: ${ABR_SITE_URL:http://localhost/}
+    # 页面上“测一下”“关注”入口的渠道码（ct 为 p + 项目ID）
+    channel: site
+    # C 端“关注这个项目”页面（带 programId；页面随 M8-05 项目动态订阅实现）
+    follow-page: pages/follow/index
+    submit:
+      # 百度普通收录 API 推送令牌（搜索资源平台获取）；为空不提交
+      baidu-token: ${ABR_SITE_BAIDU_TOKEN:}
+      # IndexNow 密钥（必应等，8–128 位字母、数字、短横线；生成器会写入站点根目录 {key}.txt）；为空不提交
+      indexnow-key: ${ABR_SITE_INDEXNOW_KEY:}
+      # 单次最多提交的地址数
+      max-urls: 500
   card:
     # 图卡字体族（为空时自动选第一个能显示中文的字体；Docker 镜像已安装文泉驿微米黑）
     font-family: ""

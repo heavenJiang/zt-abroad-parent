@@ -65,6 +65,18 @@ server {
     listen 80;
     server_name ${WWW_DOMAIN};
     root /usr/share/nginx/www;
+    charset utf-8;
+    error_page 404 /404.html;
+
+    # 生成器的清单与临时文件不对外
+    location ~ (^|/)\. { return 404; }
+    location ~ \.tmp$  { return 404; }
+
+    location = /404.html { internal; }
+
+    location /assets/ {
+        expires 7d;
+    }
 
     location / {
         try_files $uri $uri/ $uri.html =404;

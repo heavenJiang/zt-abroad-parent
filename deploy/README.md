@@ -22,11 +22,24 @@ cp .env.example .env && vi .env     # 填域名、数据库 / Redis 密码、TOK
 | --- | --- | --- |
 | `ADMIN_DOMAIN` | 管理后台静态文件 | `/prod-api/**` → 后端；**拒绝** `/prod-api/app/**`、`/prod-api/callback/**`、`/prod-api/druid/**` |
 | `APP_DOMAIN` | C 端 H5 | **只代理** `/app/**`；其余路径回退到 `index.html` |
-| `WWW_DOMAIN` | 公开项目页（M7-08 生成到 `site/www/`，之前是占位页） | 不代理接口 |
+| `WWW_DOMAIN` | 公开项目页（后端生成到 `site/www/`，见下文） | 不代理接口 |
 | `API_DOMAIN` | — | 只代理 `/app/**`（小程序）与 `/callback/**`（第三方回调） |
 | 其他 / IP 直连 | — | 直接断开（444） |
 
 数据库、Redis、后端都不对外开放端口，只有 Nginx 监听 80 / 443。生产配置里关闭了 Druid 监控台和接口文档；数据库、Redis 密码与员工令牌密钥只从 `.env` 注入（开发规范第 8 章）。
+
+## 公开项目页（M7-08）
+
+后端把院校库渲染成静态 HTML，写到 `site/www/`（容器内 `/home/zt/site`），Nginx 只读提供，不经过 Spring。定时任务 `abrSiteTask.refresh()` 每 5 分钟检查院校库与日期，有变化时只重写变化的页面并更新 `sitemap.xml`；管理后台「获客运营 → 公开项目页」可查看生成记录、预览页面、手动重新生成。首次启动后几分钟内会替换占位页。
+
+收录提交（可选，`.env` 中填写后 `./deploy.sh`）：
+
+| 变量 | 说明 |
+| --- | --- |
+| `SITE_BAIDU_TOKEN` | 百度搜索资源平台 → 普通收录 → API 提交的令牌（站点须先在平台验证） |
+| `SITE_INDEXNOW_KEY` | IndexNow 密钥（必应等；8–128 位字母、数字、短横线，生成器自动写入站点根目录的 `{key}.txt`） |
+
+未填写时不提交，只生成站点地图（可在各平台后台手动提交 `https://WWW_DOMAIN/sitemap.xml`）。
 
 ## HTTPS（上线前必须，小程序只能请求 HTTPS）
 

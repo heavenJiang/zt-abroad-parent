@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrSiteBuildMapper">
+
+    <resultMap type="AbrSiteBuild" id="AbrSiteBuildResult">
+        <id     property="buildId"         column="build_id"         />
+        <result property="triggerType"     column="trigger_type"     />
+        <result property="fingerprint"     column="fingerprint"      />
+        <result property="status"          column="status"           />
+        <result property="pageTotal"       column="page_total"       />
+        <result property="writtenCount"    column="written_count"    />
+        <result property="removedCount"    column="removed_count"    />
+        <result property="submittedCount"  column="submitted_count"  />
+        <result property="changes"         column="changes"          />
+        <result property="submitResult"    column="submit_result"    />
+        <result property="errorMsg"        column="error_msg"        />
+        <result property="startTime"       column="start_time"       />
+        <result property="endTime"         column="end_time"         />
+        <result property="createBy"        column="create_by"        />
+        <result property="createTime"      column="create_time"      />
+        <result property="remark"          column="remark"           />
+    </resultMap>
+
+    <sql id="selectAbrSiteBuildVo">
+        select build_id, trigger_type, fingerprint, status, page_total, written_count, removed_count, submitted_count,
+               cast(changes as text) as changes, cast(submit_result as text) as submit_result, error_msg, start_time, end_time,
+               create_by, create_time, remark
+        from abr_site_build
+    </sql>
+
+    <select id="selectAbrSiteBuildList" parameterType="AbrSiteBuild" resultMap="AbrSiteBuildResult">
+        <include refid="selectAbrSiteBuildVo"/>
+        <where>
+            <if test="triggerType != null and triggerType != ''">
+                AND trigger_type = #{triggerType}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                AND start_time &gt;= cast(#{params.beginTime} as date)
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                AND start_time &lt; cast(#{params.endTime} as date) + interval '1 day'
+            </if>
+        </where>
+        order by build_id desc
+    </select>
+
+    <select id="selectAbrSiteBuildById" parameterType="Long" resultMap="AbrSiteBuildResult">
+        <include refid="selectAbrSiteBuildVo"/>
+        where build_id = #{buildId}
+    </select>
+
+    <select id="selectLastSuccess" resultMap="AbrSiteBuildResult">
+        <include refid="selectAbrSiteBuildVo"/>
+        where status = 'success'
+        order by build_id desc
+        limit 1
+    </select>
+
+    <select id="selectLatest" resultMap="AbrSiteBuildResult">
+        <include refid="selectAbrSiteBuildVo"/>
+        order by build_id desc
+        limit 1
+    </select>
+
+    <insert id="insertAbrSiteBuild" parameterType="AbrSiteBuild" useGeneratedKeys="true" keyProperty="buildId" keyColumn="build_id">
+        insert into abr_site_build (trigger_type, fingerprint, status, start_time, create_by, create_time)
+        values (#{triggerType}, #{fingerprint}, 'running', now(), #{createBy}, now())
+    </insert>
+
+    <update id="finishAbrSiteBuild" parameterType="AbrSiteBuild">
+        update abr_site_build
+        set status = #{status},
+            page_total = coalesce(#{pageTotal}, 0),
+            written_count = coalesce(#{writtenCount}, 0),
+            removed_count = coalesce(#{removedCount}, 0),
+            submitted_count = coalesce(#{submittedCount}, 0),
+            changes = cast(coalesce(#{changes}, '{}') as jsonb),
+            submit_result = cast(coalesce(#{submitResult}, '{}') as jsonb),
+            error_msg = coalesce(#{errorMsg}, ''),
+            end_time = now()
+        where build_id = #{buildId} and status = 'running'
+    </update>
+
+    <update id="failRunning">
+        update abr_site_build set status = 'failed', error_msg = '生成中断（进程重启）', end_time = now()
+        where status = 'running'
+    </update>
+
+    <select id="selectCatalogStamp" resultType="String">
+        select concat_ws(';',
+            (select count(*) || ',' || coalesce(to_char(max(greatest(create_time, update_time)), 'YYYYMMDDHH24MISSUS'), '') from abr_program),
+            (select count(*) || ',' || coalesce(to_char(max(greatest(create_time, update_time)), 'YYYYMMDDHH24MISSUS'), '') from abr_requirement),
+            (select count(*) || ',' || coalesce(to_char(max(greatest(create_time, update_time)), 'YYYYMMDDHH24MISSUS'), '') from abr_school),
+            (select count(*) || ',' || coalesce(to_char(max(greatest(create_time, update_time)), 'YYYYMMDDHH24MISSUS'), '') from abr_field_source),
+            (select count(*) || ',' || coalesce(to_char(max(greatest(create_time, update_time)), 'YYYYMMDDHH24MISSUS'), '') from sys_dict_data
+             where dict_type in ('abr_country', 'abr_degree', 'abr_major_direction', 'abr_intake', 'abr_teaching_language',
+                                 'abr_test_requirement', 'abr_cross_major', 'abr_pre_sessional')))
+    </select>
+
+    <select id="selectSourceUrls" resultType="java.util.HashMap">
+        select x.program_id, x.source_url
+        from (
+            select f.record_id as program_id, f.source_url
+            from abr_field_source f
+            where f.table_name = 'abr_program' and f.record_id in
+            <foreach collection="programIds" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+            <if test="requirementIds != null and requirementIds.size() > 0">
+            union
+            select r.program_id, f.source_url
+            from abr_field_source f
+            join abr_requirement r on r.requirement_id = f.record_id
+            where f.table_name = 'abr_requirement' and f.record_id in
+            <foreach collection="requirementIds" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+            </if>
+        ) x
+        where x.source_url is not null and x.source_url &lt;&gt; ''
+        order by x.program_id, x.source_url
+    </select>
+
+</mapper>

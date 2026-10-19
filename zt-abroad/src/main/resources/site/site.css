@@ -1,0 +1,64 @@
+/* 公开项目页样式（M7-08）：由 AbrSiteServiceImpl 原样写到站点 assets/site.css */
+:root {
+  --bg: #ffffff;
+  --text: #1f2329;
+  --muted: #646a73;
+  --line: #e5e6eb;
+  --accent: #1d5bd8;
+  --accent-text: #ffffff;
+  --notice-bg: #fff7e6;
+  --notice-text: #8a5a00;
+  --passed: #a0a4ab;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17181a;
+    --text: #e6e8eb;
+    --muted: #a0a4ab;
+    --line: #2e3033;
+    --accent: #6f9bff;
+    --accent-text: #0b1020;
+    --notice-bg: #3a2d10;
+    --notice-text: #f5d38a;
+    --passed: #6b6f75;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.7 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+header, nav.crumb, main, footer { max-width: 880px; margin: 0 auto; padding: 0 16px; }
+header { padding-top: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+header .brand { font-weight: 600; color: var(--text); text-decoration: none; }
+nav.crumb { font-size: 14px; color: var(--muted); padding-top: 12px; }
+a { color: var(--accent); }
+h1 { font-size: 26px; line-height: 1.35; margin: 16px 0 4px; }
+h2 { font-size: 19px; margin: 28px 0 10px; }
+.en { color: var(--muted); font-weight: normal; }
+p.en { margin: 0 0 8px; }
+.meta, .hint, footer { color: var(--muted); font-size: 14px; }
+.notice { background: var(--notice-bg); color: var(--notice-text); padding: 10px 12px; border-radius: 6px; }
+dl { display: grid; grid-template-columns: 7.5em 1fr; gap: 8px 12px; margin: 0; }
+dt { color: var(--muted); }
+dd { margin: 0; overflow-wrap: anywhere; }
+table { width: 100%; border-collapse: collapse; font-size: 15px; }
+th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: normal; }
+tr.passed td { color: var(--passed); }
+td.nw, th.nw { white-space: nowrap; }
+.cta { margin: 28px 0; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.cta .hint { flex-basis: 100%; margin: 0; }
+.btn { display: inline-block; padding: 10px 18px; border-radius: 6px; border: 1px solid var(--accent); text-decoration: none; }
+.btn.primary { background: var(--accent); color: var(--accent-text); }
+ul.links { padding-left: 1.2em; }
+.count { color: var(--muted); font-size: 14px; }
+.sources a { overflow-wrap: anywhere; }
+footer { margin-top: 40px; padding-top: 12px; padding-bottom: 32px; border-top: 1px solid var(--line); }
+@media (max-width: 560px) {
+  h1 { font-size: 22px; }
+  dl { grid-template-columns: 6em 1fr; }
+  table { font-size: 14px; }
+}
