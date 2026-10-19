@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrTopicMapper">
+
+    <resultMap type="AbrTopic" id="AbrTopicResult">
+        <id     property="topicId"       column="topic_id"       />
+        <result property="accountId"     column="account_id"     />
+        <result property="accountCode"   column="account_code"   />
+        <result property="accountName"   column="account_name"   />
+        <result property="platform"      column="platform"       />
+        <result property="planDate"      column="plan_date"      />
+        <result property="slotNo"        column="slot_no"        />
+        <result property="contentKind"   column="content_kind"   />
+        <result property="title"         column="title"          />
+        <result property="angle"         column="angle"          />
+        <result property="hookTool"      column="hook_tool"      />
+        <result property="playbookCode"  column="playbook_code"  />
+        <result property="programIds"    column="program_ids"    />
+        <result property="source"        column="source"         />
+        <result property="status"        column="status"         />
+        <result property="contentId"     column="content_id"     />
+        <result property="aiCallId"      column="ai_call_id"     />
+        <result property="createBy"      column="create_by"      />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"      column="update_by"      />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"        column="remark"         />
+    </resultMap>
+
+    <sql id="selectAbrTopicVo">
+        select t.topic_id, t.account_id, a.account_code, a.account_name, a.platform, t.plan_date, t.slot_no, t.content_kind, t.title, t.angle,
+               t.hook_tool, t.playbook_code, cast(t.program_ids as text) as program_ids, t.source, t.status, t.content_id, t.ai_call_id,
+               t.create_by, t.create_time, t.update_by, t.update_time, t.remark
+        from abr_topic t
+        left join abr_channel_account a on a.account_id = t.account_id
+    </sql>
+
+    <select id="selectAbrTopicList" parameterType="AbrTopic" resultMap="AbrTopicResult">
+        <include refid="selectAbrTopicVo"/>
+        <where>
+            <if test="accountId != null">and t.account_id = #{accountId}</if>
+            <if test="status != null and status != ''">and t.status = #{status}</if>
+            <if test="source != null and source != ''">and t.source = #{source}</if>
+            <if test="contentKind != null and contentKind != ''">and t.content_kind = #{contentKind}</if>
+            <if test="title != null and title != ''">and t.title like concat('%', #{title}, '%')</if>
+            <if test="params.beginDate != null and params.beginDate != ''">and t.plan_date &gt;= cast(#{params.beginDate} as date)</if>
+            <if test="params.endDate != null and params.endDate != ''">and t.plan_date &lt;= cast(#{params.endDate} as date)</if>
+        </where>
+        order by t.plan_date, a.account_code, t.slot_no
+    </select>
+
+    <select id="selectAbrTopicById" parameterType="Long" resultMap="AbrTopicResult">
+        <include refid="selectAbrTopicVo"/>
+        where t.topic_id = #{topicId}
+    </select>
+
+    <insert id="insertAbrTopic" parameterType="AbrTopic" useGeneratedKeys="true" keyProperty="topicId" keyColumn="topic_id">
+        insert into abr_topic (account_id, plan_date, slot_no, content_kind, title, angle, hook_tool, playbook_code, program_ids, source, status,
+                               ai_call_id, create_by, create_time, remark)
+        values (#{accountId}, #{planDate}, #{slotNo}, #{contentKind}, #{title}, coalesce(#{angle}, ''), #{hookTool}, #{playbookCode},
+                cast(coalesce(#{programIds}, '[]') as jsonb), #{source}, coalesce(#{status}, 'planned'), #{aiCallId}, #{createBy}, now(), #{remark})
+    </insert>
+
+    <update id="updateAbrTopic" parameterType="AbrTopic">
+        update abr_topic
+        set plan_date = #{planDate}, slot_no = #{slotNo}, content_kind = #{contentKind}, title = #{title}, angle = coalesce(#{angle}, ''),
+            hook_tool = #{hookTool}, playbook_code = #{playbookCode}, program_ids = cast(coalesce(#{programIds}, '[]') as jsonb),
+            status = #{status}, update_by = #{updateBy}, update_time = now(), remark = #{remark}
+        where topic_id = #{topicId}
+    </update>
+
+    <delete id="deleteUnwrittenTopicByIds" parameterType="Long">
+        delete from abr_topic where content_id is null and topic_id in
+        <foreach item="topicId" collection="array" open="(" separator="," close=")">
+            #{topicId}
+        </foreach>
+    </delete>
+
+    <select id="countPerDay" resultType="java.util.HashMap">
+        select plan_date as "planDate", count(*) as "count"
+        from abr_topic
+        where account_id = #{accountId} and status &lt;&gt; 'cancelled'
+          and plan_date &gt;= cast(#{from} as date) and plan_date &lt;= cast(#{to} as date)
+        group by plan_date
+    </select>
+
+    <select id="countPerKind" resultType="java.util.HashMap">
+        select content_kind as "contentKind", count(*) as "count"
+        from abr_topic
+        where account_id = #{accountId} and status &lt;&gt; 'cancelled'
+          and plan_date &gt;= cast(#{from} as date) and plan_date &lt;= cast(#{to} as date)
+        group by content_kind
+    </select>
+
+    <select id="maxSlotNo" resultType="int">
+        select coalesce(max(slot_no), 0) from abr_topic
+        where account_id = #{accountId} and plan_date = cast(#{planDate} as date) and status &lt;&gt; 'cancelled'
+    </select>
+
+    <select id="selectRecentTitles" resultType="String">
+        select title from abr_topic where account_id = #{accountId} and status &lt;&gt; 'cancelled' and plan_date &gt;= cast(#{since} as date)
+        union
+        select title from abr_content where account_id = #{accountId} and create_time &gt;= cast(#{since} as date)
+    </select>
+
+    <update id="cancelStalePlanned">
+        update abr_topic
+        set status = 'cancelled', update_by = #{operator}, update_time = now(), remark = '剧本已不再生效，重排'
+        where account_id = #{accountId} and status = 'planned' and content_id is null and source in ('ai', 'backup')
+          and plan_date &gt;= cast(#{from} as date) and playbook_code is not null
+        <if test="activeCodes != null and activeCodes.size() > 0">
+          and playbook_code not in
+          <foreach collection="activeCodes" item="c" open="(" separator="," close=")">#{c}</foreach>
+        </if>
+    </update>
+
+    <select id="selectCatalogForTopics" resultType="java.util.HashMap">
+        select p.program_id as "programId", s.school_name as "schoolName", p.program_name as "programName", s.country as "country",
+               cast(r.deadlines as text) as "deadlines",
+               greatest(coalesce(p.update_time, p.create_time), coalesce(r.update_time, r.create_time)) as "changedTime"
+        from abr_program p
+        join abr_school s on s.school_id = p.school_id and s.del_flag = '0' and s.status = '0'
+        left join lateral (
+            select q.deadlines, q.create_time, q.update_time from abr_requirement q
+            where q.program_id = p.program_id and q.del_flag = '0' and q.status = '0'
+            order by q.season desc, q.requirement_id desc limit 1
+        ) r on true
+        where p.del_flag = '0' and p.status = '0' and p.verified_time &gt;= cast(#{verifiedSince} as date)
+        order by p.program_id
+    </select>
+</mapper>

@@ -1,0 +1,35 @@
+{
+  "name": "正常排期：输出符合 Schema，空位与工具取自输入",
+  "input": {
+    "account": { "platform": "小红书", "persona": "工作室号", "personaDesc": "" },
+    "slots": [
+      { "slot": "s1", "date": "2026-10-21", "weekday": "周三", "kind": "flash", "kindLabel": "变化快讯与限时信息", "playbook": "round_deadline" },
+      { "slot": "s2", "date": "2026-10-22", "weekday": "周四", "kind": "longtail", "kindLabel": "搜索型长尾问答", "playbook": "season_open" }
+    ],
+    "firstSlot": { "slot": "s2", "playbookName": "申请季开启 / 保研结果", "hook": "open" },
+    "playbooks": [
+      { "code": "round_deadline", "name": "港新英分轮截止", "audience": "已开始准备申请的学生", "focus": "轮次截止倒计时、递交提醒",
+        "hooks": [ { "code": "open", "label": "现在还能申" } ] },
+      { "code": "season_open", "name": "申请季开启 / 保研结果", "audience": "大四定校党", "focus": "新季要求变化、截止日历",
+        "hooks": [ { "code": "open", "label": "现在还能申" }, { "code": "recognition", "label": "本校认可度" } ] }
+    ],
+    "nodes": [],
+    "deadlines": [ { "programId": 5, "school": "Eastvale University", "program": "MSc Management", "country": "英国", "deadline": "2026-11-15", "round": "Round 1" } ],
+    "changes": [],
+    "recentTitles": [ "保研失败后还能申哪些英国硕士" ],
+    "_mockOutput": {
+      "topics": [
+        { "slot": "s1", "title": "Eastvale 管理学硕士第一轮截止临近", "angle": "提醒第一轮递交时间，列出材料准备顺序", "hookTool": "open", "programIds": [5] },
+        { "slot": "s2", "title": "申请季开启：先查本科学校是否被认可", "angle": "讲清楚院校背景要求怎么查", "hookTool": "recognition", "programIds": [] }
+      ]
+    }
+  },
+  "knownNames": [],
+  "expectStatus": "success",
+  "expect": [
+    { "path": "/topics/0/slot", "equals": "s1" },
+    { "path": "/topics/0/programIds", "contains": 5 },
+    { "path": "/topics/1/hookTool", "equals": "recognition" },
+    { "path": "/topics/0/title", "notContains": "保录" }
+  ]
+}

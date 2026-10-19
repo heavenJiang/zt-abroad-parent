@@ -163,6 +163,17 @@ abroad:
   content:
     # AI 生成标识：AI 生成的内容通过合规闸门前须在正文中带上这段文字
     ai-label: 本文由 AI 辅助生成
+  topic:
+    # 选题排期（M7-02）：从明天起排几天、每个账号每天几条（不超过账号的每天发布上限）
+    days: 7
+    per-day: 1
+    # 没有生效剧本或剧本未配比时的默认内容配比；暂不排的类型（案例库 M9-01 上线前不排案例）
+    default-mix: case:35,flash:30,longtail:20,invite:15
+    disabled-kinds: case
+    # 近期标题回看天数（避免重复）；输入给大模型的“近期截止”“近期有更新”天数
+    recent-days: 60
+    deadline-days: 45
+    change-days: 14
   compliance:
     # 合规闸门（M6-03）：AI 生成的消息（自动回复、培育消息）须带的标识；词表在管理端「合规词表」配置
     message-ai-label: （AI 回复）

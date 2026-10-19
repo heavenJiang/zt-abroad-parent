@@ -1,0 +1,23 @@
+{
+  "type": "object",
+  "required": ["topics"],
+  "additionalProperties": false,
+  "properties": {
+    "topics": {
+      "type": "array",
+      "maxItems": 60,
+      "items": {
+        "type": "object",
+        "required": ["slot", "title", "hookTool"],
+        "additionalProperties": false,
+        "properties": {
+          "slot": { "type": "string", "minLength": 2, "maxLength": 8 },
+          "title": { "type": "string", "minLength": 2, "maxLength": 80 },
+          "angle": { "type": "string", "maxLength": 400 },
+          "hookTool": { "type": "string", "minLength": 2, "maxLength": 32 },
+          "programIds": { "type": "array", "maxItems": 20, "items": { "type": "integer", "minimum": 1 } }
+        }
+      }
+    }
+  }
+}

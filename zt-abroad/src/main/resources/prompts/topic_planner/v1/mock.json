@@ -1,0 +1,11 @@
+{
+  "topics": [
+    {
+      "slot": "{{firstSlot.slot}}",
+      "title": "{{firstSlot.playbookName}}：申请时间线怎么排",
+      "angle": "按剧本目标人群梳理接下来要做的几件事，文末引导用工具测一下",
+      "hookTool": "{{firstSlot.hook}}",
+      "programIds": []
+    }
+  ]
+}
