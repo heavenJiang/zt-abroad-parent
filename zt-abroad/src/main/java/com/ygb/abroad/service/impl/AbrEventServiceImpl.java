@@ -78,6 +78,16 @@ public class AbrEventServiceImpl implements IAbrEventService
     }
 
     @Override
+    public boolean recordSystemEvent(String eventType, String dedupKey, Map<String, Object> payload)
+    {
+        AbrEvent e = new AbrEvent();
+        e.setEventType(eventType);
+        e.setDedupKey(dedupKey);
+        e.setPayload(payload == null ? null : MAPPER.writeValueAsString(payload));
+        return eventMapper.insertSystemEvent(e) > 0;
+    }
+
+    @Override
     public Map<String, JsonNode> activeMomentParams()
     {
         Map<String, JsonNode> map = new LinkedHashMap<>();

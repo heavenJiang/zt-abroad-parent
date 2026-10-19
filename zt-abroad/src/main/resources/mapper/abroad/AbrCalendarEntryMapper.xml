@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrCalendarEntryMapper">
+
+    <resultMap type="AbrCalendarEntry" id="AbrCalendarEntryResult">
+        <id     property="entryId"       column="entry_id"       />
+        <result property="entryType"     column="entry_type"     />
+        <result property="entryName"     column="entry_name"     />
+        <result property="playbookId"    column="playbook_id"    />
+        <result property="playbookCode"  column="playbook_code"  />
+        <result property="playbookName"  column="playbook_name"  />
+        <result property="nodeCode"      column="node_code"      />
+        <result property="startDate"     column="start_date"     />
+        <result property="endDate"       column="end_date"       />
+        <result property="repeatYearly"  column="repeat_yearly"  />
+        <result property="status"        column="status"         />
+        <result property="createBy"      column="create_by"      />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"      column="update_by"      />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"        column="remark"         />
+    </resultMap>
+
+    <sql id="selectAbrCalendarEntryVo">
+        select e.entry_id, e.entry_type, e.entry_name, e.playbook_id, p.playbook_code, p.playbook_name, e.node_code, e.start_date, e.end_date,
+               e.repeat_yearly, e.status, e.create_by, e.create_time, e.update_by, e.update_time, e.remark
+        from abr_calendar_entry e
+        left join abr_playbook p on p.playbook_id = e.playbook_id
+    </sql>
+
+    <select id="selectAbrCalendarEntryList" parameterType="AbrCalendarEntry" resultMap="AbrCalendarEntryResult">
+        <include refid="selectAbrCalendarEntryVo"/>
+        <where>
+            <if test="entryType != null and entryType != ''">and e.entry_type = #{entryType}</if>
+            <if test="playbookId != null">and e.playbook_id = #{playbookId}</if>
+            <if test="entryName != null and entryName != ''">and e.entry_name like concat('%', #{entryName}, '%')</if>
+            <if test="status != null and status != ''">and e.status = #{status}</if>
+        </where>
+        order by e.entry_type desc, to_char(e.start_date, 'MMDD'), e.entry_id
+    </select>
+
+    <select id="selectAbrCalendarEntryById" parameterType="Long" resultMap="AbrCalendarEntryResult">
+        <include refid="selectAbrCalendarEntryVo"/>
+        where e.entry_id = #{entryId}
+    </select>
+
+    <insert id="insertAbrCalendarEntry" parameterType="AbrCalendarEntry" useGeneratedKeys="true" keyProperty="entryId" keyColumn="entry_id">
+        insert into abr_calendar_entry (entry_type, entry_name, playbook_id, node_code, start_date, end_date, repeat_yearly, status,
+                                        create_by, create_time, remark)
+        values (#{entryType}, #{entryName}, #{playbookId}, #{nodeCode}, #{startDate}, #{endDate}, coalesce(#{repeatYearly}, 'Y'),
+                coalesce(#{status}, '0'), #{createBy}, now(), #{remark})
+    </insert>
+
+    <update id="updateAbrCalendarEntry" parameterType="AbrCalendarEntry">
+        update abr_calendar_entry
+        set entry_type    = #{entryType},
+            entry_name    = #{entryName},
+            playbook_id   = #{playbookId},
+            node_code     = #{nodeCode},
+            start_date    = #{startDate},
+            end_date      = #{endDate},
+            repeat_yearly = coalesce(#{repeatYearly}, 'Y'),
+            status        = coalesce(#{status}, '0'),
+            remark        = #{remark},
+            update_by     = #{updateBy},
+            update_time   = now()
+        where entry_id = #{entryId}
+    </update>
+
+    <delete id="deleteAbrCalendarEntryByIds" parameterType="Long">
+        delete from abr_calendar_entry where entry_id in
+        <foreach collection="array" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

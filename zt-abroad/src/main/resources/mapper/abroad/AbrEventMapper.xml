@@ -18,6 +18,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="shownTime"        column="shown_time"        />
         <result property="handledTime"      column="handled_time"      />
         <result property="createTime"       column="create_time"       />
+        <result property="settled"          column="settled"           />
     </resultMap>
 
     <insert id="insertAbrEvent" parameterType="AbrEvent" useGeneratedKeys="true" keyProperty="eventId" keyColumn="event_id">
@@ -55,6 +56,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{t}
         </foreach>
         order by create_time
+    </select>
+
+    <insert id="insertSystemEvent" parameterType="AbrEvent" useGeneratedKeys="true" keyProperty="eventId" keyColumn="event_id">
+        insert into abr_event (event_type, ref_type, ref_id, dedup_key, payload, create_time)
+        values (#{eventType}, #{refType}, #{refId}, #{dedupKey}, cast(coalesce(#{payload}, '{}') as jsonb), now())
+        on conflict (event_type, dedup_key) where visitor_id is null and dedup_key is not null do nothing
+    </insert>
+
+    <select id="selectEventsAfter" resultMap="AbrEventResult">
+        select event_id, event_type, visitor_id, app_user_id, ref_type, ref_id, dedup_key, cast(payload as text) as payload, create_time,
+               create_time &lt; now() - make_interval(secs =&gt; #{settleSeconds}) as settled
+        from abr_event
+        where event_id &gt; #{afterId}
+        order by event_id
+        limit #{limit}
     </select>
 
 </mapper>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrGrowthCursorMapper">
+
+    <select id="lockCursor" parameterType="String" resultType="java.util.HashMap">
+        select last_event_id as "lastEventId", cast(state as text) as "state"
+        from abr_growth_cursor
+        where cursor_name = #{cursorName}
+        for update skip locked
+    </select>
+
+    <update id="updateCursor">
+        update abr_growth_cursor
+        set last_event_id = #{lastEventId},
+            state         = cast(coalesce(#{state}, '{}') as jsonb),
+            update_time   = now()
+        where cursor_name = #{cursorName}
+    </update>
+
+</mapper>

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrPlaybookMapper">
+
+    <resultMap type="AbrPlaybook" id="AbrPlaybookResult">
+        <id     property="playbookId"      column="playbook_id"      />
+        <result property="playbookCode"    column="playbook_code"    />
+        <result property="playbookName"    column="playbook_name"    />
+        <result property="degrees"         column="degrees"          />
+        <result property="countries"       column="countries"        />
+        <result property="audience"        column="audience"         />
+        <result property="contentFocus"    column="content_focus"    />
+        <result property="hookTools"       column="hook_tools"       />
+        <result property="products"        column="products"         />
+        <result property="nurtureActions"  column="nurture_actions"  />
+        <result property="contentMix"      column="content_mix"      />
+        <result property="backupTopics"    column="backup_topics"    />
+        <result property="priority"        column="priority"         />
+        <result property="status"          column="status"           />
+        <result property="createBy"        column="create_by"        />
+        <result property="createTime"      column="create_time"      />
+        <result property="updateBy"        column="update_by"        />
+        <result property="updateTime"      column="update_time"      />
+        <result property="remark"          column="remark"           />
+    </resultMap>
+
+    <sql id="selectAbrPlaybookVo">
+        select playbook_id, playbook_code, playbook_name, cast(degrees as text) as degrees, cast(countries as text) as countries, audience,
+               content_focus, cast(hook_tools as text) as hook_tools, cast(products as text) as products, nurture_actions,
+               cast(content_mix as text) as content_mix, cast(backup_topics as text) as backup_topics, priority, status,
+               create_by, create_time, update_by, update_time, remark
+        from abr_playbook
+    </sql>
+
+    <select id="selectAbrPlaybookList" parameterType="AbrPlaybook" resultMap="AbrPlaybookResult">
+        <include refid="selectAbrPlaybookVo"/>
+        <where>
+            <if test="playbookCode != null and playbookCode != ''">and playbook_code like concat('%', #{playbookCode}, '%')</if>
+            <if test="playbookName != null and playbookName != ''">and playbook_name like concat('%', #{playbookName}, '%')</if>
+            <if test="status != null and status != ''">and status = #{status}</if>
+        </where>
+        order by priority desc, playbook_code
+    </select>
+
+    <select id="selectAbrPlaybookById" parameterType="Long" resultMap="AbrPlaybookResult">
+        <include refid="selectAbrPlaybookVo"/>
+        where playbook_id = #{playbookId}
+    </select>
+
+    <select id="checkPlaybookCodeUnique" parameterType="String" resultMap="AbrPlaybookResult">
+        <include refid="selectAbrPlaybookVo"/>
+        where playbook_code = #{playbookCode}
+        limit 1
+    </select>
+
+    <insert id="insertAbrPlaybook" parameterType="AbrPlaybook" useGeneratedKeys="true" keyProperty="playbookId" keyColumn="playbook_id">
+        insert into abr_playbook (playbook_code, playbook_name, degrees, countries, audience, content_focus, hook_tools, products, nurture_actions,
+                                  content_mix, backup_topics, priority, status, create_by, create_time, remark)
+        values (#{playbookCode}, #{playbookName}, cast(coalesce(#{degrees}, '[]') as jsonb), cast(coalesce(#{countries}, '[]') as jsonb),
+                coalesce(#{audience}, ''), coalesce(#{contentFocus}, ''), cast(coalesce(#{hookTools}, '[]') as jsonb),
+                cast(coalesce(#{products}, '[]') as jsonb), coalesce(#{nurtureActions}, ''), cast(coalesce(#{contentMix}, '{}') as jsonb),
+                cast(coalesce(#{backupTopics}, '[]') as jsonb), coalesce(#{priority}, 0), coalesce(#{status}, '0'), #{createBy}, now(), #{remark})
+    </insert>
+
+    <update id="updateAbrPlaybook" parameterType="AbrPlaybook">
+        update abr_playbook
+        set playbook_code   = #{playbookCode},
+            playbook_name   = #{playbookName},
+            degrees         = cast(coalesce(#{degrees}, '[]') as jsonb),
+            countries       = cast(coalesce(#{countries}, '[]') as jsonb),
+            audience        = coalesce(#{audience}, ''),
+            content_focus   = coalesce(#{contentFocus}, ''),
+            hook_tools      = cast(coalesce(#{hookTools}, '[]') as jsonb),
+            products        = cast(coalesce(#{products}, '[]') as jsonb),
+            nurture_actions = coalesce(#{nurtureActions}, ''),
+            content_mix     = cast(coalesce(#{contentMix}, '{}') as jsonb),
+            backup_topics   = cast(coalesce(#{backupTopics}, '[]') as jsonb),
+            priority        = coalesce(#{priority}, 0),
+            status          = coalesce(#{status}, '0'),
+            remark          = #{remark},
+            update_by       = #{updateBy},
+            update_time     = now()
+        where playbook_id = #{playbookId}
+    </update>
+
+    <delete id="deleteAbrPlaybookByIds" parameterType="Long">
+        delete from abr_playbook where playbook_id in
+        <foreach collection="array" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="countPlaybookReferences" parameterType="Long" resultType="int">
+        select (select count(*) from abr_calendar_entry where playbook_id in
+                <foreach collection="array" item="id" open="(" separator="," close=")">#{id}</foreach>)
+             + (select count(*) from abr_growth_trigger where playbook_id in
+                <foreach collection="array" item="id" open="(" separator="," close=")">#{id}</foreach>)
+    </select>
+
+</mapper>

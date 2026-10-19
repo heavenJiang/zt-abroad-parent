@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrGrowthTriggerMapper">
+
+    <resultMap type="AbrGrowthTrigger" id="AbrGrowthTriggerResult">
+        <id     property="triggerId"       column="trigger_id"       />
+        <result property="triggerName"     column="trigger_name"     />
+        <result property="triggerType"     column="trigger_type"     />
+        <result property="eventType"       column="event_type"       />
+        <result property="eventFilter"     column="event_filter"     />
+        <result property="cronExpression"  column="cron_expression"  />
+        <result property="playbookId"      column="playbook_id"      />
+        <result property="playbookCode"    column="playbook_code"    />
+        <result property="agentCode"       column="agent_code"       />
+        <result property="action"          column="action"           />
+        <result property="actionParams"    column="params"           />
+        <result property="delayMinutes"    column="delay_minutes"    />
+        <result property="ttlHours"        column="ttl_hours"        />
+        <result property="maxAttempts"     column="max_attempts"     />
+        <result property="lastFireTime"    column="last_fire_time"   />
+        <result property="status"          column="status"           />
+        <result property="createBy"        column="create_by"        />
+        <result property="createTime"      column="create_time"      />
+        <result property="updateBy"        column="update_by"        />
+        <result property="updateTime"      column="update_time"      />
+        <result property="remark"          column="remark"           />
+    </resultMap>
+
+    <sql id="selectAbrGrowthTriggerVo">
+        select t.trigger_id, t.trigger_name, t.trigger_type, t.event_type, cast(t.event_filter as text) as event_filter, t.cron_expression,
+               t.playbook_id, p.playbook_code, t.agent_code, t.action, cast(t.params as text) as params, t.delay_minutes, t.ttl_hours,
+               t.max_attempts, t.last_fire_time, t.status, t.create_by, t.create_time, t.update_by, t.update_time, t.remark
+        from abr_growth_trigger t
+        left join abr_playbook p on p.playbook_id = t.playbook_id
+    </sql>
+
+    <select id="selectAbrGrowthTriggerList" parameterType="AbrGrowthTrigger" resultMap="AbrGrowthTriggerResult">
+        <include refid="selectAbrGrowthTriggerVo"/>
+        <where>
+            <if test="triggerName != null and triggerName != ''">and t.trigger_name like concat('%', #{triggerName}, '%')</if>
+            <if test="triggerType != null and triggerType != ''">and t.trigger_type = #{triggerType}</if>
+            <if test="eventType != null and eventType != ''">and t.event_type = #{eventType}</if>
+            <if test="agentCode != null and agentCode != ''">and t.agent_code = #{agentCode}</if>
+            <if test="playbookId != null">and t.playbook_id = #{playbookId}</if>
+            <if test="status != null and status != ''">and t.status = #{status}</if>
+        </where>
+        order by t.trigger_id
+    </select>
+
+    <select id="selectAbrGrowthTriggerById" parameterType="Long" resultMap="AbrGrowthTriggerResult">
+        <include refid="selectAbrGrowthTriggerVo"/>
+        where t.trigger_id = #{triggerId}
+    </select>
+
+    <insert id="insertAbrGrowthTrigger" parameterType="AbrGrowthTrigger" useGeneratedKeys="true" keyProperty="triggerId" keyColumn="trigger_id">
+        insert into abr_growth_trigger (trigger_name, trigger_type, event_type, event_filter, cron_expression, playbook_id, agent_code, action, params,
+                                        delay_minutes, ttl_hours, max_attempts, status, create_by, create_time, remark)
+        values (#{triggerName}, #{triggerType}, #{eventType}, cast(coalesce(#{eventFilter}, '{}') as jsonb), #{cronExpression}, #{playbookId},
+                #{agentCode}, #{action}, cast(coalesce(#{actionParams}, '{}') as jsonb), coalesce(#{delayMinutes}, 0), coalesce(#{ttlHours}, 72),
+                coalesce(#{maxAttempts}, 3), coalesce(#{status}, '0'), #{createBy}, now(), #{remark})
+    </insert>
+
+    <!-- 改为定时或修改表达式时清空最近触发时刻，从修改时起算 -->
+    <update id="updateAbrGrowthTrigger" parameterType="AbrGrowthTrigger">
+        update abr_growth_trigger
+        set trigger_name    = #{triggerName},
+            trigger_type    = #{triggerType},
+            event_type      = #{eventType},
+            event_filter    = cast(coalesce(#{eventFilter}, '{}') as jsonb),
+            last_fire_time  = case when cron_expression is distinct from #{cronExpression} or trigger_type &lt;&gt; #{triggerType}
+                                   then null else last_fire_time end,
+            cron_expression = #{cronExpression},
+            playbook_id     = #{playbookId},
+            agent_code      = #{agentCode},
+            action          = #{action},
+            params          = cast(coalesce(#{actionParams}, '{}') as jsonb),
+            delay_minutes   = coalesce(#{delayMinutes}, 0),
+            ttl_hours       = coalesce(#{ttlHours}, 72),
+            max_attempts    = coalesce(#{maxAttempts}, 3),
+            status          = coalesce(#{status}, '0'),
+            remark          = #{remark},
+            update_by       = #{updateBy},
+            update_time     = now()
+        where trigger_id = #{triggerId}
+    </update>
+
+    <delete id="deleteAbrGrowthTriggerByIds" parameterType="Long">
+        delete from abr_growth_trigger where trigger_id in
+        <foreach collection="array" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <update id="updateLastFireTime">
+        update abr_growth_trigger
+        set last_fire_time = #{fireTime}
+        where trigger_id = #{triggerId} and (last_fire_time is null or last_fire_time &lt; #{fireTime})
+    </update>
+
+</mapper>

@@ -61,4 +61,22 @@ public interface AbrEventMapper
      * @return 发生时间
      */
     public List<Date> selectEventTimes(@Param("visitorId") Long visitorId, @Param("eventTypes") List<String> eventTypes, @Param("since") Date since);
+
+    /**
+     * 新增系统事件（无访客，如剧本切换、日历节点）；同类事件去重键已存在时不写入
+     * 
+     * @param event 事件
+     * @return 写入行数（已存在为 0）
+     */
+    public int insertSystemEvent(AbrEvent event);
+
+    /**
+     * 编排器读取：某ID之后的事件，按ID升序；settled 表示写入已超过静置秒数
+     * 
+     * @param afterId 读取位置（不含）
+     * @param settleSeconds 静置秒数
+     * @param limit 最多条数
+     * @return 事件
+     */
+    public List<AbrEvent> selectEventsAfter(@Param("afterId") Long afterId, @Param("settleSeconds") int settleSeconds, @Param("limit") int limit);
 }

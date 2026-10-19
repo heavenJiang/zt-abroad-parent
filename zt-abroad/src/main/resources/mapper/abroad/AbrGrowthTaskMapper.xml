@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrGrowthTaskMapper">
+
+    <resultMap type="AbrGrowthTask" id="AbrGrowthTaskResult">
+        <id     property="taskId"         column="task_id"          />
+        <result property="triggerId"      column="trigger_id"       />
+        <result property="triggerName"    column="trigger_name"     />
+        <result property="agentCode"      column="agent_code"       />
+        <result property="action"         column="action"           />
+        <result property="sourceEventId"  column="source_event_id"  />
+        <result property="playbookCodes"  column="playbook_codes"   />
+        <result property="targetType"     column="target_type"      />
+        <result property="targetId"       column="target_id"        />
+        <result property="channel"        column="channel"          />
+        <result property="dedupKey"       column="dedup_key"        />
+        <result property="payload"        column="payload"          />
+        <result property="status"         column="status"           />
+        <result property="scheduledTime"  column="scheduled_time"   />
+        <result property="expireTime"     column="expire_time"      />
+        <result property="attempts"       column="attempts"         />
+        <result property="maxAttempts"    column="max_attempts"     />
+        <result property="claimToken"     column="claim_token"      />
+        <result property="startedTime"    column="started_time"     />
+        <result property="finishedTime"   column="finished_time"    />
+        <result property="result"         column="result"           />
+        <result property="errorMsg"       column="error_msg"        />
+        <result property="createBy"       column="create_by"        />
+        <result property="createTime"     column="create_time"      />
+        <result property="updateBy"       column="update_by"        />
+        <result property="updateTime"     column="update_time"      />
+    </resultMap>
+
+    <sql id="selectAbrGrowthTaskVo">
+        select k.task_id, k.trigger_id, t.trigger_name, k.agent_code, k.action, k.source_event_id, cast(k.playbook_codes as text) as playbook_codes,
+               k.target_type, k.target_id, k.channel, k.dedup_key, cast(k.payload as text) as payload, k.status, k.scheduled_time, k.expire_time,
+               k.attempts, k.max_attempts, k.claim_token, k.started_time, k.finished_time, cast(k.result as text) as result, k.error_msg,
+               k.create_by, k.create_time, k.update_by, k.update_time
+        from abr_growth_task k
+        left join abr_growth_trigger t on t.trigger_id = k.trigger_id
+    </sql>
+
+    <select id="selectAbrGrowthTaskList" parameterType="AbrGrowthTask" resultMap="AbrGrowthTaskResult">
+        <include refid="selectAbrGrowthTaskVo"/>
+        <where>
+            <if test="agentCode != null and agentCode != ''">and k.agent_code = #{agentCode}</if>
+            <if test="action != null and action != ''">and k.action = #{action}</if>
+            <if test="status != null and status != ''">and k.status = #{status}</if>
+            <if test="triggerId != null">and k.trigger_id = #{triggerId}</if>
+            <if test="targetType != null and targetType != ''">and k.target_type = #{targetType}</if>
+            <if test="targetId != null">and k.target_id = #{targetId}</if>
+            <if test="sourceEventId != null">and k.source_event_id = #{sourceEventId}</if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and k.create_time &gt;= cast(#{params.beginTime} as date)
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and k.create_time &lt; cast(#{params.endTime} as date) + interval '1 day'
+            </if>
+        </where>
+        order by k.task_id desc
+    </select>
+
+    <select id="selectAbrGrowthTaskById" parameterType="Long" resultMap="AbrGrowthTaskResult">
+        <include refid="selectAbrGrowthTaskVo"/>
+        where k.task_id = #{taskId}
+    </select>
+
+    <select id="countAbrGrowthTasksByStatus" resultType="java.util.HashMap">
+        select status as "status", count(*) as "count" from abr_growth_task group by status order by status
+    </select>
+
+    <insert id="insertAbrGrowthTask" parameterType="AbrGrowthTask" useGeneratedKeys="true" keyProperty="taskId" keyColumn="task_id">
+        insert into abr_growth_task (trigger_id, agent_code, action, source_event_id, playbook_codes, target_type, target_id, channel, dedup_key,
+                                     payload, status, scheduled_time, expire_time, attempts, max_attempts, create_by, create_time, update_time)
+        values (#{triggerId}, #{agentCode}, #{action}, #{sourceEventId}, cast(coalesce(#{playbookCodes}, '[]') as jsonb), #{targetType}, #{targetId},
+                #{channel}, #{dedupKey}, cast(coalesce(#{payload}, '{}') as jsonb), 'pending', #{scheduledTime}, #{expireTime}, 0,
+                coalesce(#{maxAttempts}, 3), coalesce(#{createBy}, 'system'), now(), now())
+        on conflict (dedup_key) do nothing
+    </insert>
+
+    <update id="expireAbrGrowthTasks">
+        update abr_growth_task
+        set status = 'expired', finished_time = now(), update_time = now(),
+            error_msg = case when attempts = 0 then '有效期内未执行（Agent 未上线或已停用）' else error_msg end
+        where status = 'pending' and expire_time is not null and expire_time &lt;= now()
+    </update>
+
+    <update id="recoverStaleAbrGrowthTasks" parameterType="int">
+        update abr_growth_task
+        set status        = case when attempts &gt;= max_attempts then 'failed' else 'pending' end,
+            finished_time = case when attempts &gt;= max_attempts then now() else null end,
+            claim_token   = null,
+            error_msg     = '执行超时（进程中断或处理过久）',
+            update_time   = now()
+        where status = 'running' and started_time &lt; now() - make_interval(mins =&gt; #{staleMinutes})
+    </update>
+
+    <update id="claimAbrGrowthTasks">
+        update abr_growth_task
+        set status = 'running', claim_token = #{claimToken}, attempts = attempts + 1, started_time = now(), update_time = now()
+        where task_id in (
+            select task_id from abr_growth_task
+            where status = 'pending' and scheduled_time &lt;= now() and (expire_time is null or expire_time &gt; now())
+              and agent_code in
+              <foreach collection="agentCodes" item="a" open="(" separator="," close=")">#{a}</foreach>
+            order by scheduled_time, task_id
+            limit #{limit}
+            for update skip locked
+        )
+    </update>
+
+    <select id="selectAbrGrowthTasksByClaim" parameterType="String" resultMap="AbrGrowthTaskResult">
+        <include refid="selectAbrGrowthTaskVo"/>
+        where k.claim_token = #{claimToken} and k.status = 'running'
+        order by k.scheduled_time, k.task_id
+    </select>
+
+    <update id="finishAbrGrowthTask" parameterType="AbrGrowthTask">
+        update abr_growth_task
+        set status        = #{status},
+            result        = cast(#{result} as jsonb),
+            error_msg     = coalesce(#{errorMsg}, ''),
+            claim_token   = null,
+            finished_time = now(),
+            update_time   = now()
+        where task_id = #{taskId} and claim_token = #{claimToken} and status = 'running'
+    </update>
+
+    <update id="retryAbrGrowthTask">
+        update abr_growth_task
+        set status         = case when attempts &gt;= max_attempts then 'failed' else 'pending' end,
+            finished_time  = case when attempts &gt;= max_attempts then now() else null end,
+            scheduled_time = case when attempts &gt;= max_attempts then scheduled_time else now() + make_interval(mins =&gt; #{delayMinutes}) end,
+            error_msg      = coalesce(#{errorMsg}, ''),
+            claim_token    = null,
+            update_time    = now()
+        where task_id = #{taskId} and claim_token = #{claimToken} and status = 'running'
+    </update>
+
+    <update id="resetAbrGrowthTasks">
+        update abr_growth_task
+        set status = 'pending', attempts = 0, scheduled_time = now(), expire_time = now() + make_interval(hours =&gt; #{ttlHours}),
+            finished_time = null, claim_token = null, error_msg = '', update_by = #{updateBy}, update_time = now()
+        where status in ('failed', 'skipped', 'expired', 'cancelled') and task_id in
+        <foreach collection="taskIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+    <update id="cancelAbrGrowthTasks">
+        update abr_growth_task
+        set status = 'cancelled', finished_time = now(), claim_token = null, update_by = #{updateBy}, update_time = now()
+        where status = 'pending' and task_id in
+        <foreach collection="taskIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+</mapper>

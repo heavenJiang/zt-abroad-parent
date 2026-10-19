@@ -18,6 +18,12 @@ public class AbrEvent extends BaseEntity
     /** 事件类型：转化时刻 */
     public static final String TYPE_PLAN_MOMENT = "plan_moment";
 
+    /** 事件类型：生效剧本变化（编排器按营销日历写入） */
+    public static final String TYPE_PLAYBOOK_SWITCHED = "playbook_switched";
+
+    /** 事件类型：营销日历节点到达（编排器写入） */
+    public static final String TYPE_CALENDAR_NODE = "calendar_node";
+
     /** 推荐状态：待展示 */
     public static final String RECOMMEND_PENDING = "pending";
 
@@ -32,6 +38,9 @@ public class AbrEvent extends BaseEntity
 
     /** 事件ID */
     private Long eventId;
+
+    /** 编排器读取时：写入已满静置时长（读取位置可越过它） */
+    private Boolean settled;
 
     /** 事件类型 */
     private String eventType;
@@ -76,6 +85,16 @@ public class AbrEvent extends BaseEntity
     public void setEventId(Long eventId)
     {
         this.eventId = eventId;
+    }
+
+    public Boolean getSettled()
+    {
+        return settled;
+    }
+
+    public void setSettled(Boolean settled)
+    {
+        this.settled = settled;
     }
 
     public String getEventType()

@@ -25,6 +25,16 @@ public interface IAbrEventService
     public void recordAction(AbrVisitor visitor, String eventType, String refType, Long refId, Map<String, Object> payload);
 
     /**
+     * 记录一条系统事件（无访客，如剧本切换、日历节点）；同类事件去重键已存在时不写入
+     * 
+     * @param eventType 事件类型
+     * @param dedupKey 去重键
+     * @param payload 事件内容
+     * @return 是否写入（已存在为 false）
+     */
+    public boolean recordSystemEvent(String eventType, String dedupKey, Map<String, Object> payload);
+
+    /**
      * 启用的转化时刻规则的阈值参数
      * 
      * @return 时刻编码 → 阈值参数（停用的时刻不在其中）
