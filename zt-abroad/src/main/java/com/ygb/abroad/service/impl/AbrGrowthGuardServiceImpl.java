@@ -378,6 +378,12 @@ public class AbrGrowthGuardServiceImpl implements IAbrGrowthGuardService, AiCall
                 add(map, signalMapper.countSignalsByAgent(AbrGrowthSignal.TYPE_COMPLIANCE_BLOCK, since), 1);
                 add(map, signalMapper.countSignalsByAgent(AbrGrowthSignal.TYPE_COMPLIANCE_PASS, since), 1);
             }
+            case "sample_fail_rate" ->
+            {
+                add(map, signalMapper.countSignalsByAgent(AbrGrowthSignal.TYPE_SAMPLE_FAIL, since), 0);
+                add(map, signalMapper.countSignalsByAgent(AbrGrowthSignal.TYPE_SAMPLE_FAIL, since), 1);
+                add(map, signalMapper.countSignalsByAgent(AbrGrowthSignal.TYPE_SAMPLE_PASS, since), 1);
+            }
             default -> add(map, signalMapper.countSignalsByAgent(metric, since), 0);
         }
         return map;

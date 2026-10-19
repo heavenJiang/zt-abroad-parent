@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrAiEvalCaseMapper">
+
+    <resultMap type="AbrAiEvalCase" id="AbrAiEvalCaseResult">
+        <id     property="caseId"      column="case_id"      />
+        <result property="agentCode"   column="agent_code"   />
+        <result property="caseName"    column="case_name"    />
+        <result property="source"      column="source"       />
+        <result property="reviewId"    column="review_id"    />
+        <result property="spec"        column="spec"         />
+        <result property="badOutput"   column="bad_output"   />
+        <result property="status"      column="status"       />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"  column="create_time"  />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"  column="update_time"  />
+        <result property="remark"      column="remark"       />
+    </resultMap>
+
+    <sql id="selectAbrAiEvalCaseVo">
+        select case_id, agent_code, case_name, source, review_id, cast(spec as text) as spec, cast(bad_output as text) as bad_output, status,
+               create_by, create_time, update_by, update_time, remark
+        from abr_ai_eval_case
+    </sql>
+
+    <select id="selectAbrAiEvalCaseList" parameterType="AbrAiEvalCase" resultMap="AbrAiEvalCaseResult">
+        <include refid="selectAbrAiEvalCaseVo"/>
+        <where>
+            <if test="agentCode != null and agentCode != ''">and agent_code = #{agentCode}</if>
+            <if test="source != null and source != ''">and source = #{source}</if>
+            <if test="status != null and status != ''">and status = #{status}</if>
+            <if test="caseName != null and caseName != ''">and case_name like concat('%', #{caseName}, '%')</if>
+        </where>
+        order by case_id desc
+    </select>
+
+    <select id="selectAbrAiEvalCaseById" parameterType="Long" resultMap="AbrAiEvalCaseResult">
+        <include refid="selectAbrAiEvalCaseVo"/>
+        where case_id = #{caseId}
+    </select>
+
+    <select id="selectActiveByAgent" parameterType="String" resultMap="AbrAiEvalCaseResult">
+        <include refid="selectAbrAiEvalCaseVo"/>
+        where agent_code = #{agentCode} and status = '0'
+        order by case_id
+    </select>
+
+    <select id="selectByReviewId" parameterType="Long" resultMap="AbrAiEvalCaseResult">
+        <include refid="selectAbrAiEvalCaseVo"/>
+        where review_id = #{reviewId}
+    </select>
+
+    <insert id="insertAbrAiEvalCase" parameterType="AbrAiEvalCase" useGeneratedKeys="true" keyProperty="caseId" keyColumn="case_id">
+        insert into abr_ai_eval_case (agent_code, case_name, source, review_id, spec, bad_output, status, create_by, create_time, remark)
+        values (#{agentCode}, #{caseName}, #{source}, #{reviewId}, cast(#{spec} as jsonb), cast(#{badOutput} as jsonb), #{status}, #{createBy}, now(), #{remark})
+    </insert>
+
+    <update id="updateAbrAiEvalCase" parameterType="AbrAiEvalCase">
+        update abr_ai_eval_case
+        set case_name = #{caseName}, spec = cast(#{spec} as jsonb), status = #{status}, update_by = #{updateBy}, update_time = now(), remark = #{remark}
+        where case_id = #{caseId}
+    </update>
+
+    <delete id="deleteAbrAiEvalCaseByIds" parameterType="Long">
+        delete from abr_ai_eval_case where case_id in
+        <foreach item="caseId" collection="array" open="(" separator="," close=")">
+            #{caseId}
+        </foreach>
+    </delete>
+</mapper>

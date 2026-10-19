@@ -43,4 +43,45 @@ public interface AbrAiReviewMapper
      * @return 影响行数
      */
     public int updateAbrAiReviewResult(@Param("review") AbrAiReview review, @Param("fromStatus") List<String> fromStatus);
+
+    /**
+     * 业务对象未处理的例外或抽检记录
+     *
+     * @param queueType 队列
+     * @param bizType 业务类型
+     * @param bizId 业务ID
+     * @return 记录，没有返回 null
+     */
+    public AbrAiReview selectOpenByBiz(@Param("queueType") String queueType, @Param("bizType") String bizType, @Param("bizId") String bizId);
+
+    /**
+     * 更新未处理记录的快照（同一对象再次进入队列时）
+     *
+     * @param review 记录（reviewId、content、flags、callId、agentCode、promptVersion、reasonCode、sourceInput、createBy）
+     * @return 影响行数
+     */
+    public int updateOpenSnapshot(AbrAiReview review);
+
+    /**
+     * 关闭业务对象未处理的记录
+     *
+     * @param queueType 队列
+     * @param bizType 业务类型
+     * @param bizId 业务ID
+     * @param status 处理结果状态
+     * @param reason 说明
+     * @param reviewer 处理人
+     * @return 影响行数
+     */
+    public int closeOpenByBiz(@Param("queueType") String queueType, @Param("bizType") String bizType, @Param("bizId") String bizId,
+            @Param("status") String status, @Param("reason") String reason, @Param("reviewer") String reviewer);
+
+    /**
+     * 记录回流生成的评测样例
+     *
+     * @param reviewId 记录ID
+     * @param evalCaseId 样例ID
+     * @return 影响行数
+     */
+    public int updateEvalCase(@Param("reviewId") Long reviewId, @Param("evalCaseId") Long evalCaseId);
 }

@@ -1,15 +1,21 @@
 package com.ygb.abroad.ai;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import com.ygb.abroad.domain.AbrAiAgent;
+import com.ygb.abroad.domain.AbrAiEvalCase;
 import com.ygb.abroad.domain.AbrAiCallLog;
 import com.ygb.abroad.domain.AbrAiReview;
 import com.ygb.abroad.mapper.AbrAiAgentMapper;
 import com.ygb.abroad.mapper.AbrAiCallLogMapper;
+import com.ygb.abroad.mapper.AbrAiEvalCaseMapper;
 import com.ygb.abroad.mapper.AbrAiReviewMapper;
+import tools.jackson.databind.JsonNode;
 
 /**
  * 网关持久化：调用日志与审核记录在独立事务中写入，调用方事务回滚也保留
@@ -27,6 +33,9 @@ public class AiStoreImpl implements AiStore
 
     @Autowired
     private AbrAiReviewMapper reviewMapper;
+
+    @Autowired
+    private AbrAiEvalCaseMapper evalCaseMapper;
 
     /**
      * 预取调用ID
@@ -75,5 +84,26 @@ public class AiStoreImpl implements AiStore
     {
         reviewMapper.insertAbrAiReview(review);
         return review.getReviewId();
+    }
+
+    /**
+     * 数据库评测集中启用的样例（定义不是 JSON 对象的跳过）
+     *
+     * @param agentCode Agent 编码
+     * @return 样例名 → 样例定义
+     */
+    @Override
+    public List<Map.Entry<String, JsonNode>> selectEvalCases(String agentCode)
+    {
+        List<Map.Entry<String, JsonNode>> list = new ArrayList<>();
+        for (AbrAiEvalCase c : evalCaseMapper.selectActiveByAgent(agentCode))
+        {
+            JsonNode spec = AiJson.parseOrNull(c.getSpec());
+            if (spec != null && spec.isObject())
+            {
+                list.add(Map.entry("db-" + c.getCaseId(), spec));
+            }
+        }
+        return list;
     }
 }

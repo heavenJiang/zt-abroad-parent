@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +15,7 @@ import com.ygb.abroad.domain.AbrEvent;
 import com.ygb.abroad.domain.AbrGrowthSignal;
 import com.ygb.abroad.domain.AbrPublishRecord;
 import com.ygb.abroad.growth.OutboundDecision;
+import com.ygb.abroad.growth.event.ContentGateChanged;
 import com.ygb.abroad.mapper.AbrChannelAccountMapper;
 import com.ygb.abroad.mapper.AbrContentMapper;
 import com.ygb.abroad.mapper.AbrPublishRecordMapper;
@@ -52,6 +54,9 @@ public class AbrContentServiceImpl implements IAbrContentService
 
     @Autowired
     private IAbrEventService eventService;
+
+    @Autowired
+    private ApplicationEventPublisher publisher;
 
     /** C 端地址（工具链接的前缀） */
     @Value("${abroad.app.url:http://localhost:5173/}")
@@ -94,6 +99,7 @@ public class AbrContentServiceImpl implements IAbrContentService
         content.setAgentCode(null);
         content.setAiCallId(null);
         content.setRequiresConfirm("N");
+        content.setSampled("N");
         return insert(content);
     }
 
@@ -109,6 +115,7 @@ public class AbrContentServiceImpl implements IAbrContentService
         content.setAgentCode(agentCode);
         content.setAiCallId(aiCallId);
         content.setRequiresConfirm(decision == OutboundDecision.CONFIRM ? "Y" : "N");
+        content.setSampled(decision == OutboundDecision.DIRECT_SAMPLED ? "Y" : "N");
         content.setCreateBy(agentCode);
         return insert(content);
     }
@@ -209,6 +216,7 @@ public class AbrContentServiceImpl implements IAbrContentService
         AbrContent c = requireGateable(contentId);
         String result = AbrJsonFields.requireObject(resultJson, "闸门明细");
         writeGate(c, passed ? AbrContent.GATE_PASSED : AbrContent.GATE_BLOCKED, result, checker);
+        publisher.publishEvent(new ContentGateChanged(contentId, passed ? AbrContent.GATE_PASSED : AbrContent.GATE_BLOCKED, checker, null, false, false));
         if (StringUtils.isNotBlank(c.getAgentCode()))
         {
             AbrGrowthSignal s = new AbrGrowthSignal();
@@ -238,6 +246,7 @@ public class AbrContentServiceImpl implements IAbrContentService
         result.put("manual", true);
         result.put("note", text);
         writeGate(c, passed ? AbrContent.GATE_MANUAL_PASSED : AbrContent.GATE_BLOCKED, MAPPER.writeValueAsString(result), operator);
+        publisher.publishEvent(new ContentGateChanged(contentId, passed ? AbrContent.GATE_MANUAL_PASSED : AbrContent.GATE_BLOCKED, operator, text, true, false));
         return contentMapper.selectAbrContentById(contentId);
     }
 
@@ -252,6 +261,10 @@ public class AbrContentServiceImpl implements IAbrContentService
     @Transactional(rollbackFor = Exception.class)
     public int removeContents(Long[] contentIds, String operator)
     {
+        for (Long id : contentIds)
+        {
+            publisher.publishEvent(new ContentGateChanged(id, null, operator, null, true, true));
+        }
         int deleted = contentMapper.deleteUnpublishedContentByIds(contentIds);
         int archived = 0;
         for (Long id : contentIds)

@@ -23,19 +23,35 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateBy"       column="update_by"       />
         <result property="updateTime"     column="update_time"     />
         <result property="remark"         column="remark"          />
+        <result property="queueType"      column="queue_type"      />
+        <result property="reasonCode"     column="reason_code"     />
+        <result property="sourceInput"    column="source_input"    />
+        <result property="evalCaseId"     column="eval_case_id"    />
     </resultMap>
 
     <sql id="selectAbrAiReviewVo">
         select r.review_id, r.call_id, r.agent_code, r.prompt_version, r.biz_type, r.biz_id, r.content, r.edited_content, r.status, r.flags,
-               r.reviewer, r.review_time, r.reason, r.create_by, r.create_time, r.update_by, r.update_time, r.remark
+               r.reviewer, r.review_time, r.reason, r.create_by, r.create_time, r.update_by, r.update_time, r.remark,
+               r.queue_type, r.reason_code, cast(r.source_input as text) as source_input, r.eval_case_id
         from abr_ai_review r
     </sql>
 
     <select id="selectAbrAiReviewList" parameterType="AbrAiReview" resultMap="AbrAiReviewResult">
         select r.review_id, r.call_id, r.agent_code, r.prompt_version, r.biz_type, r.biz_id, r.status, r.flags,
-               r.reviewer, r.review_time, r.reason, r.create_by, r.create_time, r.update_by, r.update_time, r.remark
+               r.reviewer, r.review_time, r.reason, r.create_by, r.create_time, r.update_by, r.update_time, r.remark,
+               r.queue_type, r.reason_code, r.eval_case_id
         from abr_ai_review r
         <where>
+            <if test="queueType != null and queueType != ''">
+                AND r.queue_type = #{queueType}
+            </if>
+            <if test="params.queueTypes != null">
+                AND r.queue_type in
+                <foreach collection="params.queueTypes" item="q" open="(" separator="," close=")">#{q}</foreach>
+            </if>
+            <if test="reasonCode != null and reasonCode != ''">
+                AND r.reason_code = #{reasonCode}
+            </if>
             <if test="agentCode != null and agentCode != ''">
                 AND r.agent_code = #{agentCode}
             </if>
@@ -67,10 +83,36 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <insert id="insertAbrAiReview" parameterType="AbrAiReview" useGeneratedKeys="true" keyProperty="reviewId" keyColumn="review_id">
-        insert into abr_ai_review (call_id, agent_code, prompt_version, biz_type, biz_id, content, status, flags, create_by, create_time)
+        insert into abr_ai_review (call_id, agent_code, prompt_version, biz_type, biz_id, content, status, flags, create_by, create_time,
+                                   queue_type, reason_code, source_input)
         values (#{callId}, #{agentCode}, coalesce(#{promptVersion}, ''), coalesce(#{bizType}, ''), coalesce(#{bizId}, ''),
-                cast(#{content} as jsonb), #{status}, cast(#{flags} as jsonb), coalesce(#{createBy}, ''), now())
+                cast(#{content} as jsonb), #{status}, cast(#{flags} as jsonb), coalesce(#{createBy}, ''), now(),
+                coalesce(#{queueType}, 'ai'), coalesce(#{reasonCode}, ''), cast(#{sourceInput} as jsonb))
     </insert>
+
+    <select id="selectOpenByBiz" resultMap="AbrAiReviewResult">
+        <include refid="selectAbrAiReviewVo"/>
+        where r.queue_type = #{queueType} and r.biz_type = #{bizType} and r.biz_id = #{bizId} and r.status in ('pending', 'sampled')
+        limit 1
+    </select>
+
+    <update id="updateOpenSnapshot" parameterType="AbrAiReview">
+        update abr_ai_review
+        set content = cast(#{content} as jsonb), flags = cast(#{flags} as jsonb), call_id = #{callId}, agent_code = #{agentCode},
+            prompt_version = coalesce(#{promptVersion}, ''), reason_code = coalesce(#{reasonCode}, ''),
+            source_input = coalesce(cast(#{sourceInput} as jsonb), source_input), update_by = #{createBy}, update_time = now()
+        where review_id = #{reviewId} and status in ('pending', 'sampled')
+    </update>
+
+    <update id="closeOpenByBiz">
+        update abr_ai_review
+        set status = #{status}, reason = #{reason}, reviewer = #{reviewer}, review_time = now(), update_by = #{reviewer}, update_time = now()
+        where queue_type = #{queueType} and biz_type = #{bizType} and biz_id = #{bizId} and status in ('pending', 'sampled')
+    </update>
+
+    <update id="updateEvalCase">
+        update abr_ai_review set eval_case_id = #{evalCaseId} where review_id = #{reviewId}
+    </update>
 
     <update id="updateAbrAiReviewResult">
         update abr_ai_review

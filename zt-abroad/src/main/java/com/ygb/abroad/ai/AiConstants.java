@@ -49,6 +49,15 @@ public final class AiConstants
     public static final Set<String> REVIEW_POLICIES = Set.of(POLICY_DIRECT, POLICY_DIRECT_SAMPLE, POLICY_REVIEW_BEFORE_SEND,
             POLICY_USER_CONFIRM, POLICY_INTERNAL_ONLY, POLICY_FORBIDDEN);
 
+    /** 审核队列：AI 网关按审核策略写入 */
+    public static final String QUEUE_AI = "ai";
+
+    /** 审核队列：获客例外（合规闸门拦截等需要人处理的） */
+    public static final String QUEUE_EXCEPTION = "exception";
+
+    /** 审核队列：获客抽检（自动发出的内容事后抽查） */
+    public static final String QUEUE_SAMPLE = "sample";
+
     /** 审核状态：待审核 */
     public static final String REVIEW_PENDING = "pending";
 

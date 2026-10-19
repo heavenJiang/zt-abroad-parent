@@ -33,6 +33,12 @@ public class AbrGrowthSignal extends BaseEntity
     /** 类型：退订 */
     public static final String TYPE_UNSUBSCRIBE = "unsubscribe";
 
+    /** 类型：抽检合格 */
+    public static final String TYPE_SAMPLE_PASS = "sample_pass";
+
+    /** 类型：抽检不合格 */
+    public static final String TYPE_SAMPLE_FAIL = "sample_fail";
+
     /** 信号ID */
     private Long signalId;
 

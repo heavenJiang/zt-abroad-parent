@@ -55,6 +55,58 @@ public class AbrAiReview extends BaseEntity
     /** 驳回或修改原因 */
     private String reason;
 
+    /** 队列（ai / exception / sample） */
+    private String queueType;
+
+    /** 进入队列的原因（字典 abr_exception_reason） */
+    private String reasonCode;
+
+    /** 产生该输出的模型输入（JSON 文本，可为空） */
+    private String sourceInput;
+
+    /** 回流生成的评测样例ID */
+    private Long evalCaseId;
+
+    public String getQueueType()
+    {
+        return queueType;
+    }
+
+    public void setQueueType(String queueType)
+    {
+        this.queueType = queueType;
+    }
+
+    public String getReasonCode()
+    {
+        return reasonCode;
+    }
+
+    public void setReasonCode(String reasonCode)
+    {
+        this.reasonCode = reasonCode;
+    }
+
+    public String getSourceInput()
+    {
+        return sourceInput;
+    }
+
+    public void setSourceInput(String sourceInput)
+    {
+        this.sourceInput = sourceInput;
+    }
+
+    public Long getEvalCaseId()
+    {
+        return evalCaseId;
+    }
+
+    public void setEvalCaseId(Long evalCaseId)
+    {
+        this.evalCaseId = evalCaseId;
+    }
+
     public void setReviewId(Long reviewId)
     {
         this.reviewId = reviewId;
@@ -207,6 +259,9 @@ public class AbrAiReview extends BaseEntity
             .append("updateBy", getUpdateBy())
             .append("updateTime", getUpdateTime())
             .append("remark", getRemark())
+            .append("queueType", getQueueType())
+            .append("reasonCode", getReasonCode())
+            .append("evalCaseId", getEvalCaseId())
             .toString();
     }
 }

@@ -42,6 +42,8 @@ public class AbrAiReviewServiceImpl implements IAbrAiReviewService
     @Override
     public List<AbrAiReview> selectAbrAiReviewList(AbrAiReview review)
     {
+        // AI 审核队列只列网关写入的记录；例外与抽检在例外队列中查看
+        review.setQueueType(AiConstants.QUEUE_AI);
         return reviewMapper.selectAbrAiReviewList(review);
     }
 
@@ -185,6 +187,10 @@ public class AbrAiReviewServiceImpl implements IAbrAiReviewService
         if (!OPEN_STATUS.contains(review.getStatus()))
         {
             throw new ServiceException("审核记录已处理，不能重复审核");
+        }
+        if (review.getQueueType() != null && !AiConstants.QUEUE_AI.equals(review.getQueueType()))
+        {
+            throw new ServiceException("例外与抽检记录请在“获客运营 → 例外队列”处理");
         }
         return review;
     }

@@ -126,6 +126,19 @@ public class AbrContent extends BaseEntity
     /** 是否须人工确认（Y / N） */
     private String requiresConfirm;
 
+    /** 是否被抽检（Y / N） */
+    private String sampled;
+
+    public String getSampled()
+    {
+        return sampled;
+    }
+
+    public void setSampled(String sampled)
+    {
+        this.sampled = sampled;
+    }
+
     /** 合规闸门结果 */
     private String gateStatus;
 
@@ -487,6 +500,7 @@ public class AbrContent extends BaseEntity
             .append("agentCode", getAgentCode())
             .append("aiCallId", getAiCallId())
             .append("requiresConfirm", getRequiresConfirm())
+            .append("sampled", getSampled())
             .append("gateStatus", getGateStatus())
             .append("gateResult", getGateResult())
             .append("gateBy", getGateBy())

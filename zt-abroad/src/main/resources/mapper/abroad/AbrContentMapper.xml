@@ -29,6 +29,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="agentCode"        column="agent_code"        />
         <result property="aiCallId"         column="ai_call_id"        />
         <result property="requiresConfirm"  column="requires_confirm"  />
+        <result property="sampled"          column="sampled"           />
         <result property="gateStatus"       column="gate_status"       />
         <result property="gateResult"       column="gate_result"       />
         <result property="gateBy"           column="gate_by"           />
@@ -47,7 +48,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select c.content_id, c.content_code, c.codeword, c.title, c.content_kind, c.account_id, a.account_code, a.account_name, a.platform,
                c.topic, c.topic_ref, c.playbook_code, c.degree, cast(c.countries as text) as countries, c.body, cast(c.hashtags as text) as hashtags,
                cast(c.cards as text) as cards, c.hook_tool, c.tool_link, cast(c.citations as text) as citations, c.ai_generated, c.agent_code,
-               c.ai_call_id, c.requires_confirm, c.gate_status, cast(c.gate_result as text) as gate_result, c.gate_by, c.gate_time, c.confirm_by,
+               c.ai_call_id, c.requires_confirm, c.sampled, c.gate_status, cast(c.gate_result as text) as gate_result, c.gate_by, c.gate_time, c.confirm_by,
                c.confirm_time, c.status, c.create_by, c.create_time, c.update_by, c.update_time, c.remark
         from abr_content c
         left join abr_channel_account a on a.account_id = c.account_id
@@ -98,11 +99,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <insert id="insertAbrContent" parameterType="AbrContent" useGeneratedKeys="true" keyProperty="contentId" keyColumn="content_id">
         insert into abr_content (content_code, codeword, title, content_kind, account_id, topic, topic_ref, playbook_code, degree, countries, body,
                                  hashtags, cards, hook_tool, tool_link, citations, ai_generated, agent_code, ai_call_id, requires_confirm,
-                                 gate_status, status, create_by, create_time, remark)
+                                 sampled, gate_status, status, create_by, create_time, remark)
         values (#{contentCode}, #{codeword}, #{title}, #{contentKind}, #{accountId}, coalesce(#{topic}, ''), #{topicRef}, #{playbookCode}, #{degree},
                 cast(coalesce(#{countries}, '[]') as jsonb), coalesce(#{body}, ''), cast(coalesce(#{hashtags}, '[]') as jsonb),
                 cast(coalesce(#{cards}, '[]') as jsonb), #{hookTool}, coalesce(#{toolLink}, ''), cast(coalesce(#{citations}, '[]') as jsonb),
-                coalesce(#{aiGenerated}, 'N'), #{agentCode}, #{aiCallId}, coalesce(#{requiresConfirm}, 'N'), 'pending', 'draft', #{createBy}, now(), #{remark})
+                coalesce(#{aiGenerated}, 'N'), #{agentCode}, #{aiCallId}, coalesce(#{requiresConfirm}, 'N'),
+                coalesce(#{sampled}, 'N'), 'pending', 'draft', #{createBy}, now(), #{remark})
     </insert>
 
     <update id="updateAbrContent" parameterType="AbrContent">

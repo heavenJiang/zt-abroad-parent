@@ -24,7 +24,8 @@ import tools.jackson.databind.node.MissingNode;
  * <p>
  * 样例格式：{"name": "...", "input": {...}, "knownNames": ["张三"], "facts": [...], "expectStatus": "success",
  * "expect": [{"path": "/level", "equals": "ok"}, {"path": "/tags", "contains": "x"}, {"path": "/a", "exists": true},
- * {"path": "/b", "notExists": true}]}；path 为 JSON Pointer，作用于还原占位符后的输出。
+ * {"path": "/b", "notExists": true}, {"path": "/body", "notContains": "保录"}]}；path 为 JSON Pointer，作用于还原占位符后的输出。
+ * 数据库评测集（abr_ai_eval_case）中启用的样例经 AiStore 一并执行。
  * </p>
  *
  * @author ygb
@@ -67,7 +68,9 @@ public class AiEvalRunner
         report.startTime = new Date();
         // 提示词目录缺失时直接报出（AiException）
         promptLoader.load(agentCode, agent.getPromptVersion());
-        List<Map.Entry<String, JsonNode>> cases = promptLoader.loadEvalCases(agentCode, agent.getPromptVersion());
+        List<Map.Entry<String, JsonNode>> cases = new ArrayList<>(promptLoader.loadEvalCases(agentCode, agent.getPromptVersion()));
+        // 数据库评测集中启用的样例（抽检不合格回流、手工补充），名称为 db-样例ID
+        cases.addAll(store.selectEvalCases(agentCode));
         if (cases.isEmpty())
         {
             throw new AiException("Agent「" + agentCode + "」的 prompts/" + agentCode + "/" + agent.getPromptVersion() + "/eval/ 下没有评测样例");
@@ -162,6 +165,27 @@ public class AiEvalRunner
             }
             return new AssertionResult(path + " contains " + expected, pass, shown);
         }
+        if (a.has("notContains"))
+        {
+            JsonNode expected = a.get("notContains");
+            boolean pass = true;
+            if (!missing && actual.isString())
+            {
+                pass = !actual.asString().contains(expected.asString());
+            }
+            else if (!missing && actual.isArray())
+            {
+                for (JsonNode item : actual)
+                {
+                    if (AiJson.jsonEquals(item, expected) || (item.isString() && item.asString().contains(expected.asString())))
+                    {
+                        pass = false;
+                        break;
+                    }
+                }
+            }
+            return new AssertionResult(path + " notContains " + expected, pass, shown);
+        }
         if (a.has("exists"))
         {
             boolean want = a.get("exists").asBoolean(true);
@@ -172,7 +196,7 @@ public class AiEvalRunner
             boolean want = a.get("notExists").asBoolean(true);
             return new AssertionResult(path + (want ? " notExists" : " exists"), missing == want, shown);
         }
-        return new AssertionResult("未知断言 " + a, false, "支持 equals / contains / exists / notExists");
+        return new AssertionResult("未知断言 " + a, false, "支持 equals / contains / notContains / exists / notExists");
     }
 
     /**
