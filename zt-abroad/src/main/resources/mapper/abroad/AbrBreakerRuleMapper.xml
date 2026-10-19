@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrBreakerRuleMapper">
+
+    <resultMap type="AbrBreakerRule" id="AbrBreakerRuleResult">
+        <id     property="ruleId"       column="rule_id"       />
+        <result property="ruleCode"     column="rule_code"     />
+        <result property="ruleName"     column="rule_name"     />
+        <result property="metric"       column="metric"        />
+        <result property="scope"        column="scope"         />
+        <result property="agentCode"    column="agent_code"    />
+        <result property="windowHours"  column="window_hours"  />
+        <result property="threshold"    column="threshold"     />
+        <result property="minSample"    column="min_sample"    />
+        <result property="status"       column="status"        />
+        <result property="createBy"     column="create_by"     />
+        <result property="createTime"   column="create_time"   />
+        <result property="updateBy"     column="update_by"     />
+        <result property="updateTime"   column="update_time"   />
+        <result property="remark"       column="remark"        />
+    </resultMap>
+
+    <sql id="selectAbrBreakerRuleVo">
+        select rule_id, rule_code, rule_name, metric, scope, agent_code, window_hours, threshold, min_sample, status,
+               create_by, create_time, update_by, update_time, remark
+        from abr_breaker_rule
+    </sql>
+
+    <select id="selectAbrBreakerRuleList" parameterType="AbrBreakerRule" resultMap="AbrBreakerRuleResult">
+        <include refid="selectAbrBreakerRuleVo"/>
+        <where>
+            <if test="metric != null and metric != ''">and metric = #{metric}</if>
+            <if test="scope != null and scope != ''">and scope = #{scope}</if>
+            <if test="status != null and status != ''">and status = #{status}</if>
+        </where>
+        order by rule_id
+    </select>
+
+    <select id="selectAbrBreakerRuleById" parameterType="Long" resultMap="AbrBreakerRuleResult">
+        <include refid="selectAbrBreakerRuleVo"/>
+        where rule_id = #{ruleId}
+    </select>
+
+    <select id="checkRuleCodeUnique" parameterType="String" resultMap="AbrBreakerRuleResult">
+        <include refid="selectAbrBreakerRuleVo"/>
+        where rule_code = #{ruleCode}
+        limit 1
+    </select>
+
+    <insert id="insertAbrBreakerRule" parameterType="AbrBreakerRule" useGeneratedKeys="true" keyProperty="ruleId" keyColumn="rule_id">
+        insert into abr_breaker_rule (rule_code, rule_name, metric, scope, agent_code, window_hours, threshold, min_sample, status, create_by, create_time, remark)
+        values (#{ruleCode}, #{ruleName}, #{metric}, #{scope}, #{agentCode}, #{windowHours}, #{threshold}, coalesce(#{minSample}, 0),
+                coalesce(#{status}, '0'), #{createBy}, now(), #{remark})
+    </insert>
+
+    <update id="updateAbrBreakerRule" parameterType="AbrBreakerRule">
+        update abr_breaker_rule
+        set rule_code    = #{ruleCode},
+            rule_name    = #{ruleName},
+            metric       = #{metric},
+            scope        = #{scope},
+            agent_code   = #{agentCode},
+            window_hours = #{windowHours},
+            threshold    = #{threshold},
+            min_sample   = coalesce(#{minSample}, 0),
+            status       = coalesce(#{status}, '0'),
+            remark       = #{remark},
+            update_by    = #{updateBy},
+            update_time  = now()
+        where rule_id = #{ruleId}
+    </update>
+
+    <delete id="deleteAbrBreakerRuleByIds" parameterType="Long">
+        delete from abr_breaker_rule where rule_id in
+        <foreach collection="array" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

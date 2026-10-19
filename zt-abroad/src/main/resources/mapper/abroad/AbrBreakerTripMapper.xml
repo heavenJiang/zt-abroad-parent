@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrBreakerTripMapper">
+
+    <resultMap type="AbrBreakerTrip" id="AbrBreakerTripResult">
+        <id     property="tripId"        column="trip_id"        />
+        <result property="ruleId"        column="rule_id"        />
+        <result property="ruleCode"      column="rule_code"      />
+        <result property="metric"        column="metric"         />
+        <result property="scope"         column="scope"          />
+        <result property="agentCode"     column="agent_code"     />
+        <result property="metricValue"   column="metric_value"   />
+        <result property="sampleSize"    column="sample_size"    />
+        <result property="threshold"     column="threshold"      />
+        <result property="windowStart"   column="window_start"   />
+        <result property="action"        column="action"         />
+        <result property="dedupKey"      column="dedup_key"      />
+        <result property="resolvedBy"    column="resolved_by"    />
+        <result property="resolvedTime"  column="resolved_time"  />
+        <result property="createTime"    column="create_time"    />
+    </resultMap>
+
+    <select id="selectAbrBreakerTripList" parameterType="AbrBreakerTrip" resultMap="AbrBreakerTripResult">
+        select trip_id, rule_id, rule_code, metric, scope, agent_code, metric_value, sample_size, threshold, window_start, action, dedup_key,
+               resolved_by, resolved_time, create_time
+        from abr_breaker_trip
+        <where>
+            <if test="ruleCode != null and ruleCode != ''">and rule_code = #{ruleCode}</if>
+            <if test="agentCode != null and agentCode != ''">and agent_code = #{agentCode}</if>
+            <if test="scope != null and scope != ''">and scope = #{scope}</if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and create_time &gt;= cast(#{params.beginTime} as date)
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and create_time &lt; cast(#{params.endTime} as date) + interval '1 day'
+            </if>
+        </where>
+        order by trip_id desc
+    </select>
+
+    <insert id="insertAbrBreakerTrip" parameterType="AbrBreakerTrip" useGeneratedKeys="true" keyProperty="tripId" keyColumn="trip_id">
+        insert into abr_breaker_trip (rule_id, rule_code, metric, scope, agent_code, metric_value, sample_size, threshold, window_start, action,
+                                      dedup_key, create_time)
+        values (#{ruleId}, #{ruleCode}, #{metric}, #{scope}, #{agentCode}, #{metricValue}, #{sampleSize}, #{threshold}, #{windowStart},
+                coalesce(#{action}, ''), #{dedupKey}, now())
+        on conflict (dedup_key) where dedup_key is not null do nothing
+    </insert>
+
+    <update id="resolveTrips">
+        update abr_breaker_trip
+        set resolved_by = #{resolvedBy}, resolved_time = now()
+        where resolved_time is null and scope = #{scope} and rule_code not like 'budget%'
+        <if test="agentCode != null and agentCode != ''">and agent_code = #{agentCode}</if>
+    </update>
+
+</mapper>

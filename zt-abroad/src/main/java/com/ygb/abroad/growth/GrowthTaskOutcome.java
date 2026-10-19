@@ -1,5 +1,6 @@
 package com.ygb.abroad.growth;
 
+import java.util.Date;
 import java.util.Map;
 
 /**
@@ -8,9 +9,10 @@ import java.util.Map;
  * @param kind 结果类型
  * @param message 说明（跳过、重试的原因）
  * @param result 结果内容（写入任务的 result）
+ * @param deferUntil 推迟到（DEFER 时）
  * @author ygb
  */
-public record GrowthTaskOutcome(Kind kind, String message, Map<String, Object> result)
+public record GrowthTaskOutcome(Kind kind, String message, Map<String, Object> result, Date deferUntil)
 {
     /**
      * 结果类型
@@ -22,7 +24,9 @@ public record GrowthTaskOutcome(Kind kind, String message, Map<String, Object> r
         /** 跳过（不需要执行，如对象已不满足条件） */
         SKIPPED,
         /** 稍后重试（如渠道暂时不可用；达到最多执行次数后为失败） */
-        RETRY
+        RETRY,
+        /** 推迟到指定时刻再执行（如免打扰中；不计执行次数） */
+        DEFER
     }
 
     /**
@@ -33,7 +37,7 @@ public record GrowthTaskOutcome(Kind kind, String message, Map<String, Object> r
      */
     public static GrowthTaskOutcome done(Map<String, Object> result)
     {
-        return new GrowthTaskOutcome(Kind.DONE, null, result);
+        return new GrowthTaskOutcome(Kind.DONE, null, result, null);
     }
 
     /**
@@ -44,7 +48,7 @@ public record GrowthTaskOutcome(Kind kind, String message, Map<String, Object> r
      */
     public static GrowthTaskOutcome skipped(String reason)
     {
-        return new GrowthTaskOutcome(Kind.SKIPPED, reason, null);
+        return new GrowthTaskOutcome(Kind.SKIPPED, reason, null, null);
     }
 
     /**
@@ -55,7 +59,19 @@ public record GrowthTaskOutcome(Kind kind, String message, Map<String, Object> r
      */
     public static GrowthTaskOutcome retry(String reason)
     {
-        return new GrowthTaskOutcome(Kind.RETRY, reason, null);
+        return new GrowthTaskOutcome(Kind.RETRY, reason, null, null);
+    }
+
+    /**
+     * 推迟到指定时刻（不计执行次数；常用于触达判断返回免打扰时）
+     *
+     * @param until 推迟到
+     * @param reason 原因
+     * @return 结果
+     */
+    public static GrowthTaskOutcome deferred(Date until, String reason)
+    {
+        return new GrowthTaskOutcome(Kind.DEFER, reason, null, until);
     }
 
     /**

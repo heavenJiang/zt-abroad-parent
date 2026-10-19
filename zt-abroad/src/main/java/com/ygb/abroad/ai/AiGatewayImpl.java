@@ -29,16 +29,20 @@ public class AiGatewayImpl implements AiGateway
     @Autowired
     private AiProviderRegistry registry;
 
+    @Autowired(required = false)
+    private AiCallGuard callGuard;
+
     private AiPipeline pipeline;
 
     /**
-     * 装配管道：加载过滤词表
+     * 装配管道：加载过滤词表、接入调用前放行检查（获客执行保障）
      */
     @PostConstruct
     public void init()
     {
         AiOutputFilter filter = new AiOutputFilter(promptLoader.loadFilterLists(), properties.getFilter().getMaxFieldLength());
         pipeline = new AiPipeline(store, promptLoader, registry, filter, retriever);
+        pipeline.setCallGuard(callGuard);
     }
 
     /**

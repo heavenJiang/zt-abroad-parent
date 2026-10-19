@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrTouchLogMapper">
+
+    <resultMap type="AbrTouchLog" id="AbrTouchLogResult">
+        <id     property="touchId"     column="touch_id"     />
+        <result property="taskId"      column="task_id"      />
+        <result property="agentCode"   column="agent_code"   />
+        <result property="targetType"  column="target_type"  />
+        <result property="targetId"    column="target_id"    />
+        <result property="channel"     column="channel"      />
+        <result property="category"    column="category"     />
+        <result property="status"      column="status"       />
+        <result property="reason"      column="reason"       />
+        <result property="contentRef"  column="content_ref"  />
+        <result property="createTime"  column="create_time"  />
+    </resultMap>
+
+    <select id="selectAbrTouchLogList" parameterType="AbrTouchLog" resultMap="AbrTouchLogResult">
+        select touch_id, task_id, agent_code, target_type, target_id, channel, category, status, reason, content_ref, create_time
+        from abr_touch_log
+        <where>
+            <if test="agentCode != null and agentCode != ''">and agent_code = #{agentCode}</if>
+            <if test="targetType != null and targetType != ''">and target_type = #{targetType}</if>
+            <if test="targetId != null">and target_id = #{targetId}</if>
+            <if test="channel != null and channel != ''">and channel = #{channel}</if>
+            <if test="category != null and category != ''">and category = #{category}</if>
+            <if test="status != null and status != ''">and status = #{status}</if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and create_time &gt;= cast(#{params.beginTime} as date)
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and create_time &lt; cast(#{params.endTime} as date) + interval '1 day'
+            </if>
+        </where>
+        order by touch_id desc
+    </select>
+
+    <insert id="insertAbrTouchLog" parameterType="AbrTouchLog" useGeneratedKeys="true" keyProperty="touchId" keyColumn="touch_id">
+        insert into abr_touch_log (task_id, agent_code, target_type, target_id, channel, category, status, reason, content_ref, create_time)
+        values (#{taskId}, #{agentCode}, #{targetType}, #{targetId}, #{channel}, #{category}, #{status}, coalesce(#{reason}, ''), #{contentRef}, now())
+    </insert>
+
+    <select id="countMarketingSent" resultType="int">
+        select count(*) from abr_touch_log
+        where target_type = #{targetType} and target_id = #{targetId} and category = 'marketing' and status = 'sent' and create_time &gt;= #{since}
+    </select>
+
+    <select id="selectLastTouchAgent" resultType="String">
+        select agent_code from abr_touch_log
+        where target_type = #{targetType} and target_id = #{targetId} and status = 'sent' and create_time &gt;= #{since}
+        order by touch_id desc
+        limit 1
+    </select>
+
+    <select id="countMarketingSentByAgent" parameterType="java.util.Date" resultType="java.util.HashMap">
+        select agent_code as "agentCode", count(*) as "count" from abr_touch_log
+        where category = 'marketing' and status = 'sent' and create_time &gt;= #{since}
+        group by agent_code
+    </select>
+
+    <select id="existsOptout" resultType="boolean">
+        select exists (select 1 from abr_touch_optout where target_type = #{targetType} and target_id = #{targetId} and scope = #{scope})
+    </select>
+
+    <insert id="insertOptout">
+        insert into abr_touch_optout (target_type, target_id, scope, source, reason, create_by, create_time)
+        values (#{targetType}, #{targetId}, #{scope}, #{source}, coalesce(#{reason}, ''), coalesce(#{createBy}, ''), now())
+        on conflict (target_type, target_id, scope) do nothing
+    </insert>
+
+    <delete id="deleteOptout">
+        delete from abr_touch_optout where target_type = #{targetType} and target_id = #{targetId} and scope = #{scope}
+    </delete>
+
+</mapper>

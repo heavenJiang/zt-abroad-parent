@@ -22,5 +22,8 @@ class GrowthTaskOutcomeTest
         assertEquals(60, GrowthTaskOutcome.retryDelayMinutes(9));
         assertEquals(GrowthTaskOutcome.Kind.SKIPPED, GrowthTaskOutcome.skipped("x").kind());
         assertEquals("x", GrowthTaskOutcome.retry("x").message());
+        java.util.Date until = new java.util.Date();
+        assertEquals(GrowthTaskOutcome.Kind.DEFER, GrowthTaskOutcome.deferred(until, "免打扰").kind());
+        assertEquals(until, GrowthTaskOutcome.deferred(until, "免打扰").deferUntil());
     }
 }

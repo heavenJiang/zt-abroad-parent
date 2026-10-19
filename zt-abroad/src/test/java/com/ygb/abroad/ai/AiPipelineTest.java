@@ -53,6 +53,23 @@ class AiPipelineTest
     }
 
     @Test
+    void callGuardBlocksWithoutCallingModel()
+    {
+        pipeline.setCallGuard(code -> "_selftest".equals(code) ? "超出今天的 AI 预算" : null);
+        AiResult r = pipeline.invoke("_selftest", input(null), ctx());
+        assertEquals(AiConstants.STATUS_BLOCKED, r.getStatus());
+        assertTrue(r.getMessage().contains("超出今天的 AI 预算"));
+        assertNull(r.getOutput());
+        assertEquals(1, store.logs.size());
+        assertEquals(AiConstants.STATUS_BLOCKED, store.logs.get(0).getStatus());
+        assertEquals(0, store.logs.get(0).getAttempts() == null ? 0 : store.logs.get(0).getAttempts());
+
+        AiContext trial = ctx();
+        trial.setTrial(true);
+        assertEquals(AiConstants.STATUS_SUCCESS, pipeline.invoke("_selftest", input(null), trial).getStatus());
+    }
+
+    @Test
     void successDeidentifiesRestoresAndLogs()
     {
         AiResult r = pipeline.invoke("_selftest", input(null), ctx());

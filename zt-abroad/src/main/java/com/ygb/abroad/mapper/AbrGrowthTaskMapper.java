@@ -1,5 +1,6 @@
 package com.ygb.abroad.mapper;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import org.apache.ibatis.annotations.Param;
@@ -94,6 +95,18 @@ public interface AbrGrowthTaskMapper
      * @return 影响行数
      */
     public int retryAbrGrowthTask(@Param("taskId") Long taskId, @Param("claimToken") String claimToken, @Param("delayMinutes") int delayMinutes,
+            @Param("errorMsg") String errorMsg);
+
+    /**
+     * 推迟到指定时刻再执行（免打扰等；不计执行次数）
+     * 
+     * @param taskId 任务ID
+     * @param claimToken 认领令牌
+     * @param until 推迟到
+     * @param errorMsg 原因
+     * @return 影响行数
+     */
+    public int deferAbrGrowthTask(@Param("taskId") Long taskId, @Param("claimToken") String claimToken, @Param("until") Date until,
             @Param("errorMsg") String errorMsg);
 
     /**

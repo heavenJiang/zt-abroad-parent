@@ -21,6 +21,9 @@ public final class AiConstants
     /** 结果状态：已进入审核队列，内容只在审核记录中 */
     public static final String STATUS_PENDING_REVIEW = "pending_review";
 
+    /** 结果状态：已拦截（全局或 Agent 暂停、停用、超出每天 AI 预算，未调用模型） */
+    public static final String STATUS_BLOCKED = "blocked";
+
     /** 结果状态：错误（Agent 不可用、提示词缺失、主备模型均不可用等） */
     public static final String STATUS_ERROR = "error";
 

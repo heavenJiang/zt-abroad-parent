@@ -139,6 +139,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where task_id = #{taskId} and claim_token = #{claimToken} and status = 'running'
     </update>
 
+    <update id="deferAbrGrowthTask">
+        update abr_growth_task
+        set status         = 'pending',
+            attempts       = greatest(attempts - 1, 0),
+            scheduled_time = cast(#{until} as timestamp),
+            expire_time    = case when expire_time is not null and expire_time &lt; cast(#{until} as timestamp)
+                                  then cast(#{until} as timestamp) + interval '1 hour' else expire_time end,
+            error_msg      = coalesce(#{errorMsg}, ''),
+            claim_token    = null,
+            update_time    = now()
+        where task_id = #{taskId} and claim_token = #{claimToken} and status = 'running'
+    </update>
+
     <update id="resetAbrGrowthTasks">
         update abr_growth_task
         set status = 'pending', attempts = 0, scheduled_time = now(), expire_time = now() + make_interval(hours =&gt; #{ttlHours}),

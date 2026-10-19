@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrGrowthAgentMapper">
+
+    <resultMap type="AbrGrowthAgent" id="AbrGrowthAgentResult">
+        <id     property="agentId"           column="agent_id"            />
+        <result property="agentCode"         column="agent_code"          />
+        <result property="agentName"         column="agent_name"          />
+        <result property="execMode"          column="exec_mode"           />
+        <result property="targetMode"        column="target_mode"         />
+        <result property="sampleRate"        column="sample_rate"         />
+        <result property="dailyCostBudget"   column="daily_cost_budget"   />
+        <result property="dailyTokenBudget"  column="daily_token_budget"  />
+        <result property="paused"            column="paused"              />
+        <result property="pauseReason"       column="pause_reason"        />
+        <result property="pausedBy"          column="paused_by"           />
+        <result property="pausedTime"        column="paused_time"         />
+        <result property="resumeTime"        column="resume_time"         />
+        <result property="createBy"          column="create_by"           />
+        <result property="createTime"        column="create_time"         />
+        <result property="updateBy"          column="update_by"           />
+        <result property="updateTime"        column="update_time"         />
+        <result property="remark"            column="remark"              />
+    </resultMap>
+
+    <sql id="selectAbrGrowthAgentVo">
+        select agent_id, agent_code, agent_name, exec_mode, target_mode, sample_rate, daily_cost_budget, daily_token_budget, paused, pause_reason,
+               paused_by, paused_time, resume_time, create_by, create_time, update_by, update_time, remark
+        from abr_growth_agent
+    </sql>
+
+    <select id="selectAbrGrowthAgentList" parameterType="AbrGrowthAgent" resultMap="AbrGrowthAgentResult">
+        <include refid="selectAbrGrowthAgentVo"/>
+        <where>
+            <if test="execMode != null and execMode != ''">and exec_mode = #{execMode}</if>
+            <if test="paused != null and paused != ''">and paused = #{paused}</if>
+        </where>
+        order by agent_id
+    </select>
+
+    <select id="selectAbrGrowthAgentByCode" parameterType="String" resultMap="AbrGrowthAgentResult">
+        <include refid="selectAbrGrowthAgentVo"/>
+        where agent_code = #{agentCode}
+    </select>
+
+    <update id="updateAbrGrowthAgent" parameterType="AbrGrowthAgent">
+        update abr_growth_agent
+        set exec_mode          = #{execMode},
+            sample_rate        = coalesce(#{sampleRate}, 0),
+            daily_cost_budget  = #{dailyCostBudget},
+            daily_token_budget = #{dailyTokenBudget},
+            remark             = #{remark},
+            update_by          = #{updateBy},
+            update_time        = now()
+        where agent_code = #{agentCode}
+    </update>
+
+    <update id="pauseAgent">
+        update abr_growth_agent
+        set paused = 'Y', pause_reason = #{reason}, paused_by = #{pausedBy}, paused_time = now(), update_by = #{pausedBy}, update_time = now()
+        where agent_code = #{agentCode} and paused = 'N'
+    </update>
+
+    <update id="resumeAgent">
+        update abr_growth_agent
+        set paused = 'N', resume_time = now(), update_by = #{updateBy}, update_time = now()
+        where agent_code = #{agentCode} and paused = 'Y'
+    </update>
+
+    <select id="selectAiUsageSince" resultType="java.util.HashMap">
+        select agent_code as "agentCode", coalesce(sum(cost), 0) as "cost",
+               coalesce(sum(coalesce(prompt_tokens, 0) + coalesce(completion_tokens, 0)), 0) as "tokens"
+        from abr_ai_call_log
+        where create_time &gt;= #{since} and coalesce(biz_type, '') not in ('trial', 'eval')
+        <if test="agentCode != null and agentCode != ''">and agent_code = #{agentCode}</if>
+        group by agent_code
+    </select>
+
+</mapper>

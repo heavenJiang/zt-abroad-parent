@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrGrowthSettingMapper">
+
+    <resultMap type="AbrGrowthSetting" id="AbrGrowthSettingResult">
+        <id     property="settingId"         column="setting_id"          />
+        <result property="paused"            column="paused"              />
+        <result property="pauseReason"       column="pause_reason"        />
+        <result property="pausedBy"          column="paused_by"           />
+        <result property="pausedTime"        column="paused_time"         />
+        <result property="resumeTime"        column="resume_time"         />
+        <result property="weeklyTouchCap"    column="weekly_touch_cap"    />
+        <result property="quietStart"        column="quiet_start"         />
+        <result property="quietEnd"          column="quiet_end"           />
+        <result property="dailyCostBudget"   column="daily_cost_budget"   />
+        <result property="dailyTokenBudget"  column="daily_token_budget"  />
+        <result property="updateBy"          column="update_by"           />
+        <result property="updateTime"        column="update_time"         />
+        <result property="remark"            column="remark"              />
+    </resultMap>
+
+    <select id="selectAbrGrowthSetting" resultMap="AbrGrowthSettingResult">
+        select setting_id, paused, pause_reason, paused_by, paused_time, resume_time, weekly_touch_cap, quiet_start, quiet_end,
+               daily_cost_budget, daily_token_budget, update_by, update_time, remark
+        from abr_growth_setting
+        where setting_id = 1
+    </select>
+
+    <update id="updateAbrGrowthSetting" parameterType="AbrGrowthSetting">
+        update abr_growth_setting
+        set weekly_touch_cap   = #{weeklyTouchCap},
+            quiet_start        = #{quietStart},
+            quiet_end          = #{quietEnd},
+            daily_cost_budget  = #{dailyCostBudget},
+            daily_token_budget = #{dailyTokenBudget},
+            remark             = #{remark},
+            update_by          = #{updateBy},
+            update_time        = now()
+        where setting_id = 1
+    </update>
+
+    <update id="pauseGlobal">
+        update abr_growth_setting
+        set paused = 'Y', pause_reason = #{reason}, paused_by = #{pausedBy}, paused_time = now(), update_by = #{pausedBy}, update_time = now()
+        where setting_id = 1 and paused = 'N'
+    </update>
+
+    <update id="resumeGlobal" parameterType="String">
+        update abr_growth_setting
+        set paused = 'N', resume_time = now(), update_by = #{updateBy}, update_time = now()
+        where setting_id = 1 and paused = 'Y'
+    </update>
+
+</mapper>

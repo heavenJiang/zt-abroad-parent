@@ -9,9 +9,11 @@ package com.ygb.abroad.growth;
  * @param tasksCreated 本轮生成的任务数
  * @param tasksRun 本轮执行的任务数
  * @param tasksExpired 本轮过期的任务数
+ * @param breakerTrips 本轮触发的熔断数
  * @author ygb
  */
-public record OrchestratorRound(boolean playbookSwitched, int nodeEvents, int eventsRead, int tasksCreated, int tasksRun, int tasksExpired)
+public record OrchestratorRound(boolean playbookSwitched, int nodeEvents, int eventsRead, int tasksCreated, int tasksRun, int tasksExpired,
+        int breakerTrips)
 {
     /**
      * 本轮是否有任何变化
@@ -20,6 +22,6 @@ public record OrchestratorRound(boolean playbookSwitched, int nodeEvents, int ev
      */
     public boolean busy()
     {
-        return playbookSwitched || nodeEvents > 0 || eventsRead > 0 || tasksCreated > 0 || tasksRun > 0 || tasksExpired > 0;
+        return playbookSwitched || nodeEvents > 0 || eventsRead > 0 || tasksCreated > 0 || tasksRun > 0 || tasksExpired > 0 || breakerTrips > 0;
     }
 }

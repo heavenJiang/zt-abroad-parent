@@ -59,6 +59,9 @@ public class AiPipeline
 
     private final AiRetriever retriever;
 
+    /** 调用前放行检查（可为 null） */
+    private AiCallGuard callGuard;
+
     public AiPipeline(AiStore store, AiPromptLoader promptLoader, AiProviderRegistry registry, AiOutputFilter filter, AiRetriever retriever)
     {
         this.store = store;
@@ -66,6 +69,16 @@ public class AiPipeline
         this.registry = registry;
         this.filter = filter;
         this.retriever = retriever;
+    }
+
+    /**
+     * 设置调用前放行检查（获客执行保障：暂停、停用、预算闸）
+     *
+     * @param callGuard 放行检查
+     */
+    public void setCallGuard(AiCallGuard callGuard)
+    {
+        this.callGuard = callGuard;
     }
 
     /**
@@ -94,6 +107,11 @@ public class AiPipeline
             callLog.setCallId(callId);
             result.setCallId(callId);
             run(agentCode, input, ctx, result, callLog);
+        }
+        catch (AiBlockedException e)
+        {
+            fail(result, e.getMessage());
+            result.setStatus(AiConstants.STATUS_BLOCKED);
         }
         catch (AiException e)
         {
@@ -126,6 +144,11 @@ public class AiPipeline
         if (!"0".equals(agent.getStatus()) && !ctx.isTrial() && !ctx.isEvaluation())
         {
             throw new AiException("Agent「" + agentCode + "」已停用");
+        }
+        String blocked = callGuard == null || ctx.isTrial() || ctx.isEvaluation() ? null : callGuard.blockReason(agentCode);
+        if (blocked != null)
+        {
+            throw new AiBlockedException("Agent「" + agentCode + "」" + blocked);
         }
         if (AiConstants.POLICY_FORBIDDEN.equals(agent.getReviewPolicy()))
         {

@@ -24,6 +24,18 @@ public class AbrEvent extends BaseEntity
     /** 事件类型：营销日历节点到达（编排器写入） */
     public static final String TYPE_CALENDAR_NODE = "calendar_node";
 
+    /** 事件类型：熔断触发（已暂停对应 Agent 或全局） */
+    public static final String TYPE_CIRCUIT_BREAKER_TRIPPED = "circuit_breaker_tripped";
+
+    /** 事件类型：超出每天 AI 预算（当天停止调用，次日自动恢复） */
+    public static final String TYPE_BUDGET_EXCEEDED = "budget_exceeded";
+
+    /** 事件类型：员工暂停获客 Agent 或全局 */
+    public static final String TYPE_GROWTH_PAUSED = "growth_paused";
+
+    /** 事件类型：员工恢复获客 Agent 或全局 */
+    public static final String TYPE_GROWTH_RESUMED = "growth_resumed";
+
     /** 推荐状态：待展示 */
     public static final String RECOMMEND_PENDING = "pending";
 

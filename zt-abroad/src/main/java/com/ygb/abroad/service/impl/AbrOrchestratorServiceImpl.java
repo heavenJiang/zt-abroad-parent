@@ -8,10 +8,12 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import com.ygb.abroad.domain.AbrCalendarEntry;
 import com.ygb.abroad.domain.AbrEvent;
+import com.ygb.abroad.domain.AbrGrowthAgent;
 import com.ygb.abroad.domain.AbrGrowthTask;
 import com.ygb.abroad.domain.AbrGrowthTrigger;
 import com.ygb.abroad.domain.AbrPlaybook;
@@ -32,11 +35,13 @@ import com.ygb.abroad.growth.MarketingCalendar;
 import com.ygb.abroad.growth.OrchestratorRound;
 import com.ygb.abroad.mapper.AbrCalendarEntryMapper;
 import com.ygb.abroad.mapper.AbrEventMapper;
+import com.ygb.abroad.mapper.AbrGrowthAgentMapper;
 import com.ygb.abroad.mapper.AbrGrowthCursorMapper;
 import com.ygb.abroad.mapper.AbrGrowthTaskMapper;
 import com.ygb.abroad.mapper.AbrGrowthTriggerMapper;
 import com.ygb.abroad.mapper.AbrPlaybookMapper;
 import com.ygb.abroad.service.IAbrEventService;
+import com.ygb.abroad.service.IAbrGrowthGuardService;
 import com.ygb.abroad.service.IAbrOrchestratorService;
 import com.ygb.common.exception.ServiceException;
 import com.ygb.common.utils.DateUtils;
@@ -55,7 +60,9 @@ import tools.jackson.databind.json.JsonMapper;
  * 事件ID可能因并发事务提交先后出现空洞，游标只推进到连续的或已静置的事件为止，之后的事件下一轮会再读一次（去重键保证不重复生成）。</li>
  * <li>定时：启用的定时规则在上次触发之后、当前时刻之前有计划时刻的，生成一条任务（停机错过的只补最近一次，且不早于补触发窗口）。</li>
  * <li>执行：只认领有处理器的 Agent 的任务，逐条交给处理器；失败按 5、10、20、40、60 分钟重试，达到最多次数为失败。
- * 没有处理器的 Agent（未上线）任务保持待执行，到期后标为过期。</li>
+ * 没有处理器的 Agent（未上线）任务保持待执行，到期后标为过期；全局或 Agent 暂停、超出 AI 预算时不认领（M6-02），
+ * 执行模式为停用的 Agent 不生成任务。处理器返回推迟（如免打扰）时按指定时刻重排，不计执行次数。</li>
+ * <li>熔断：每轮评估熔断规则，达到阈值时暂停对应 Agent 或全局。</li>
  * </ol>
  *
  * @author ygb
@@ -97,6 +104,12 @@ public class AbrOrchestratorServiceImpl implements IAbrOrchestratorService
     private IAbrEventService eventService;
 
     @Autowired
+    private IAbrGrowthGuardService guardService;
+
+    @Autowired
+    private AbrGrowthAgentMapper agentMapper;
+
+    @Autowired
     private TransactionTemplate transactionTemplate;
 
     @Autowired(required = false)
@@ -134,6 +147,7 @@ public class AbrOrchestratorServiceImpl implements IAbrOrchestratorService
         {
             return null;
         }
+        int trips = guardService.evaluateBreakers();
         int created = counts[3] + fireSchedules();
         int expired = taskMapper.expireAbrGrowthTasks();
         int recovered = taskMapper.recoverStaleAbrGrowthTasks(staleMinutes);
@@ -142,7 +156,7 @@ public class AbrOrchestratorServiceImpl implements IAbrOrchestratorService
             log.warn("编排任务执行超时 {} 条，已恢复为待执行或标为失败", recovered);
         }
         int run = runDueTasks();
-        OrchestratorRound round = new OrchestratorRound(counts[0] > 0, counts[1], counts[2], created, run, expired);
+        OrchestratorRound round = new OrchestratorRound(counts[0] > 0, counts[1], counts[2], created, run, expired, trips);
         if (round.busy())
         {
             log.info("编排器一轮：{}", round);
@@ -166,6 +180,7 @@ public class AbrOrchestratorServiceImpl implements IAbrOrchestratorService
         map.put("playbooks", MarketingCalendar.activePlaybooks(allPlaybooks(), entries, today).stream().map(this::playbookBrief).toList());
         map.put("nodes", MarketingCalendar.nodesOn(entries, today).stream().map(e -> nodeBrief(today, e)).toList());
         map.put("handlerAgents", handlerMap().keySet());
+        map.put("blockedAgents", guardService.blockedAgents());
         Map<String, Long> tasks = new LinkedHashMap<>();
         for (Map<String, Object> row : taskMapper.countAbrGrowthTasksByStatus())
         {
@@ -423,6 +438,8 @@ public class AbrOrchestratorServiceImpl implements IAbrOrchestratorService
     private int runDueTasks()
     {
         Map<String, GrowthAgentHandler> map = handlerMap();
+        Map<String, String> blocked = guardService.blockedAgents();
+        map.keySet().removeAll(blocked.keySet());
         if (map.isEmpty())
         {
             return 0;
@@ -435,7 +452,15 @@ public class AbrOrchestratorServiceImpl implements IAbrOrchestratorService
         List<AbrGrowthTask> tasks = taskMapper.selectAbrGrowthTasksByClaim(token);
         for (AbrGrowthTask task : tasks)
         {
-            execute(task, map.get(task.getAgentCode()));
+            try
+            {
+                execute(task, map.get(task.getAgentCode()));
+            }
+            catch (RuntimeException e)
+            {
+                // 写回结果失败：任务保持执行中，超时后由 recoverStaleAbrGrowthTasks 恢复；不影响本批其他任务
+                log.error("编排任务 {} 写回结果失败", task.getTaskId(), e);
+            }
         }
         return tasks.size();
     }
@@ -459,7 +484,12 @@ public class AbrOrchestratorServiceImpl implements IAbrOrchestratorService
         {
             outcome = GrowthTaskOutcome.done(null);
         }
-        if (outcome.kind() == GrowthTaskOutcome.Kind.RETRY)
+        if (outcome.kind() == GrowthTaskOutcome.Kind.DEFER && outcome.deferUntil() != null)
+        {
+            taskMapper.deferAbrGrowthTask(task.getTaskId(), task.getClaimToken(), outcome.deferUntil(), StringUtils.substring(outcome.message(), 0, 1900));
+            return;
+        }
+        if (outcome.kind() == GrowthTaskOutcome.Kind.RETRY || outcome.kind() == GrowthTaskOutcome.Kind.DEFER)
         {
             int attempts = task.getAttempts() == null ? 1 : task.getAttempts();
             taskMapper.retryAbrGrowthTask(task.getTaskId(), task.getClaimToken(), GrowthTaskOutcome.retryDelayMinutes(attempts),
@@ -534,12 +564,21 @@ public class AbrOrchestratorServiceImpl implements IAbrOrchestratorService
         return entryMapper.selectAbrCalendarEntryList(new AbrCalendarEntry());
     }
 
+    /**
+     * 启用的规则（执行模式为停用的 Agent 的规则不生成任务）
+     */
     private List<AbrGrowthTrigger> enabledTriggers(String type)
     {
         AbrGrowthTrigger query = new AbrGrowthTrigger();
         query.setTriggerType(type);
         query.setStatus("0");
-        return triggerMapper.selectAbrGrowthTriggerList(query);
+        AbrGrowthAgent off = new AbrGrowthAgent();
+        off.setExecMode(AbrGrowthAgent.MODE_OFF);
+        Set<String> offAgents = new HashSet<>();
+        agentMapper.selectAbrGrowthAgentList(off).forEach(a -> offAgents.add(a.getAgentCode()));
+        List<AbrGrowthTrigger> list = triggerMapper.selectAbrGrowthTriggerList(query);
+        list.removeIf(t -> offAgents.contains(t.getAgentCode()));
+        return list;
     }
 
     private Map<String, Object> playbookBrief(AbrPlaybook p)
