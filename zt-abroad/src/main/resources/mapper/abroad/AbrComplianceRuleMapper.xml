@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrComplianceRuleMapper">
+
+    <resultMap type="AbrComplianceRule" id="AbrComplianceRuleResult">
+        <id     property="ruleId"      column="rule_id"      />
+        <result property="category"    column="category"     />
+        <result property="matchType"   column="match_type"   />
+        <result property="pattern"     column="pattern"      />
+        <result property="action"      column="action"       />
+        <result property="platforms"   column="platforms"    />
+        <result property="status"      column="status"       />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"  column="create_time"  />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"  column="update_time"  />
+        <result property="remark"      column="remark"       />
+    </resultMap>
+
+    <sql id="selectAbrComplianceRuleVo">
+        select rule_id, category, match_type, pattern, action, cast(platforms as text) as platforms, status,
+               create_by, create_time, update_by, update_time, remark
+        from abr_compliance_rule
+    </sql>
+
+    <select id="selectAbrComplianceRuleList" parameterType="AbrComplianceRule" resultMap="AbrComplianceRuleResult">
+        <include refid="selectAbrComplianceRuleVo"/>
+        <where>
+            <if test="category != null and category != ''">and category = #{category}</if>
+            <if test="matchType != null and matchType != ''">and match_type = #{matchType}</if>
+            <if test="pattern != null and pattern != ''">and pattern ilike concat('%', #{pattern}, '%')</if>
+            <if test="status != null and status != ''">and status = #{status}</if>
+            <if test="params.platform != null and params.platform != ''">
+                and (platforms = '[]'::jsonb or platforms @&gt; jsonb_build_array(cast(#{params.platform} as text)))
+            </if>
+        </where>
+        order by category, match_type, rule_id
+    </select>
+
+    <select id="selectAbrComplianceRuleById" parameterType="Long" resultMap="AbrComplianceRuleResult">
+        <include refid="selectAbrComplianceRuleVo"/>
+        where rule_id = #{ruleId}
+    </select>
+
+    <select id="selectActiveRules" resultMap="AbrComplianceRuleResult">
+        <include refid="selectAbrComplianceRuleVo"/>
+        where status = '0'
+        order by rule_id
+    </select>
+
+    <select id="checkRuleUnique" parameterType="AbrComplianceRule" resultMap="AbrComplianceRuleResult">
+        <include refid="selectAbrComplianceRuleVo"/>
+        where category = #{category} and match_type = #{matchType} and lower(pattern) = lower(#{pattern})
+        limit 1
+    </select>
+
+    <insert id="insertAbrComplianceRule" parameterType="AbrComplianceRule" useGeneratedKeys="true" keyProperty="ruleId" keyColumn="rule_id">
+        insert into abr_compliance_rule (category, match_type, pattern, action, platforms, status, create_by, create_time, remark)
+        values (#{category}, #{matchType}, #{pattern}, #{action}, cast(#{platforms} as jsonb), #{status}, #{createBy}, now(), #{remark})
+    </insert>
+
+    <update id="updateAbrComplianceRule" parameterType="AbrComplianceRule">
+        update abr_compliance_rule
+        set category = #{category}, match_type = #{matchType}, pattern = #{pattern}, action = #{action},
+            platforms = cast(#{platforms} as jsonb), status = #{status}, update_by = #{updateBy}, update_time = now(), remark = #{remark}
+        where rule_id = #{ruleId}
+    </update>
+
+    <delete id="deleteAbrComplianceRuleByIds" parameterType="Long">
+        delete from abr_compliance_rule where rule_id in
+        <foreach item="ruleId" collection="array" open="(" separator="," close=")">
+            #{ruleId}
+        </foreach>
+    </delete>
+</mapper>

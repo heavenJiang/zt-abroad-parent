@@ -142,7 +142,7 @@ xss:
   # 过滤开关
   enabled: true
   # 排除链接（多个用逗号分隔）
-  excludes: /system/notice,/abroad/questionnaire/**,/abroad/engine/**,/abroad/orchestrator/**,/abroad/content/**,/app/assessment/**,/app/tool/**
+  excludes: /system/notice,/abroad/questionnaire/**,/abroad/engine/**,/abroad/orchestrator/**,/abroad/content/**,/abroad/compliance/**,/app/assessment/**,/app/tool/**
   # 匹配链接
   urlPatterns: /system/*,/monitor/*,/tool/*,/abroad/*,/app/*
 
@@ -163,6 +163,9 @@ abroad:
   content:
     # AI 生成标识：AI 生成的内容通过合规闸门前须在正文中带上这段文字
     ai-label: 本文由 AI 辅助生成
+  compliance:
+    # 合规闸门（M6-03）：AI 生成的消息（自动回复、培育消息）须带的标识；词表在管理端「合规词表」配置
+    message-ai-label: （AI 回复）
   growth:
     # 营销编排器（定时任务 abrOrchestratorTask.dispatch() 每分钟一轮）：每轮最多执行的任务数
     batch-size: 10

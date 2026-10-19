@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.ygb.abroad.domain.AbrChannelAccount;
 import com.ygb.abroad.domain.AbrContent;
+import com.ygb.abroad.domain.AbrEvent;
 import com.ygb.abroad.domain.AbrGrowthSignal;
 import com.ygb.abroad.domain.AbrPublishRecord;
 import com.ygb.abroad.growth.OutboundDecision;
@@ -17,6 +18,7 @@ import com.ygb.abroad.mapper.AbrChannelAccountMapper;
 import com.ygb.abroad.mapper.AbrContentMapper;
 import com.ygb.abroad.mapper.AbrPublishRecordMapper;
 import com.ygb.abroad.service.IAbrContentService;
+import com.ygb.abroad.service.IAbrEventService;
 import com.ygb.abroad.service.IAbrGrowthGuardService;
 import com.ygb.common.exception.ServiceException;
 import com.ygb.common.utils.StringUtils;
@@ -47,6 +49,9 @@ public class AbrContentServiceImpl implements IAbrContentService
 
     @Autowired
     private IAbrGrowthGuardService guardService;
+
+    @Autowired
+    private IAbrEventService eventService;
 
     /** C 端地址（工具链接的前缀） */
     @Value("${abroad.app.url:http://localhost:5173/}")
@@ -125,6 +130,7 @@ public class AbrContentServiceImpl implements IAbrContentService
             try
             {
                 contentMapper.insertAbrContent(content);
+                requestGate(content.getContentId());
                 return contentMapper.selectAbrContentById(content.getContentId());
             }
             catch (DuplicateKeyException e)
@@ -181,7 +187,20 @@ public class AbrContentServiceImpl implements IAbrContentService
             content.setConfirmTime(before.getConfirmTime());
             content.setStatus(before.getStatus());
         }
-        return contentMapper.updateAbrContent(content);
+        int rows = contentMapper.updateAbrContent(content);
+        if (rows > 0 && AbrContent.GATE_PENDING.equals(content.getGateStatus()))
+        {
+            requestGate(content.getContentId());
+        }
+        return rows;
+    }
+
+    /**
+     * 写入“内容待过合规闸门”事件，由编排器交给 compliance_checker（M6-03）
+     */
+    private void requestGate(Long contentId)
+    {
+        eventService.recordSystemEvent(AbrEvent.TYPE_CONTENT_GATE_REQUESTED, null, Map.of("content_id", contentId));
     }
 
     @Override

@@ -33,6 +33,9 @@ public class AbrEvent extends BaseEntity
     /** 事件类型：内容已发布（归因起点：内容编号、口令、账号） */
     public static final String TYPE_CONTENT_PUBLISHED = "content_published";
 
+    /** 事件类型：内容待过合规闸门（新增或改稿后；compliance_checker 订阅） */
+    public static final String TYPE_CONTENT_GATE_REQUESTED = "content_gate_requested";
+
     /** 事件类型：员工暂停获客 Agent 或全局 */
     public static final String TYPE_GROWTH_PAUSED = "growth_paused";
 
