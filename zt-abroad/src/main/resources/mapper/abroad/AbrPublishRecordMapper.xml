@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrPublishRecordMapper">
+
+    <resultMap type="AbrPublishRecord" id="AbrPublishRecordResult">
+        <id     property="recordId"        column="record_id"         />
+        <result property="contentId"       column="content_id"        />
+        <result property="contentCode"     column="content_code"      />
+        <result property="title"           column="title"             />
+        <result property="accountId"       column="account_id"        />
+        <result property="accountCode"     column="account_code"      />
+        <result property="accountName"     column="account_name"      />
+        <result property="publishMode"     column="publish_mode"      />
+        <result property="status"          column="status"            />
+        <result property="plannedTime"     column="planned_time"      />
+        <result property="publishedTime"   column="published_time"    />
+        <result property="postUrl"         column="post_url"          />
+        <result property="platformPostId"  column="platform_post_id"  />
+        <result property="errorMsg"        column="error_msg"         />
+        <result property="metrics"         column="metrics"           />
+        <result property="metricsTime"     column="metrics_time"      />
+        <result property="createBy"        column="create_by"         />
+        <result property="createTime"      column="create_time"       />
+        <result property="updateBy"        column="update_by"         />
+        <result property="updateTime"      column="update_time"       />
+    </resultMap>
+
+    <sql id="selectAbrPublishRecordVo">
+        select r.record_id, r.content_id, c.content_code, c.title, r.account_id, a.account_code, a.account_name, r.publish_mode, r.status,
+               r.planned_time, r.published_time, r.post_url, r.platform_post_id, r.error_msg, cast(r.metrics as text) as metrics, r.metrics_time,
+               r.create_by, r.create_time, r.update_by, r.update_time
+        from abr_publish_record r
+        left join abr_content c on c.content_id = r.content_id
+        left join abr_channel_account a on a.account_id = r.account_id
+    </sql>
+
+    <select id="selectAbrPublishRecordList" parameterType="AbrPublishRecord" resultMap="AbrPublishRecordResult">
+        <include refid="selectAbrPublishRecordVo"/>
+        <where>
+            <if test="contentId != null">and r.content_id = #{contentId}</if>
+            <if test="accountId != null">and r.account_id = #{accountId}</if>
+            <if test="publishMode != null and publishMode != ''">and r.publish_mode = #{publishMode}</if>
+            <if test="status != null and status != ''">and r.status = #{status}</if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and r.planned_time &gt;= cast(#{params.beginTime} as date)
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and r.planned_time &lt; cast(#{params.endTime} as date) + interval '1 day'
+            </if>
+        </where>
+        order by r.planned_time desc, r.record_id desc
+    </select>
+
+    <select id="selectAbrPublishRecordById" parameterType="Long" resultMap="AbrPublishRecordResult">
+        <include refid="selectAbrPublishRecordVo"/>
+        where r.record_id = #{recordId}
+    </select>
+
+    <insert id="insertAbrPublishRecord" parameterType="AbrPublishRecord" useGeneratedKeys="true" keyProperty="recordId" keyColumn="record_id">
+        insert into abr_publish_record (content_id, account_id, publish_mode, status, planned_time, create_by, create_time, update_time)
+        values (#{contentId}, #{accountId}, #{publishMode}, 'scheduled', #{plannedTime}, #{createBy}, now(), now())
+    </insert>
+
+    <update id="markPublished" parameterType="AbrPublishRecord">
+        update abr_publish_record
+        set status = 'published', published_time = coalesce(#{publishedTime}, now()), post_url = coalesce(#{postUrl}, ''),
+            platform_post_id = coalesce(#{platformPostId}, ''), error_msg = '', update_by = #{updateBy}, update_time = now()
+        where record_id = #{recordId} and status in ('scheduled', 'failed')
+    </update>
+
+    <update id="markFailed">
+        update abr_publish_record
+        set status = 'failed', error_msg = coalesce(#{reason}, ''), update_by = #{updateBy}, update_time = now()
+        where record_id = #{recordId} and status = 'scheduled'
+    </update>
+
+    <update id="withdraw">
+        update abr_publish_record
+        set status = 'withdrawn', error_msg = coalesce(#{reason}, ''), update_by = #{updateBy}, update_time = now()
+        where record_id = #{recordId} and status in ('scheduled', 'published')
+    </update>
+
+    <select id="countActiveByContent" resultType="int">
+        select count(*) from abr_publish_record
+        where content_id = #{contentId}
+        <choose>
+            <when test="status != null and status != ''">and status = #{status}</when>
+            <otherwise>and status in ('scheduled', 'published')</otherwise>
+        </choose>
+    </select>
+
+    <select id="countByContentIds" parameterType="Long" resultType="int">
+        select count(*) from abr_publish_record where content_id in
+        <foreach collection="array" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </select>
+
+    <select id="selectDueRecords" resultMap="AbrPublishRecordResult">
+        <include refid="selectAbrPublishRecordVo"/>
+        where r.status = 'scheduled' and r.planned_time &lt;= #{now} and r.publish_mode = #{publishMode}
+        order by r.planned_time, r.record_id
+    </select>
+
+</mapper>

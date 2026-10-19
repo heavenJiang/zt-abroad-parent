@@ -28,12 +28,12 @@ public interface AbrBreakerTripMapper
     public int insertAbrBreakerTrip(AbrBreakerTrip trip);
 
     /**
-     * 恢复时记录处理人：某 Agent（或全局）未处理的熔断记录
+     * 恢复时记录处理人：某 Agent、渠道账号（或全局）未处理的熔断记录
      * 
-     * @param scope 范围（agent / global）
-     * @param agentCode Agent 编码（全局为空）
+     * @param scope 范围（agent / account / global）
+     * @param code Agent 编码或账号编码（全局为空）
      * @param resolvedBy 恢复人
      * @return 影响行数
      */
-    public int resolveTrips(@Param("scope") String scope, @Param("agentCode") String agentCode, @Param("resolvedBy") String resolvedBy);
+    public int resolveTrips(@Param("scope") String scope, @Param("code") String code, @Param("resolvedBy") String resolvedBy);
 }

@@ -279,11 +279,15 @@ public class AbrGrowthControlServiceImpl implements IAbrGrowthControlService
         {
             throw new ServiceException("指标“" + rule.getMetric() + "”不在字典 abr_breaker_metric 中");
         }
-        if (!AbrBreakerRule.SCOPE_AGENT.equals(rule.getScope()) && !AbrBreakerRule.SCOPE_GLOBAL.equals(rule.getScope()))
+        if (!Set.of(AbrBreakerRule.SCOPE_AGENT, AbrBreakerRule.SCOPE_ACCOUNT, AbrBreakerRule.SCOPE_GLOBAL).contains(rule.getScope()))
         {
-            throw new ServiceException("范围只能是 agent（逐个 Agent）或 global（全局）");
+            throw new ServiceException("范围只能是 agent（逐个 Agent）、account（逐个渠道账号）或 global（全局）");
         }
-        if (AbrBreakerRule.SCOPE_GLOBAL.equals(rule.getScope()))
+        if (AbrBreakerRule.SCOPE_ACCOUNT.equals(rule.getScope()) && AbrGrowthGuardServiceImpl.ratio(rule.getMetric()))
+        {
+            throw new ServiceException("按渠道账号统计只支持计数类指标（投诉、平台违规提示、差评回复）");
+        }
+        if (!AbrBreakerRule.SCOPE_AGENT.equals(rule.getScope()))
         {
             rule.setAgentCode(null);
         }

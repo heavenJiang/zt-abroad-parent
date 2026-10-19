@@ -30,6 +30,9 @@ public class AbrEvent extends BaseEntity
     /** 事件类型：超出每天 AI 预算（当天停止调用，次日自动恢复） */
     public static final String TYPE_BUDGET_EXCEEDED = "budget_exceeded";
 
+    /** 事件类型：内容已发布（归因起点：内容编号、口令、账号） */
+    public static final String TYPE_CONTENT_PUBLISHED = "content_published";
+
     /** 事件类型：员工暂停获客 Agent 或全局 */
     public static final String TYPE_GROWTH_PAUSED = "growth_paused";
 

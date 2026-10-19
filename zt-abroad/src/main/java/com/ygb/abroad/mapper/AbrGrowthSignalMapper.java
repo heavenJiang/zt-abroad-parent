@@ -37,4 +37,13 @@ public interface AbrGrowthSignalMapper
      * @return agentCode、count
      */
     public List<Map<String, Object>> countSignalsByAgent(@Param("signalType") String signalType, @Param("since") Date since);
+
+    /**
+     * 某时刻以来各渠道账号某类信号数（没有账号的信号不在其中）
+     * 
+     * @param signalType 信号类型
+     * @param since 起点
+     * @return accountCode、count
+     */
+    public List<Map<String, Object>> countSignalsByAccount(@Param("signalType") String signalType, @Param("since") Date since);
 }

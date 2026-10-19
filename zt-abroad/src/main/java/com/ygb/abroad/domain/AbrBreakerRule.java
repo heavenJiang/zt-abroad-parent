@@ -24,6 +24,9 @@ public class AbrBreakerRule extends BaseEntity
     /** 范围：逐个 Agent */
     public static final String SCOPE_AGENT = "agent";
 
+    /** 范围：逐个渠道账号（只支持计数类指标） */
+    public static final String SCOPE_ACCOUNT = "account";
+
     /** 范围：全局 */
     public static final String SCOPE_GLOBAL = "global";
 

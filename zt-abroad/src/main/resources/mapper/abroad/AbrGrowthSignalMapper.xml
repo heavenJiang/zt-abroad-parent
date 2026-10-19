@@ -48,4 +48,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         group by coalesce(agent_code, '')
     </select>
 
+    <select id="countSignalsByAccount" resultType="java.util.HashMap">
+        select account_code as "accountCode", count(*) as "count" from abr_growth_signal
+        where signal_type = #{signalType} and create_time &gt;= #{since} and account_code is not null and account_code &lt;&gt; ''
+        group by account_code
+    </select>
+
 </mapper>

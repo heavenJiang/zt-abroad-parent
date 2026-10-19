@@ -34,6 +34,9 @@ public class AbrBreakerTrip extends BaseEntity
     /** 暂停的 Agent */
     private String agentCode;
 
+    /** 暂停的渠道账号 */
+    private String accountCode;
+
     /** 触发时的指标值 */
     private BigDecimal metricValue;
 
@@ -118,6 +121,16 @@ public class AbrBreakerTrip extends BaseEntity
     public String getAgentCode()
     {
         return agentCode;
+    }
+
+    public void setAccountCode(String accountCode)
+    {
+        this.accountCode = accountCode;
+    }
+
+    public String getAccountCode()
+    {
+        return accountCode;
     }
 
     public void setMetricValue(BigDecimal metricValue)
@@ -210,6 +223,7 @@ public class AbrBreakerTrip extends BaseEntity
             .append("metric", getMetric())
             .append("scope", getScope())
             .append("agentCode", getAgentCode())
+            .append("accountCode", getAccountCode())
             .append("metricValue", getMetricValue())
             .append("sampleSize", getSampleSize())
             .append("threshold", getThreshold())

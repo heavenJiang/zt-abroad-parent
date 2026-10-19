@@ -11,6 +11,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="metric"        column="metric"         />
         <result property="scope"         column="scope"          />
         <result property="agentCode"     column="agent_code"     />
+        <result property="accountCode"   column="account_code"   />
         <result property="metricValue"   column="metric_value"   />
         <result property="sampleSize"    column="sample_size"    />
         <result property="threshold"     column="threshold"      />
@@ -23,12 +24,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <select id="selectAbrBreakerTripList" parameterType="AbrBreakerTrip" resultMap="AbrBreakerTripResult">
-        select trip_id, rule_id, rule_code, metric, scope, agent_code, metric_value, sample_size, threshold, window_start, action, dedup_key,
+        select trip_id, rule_id, rule_code, metric, scope, agent_code, account_code, metric_value, sample_size, threshold, window_start, action, dedup_key,
                resolved_by, resolved_time, create_time
         from abr_breaker_trip
         <where>
             <if test="ruleCode != null and ruleCode != ''">and rule_code = #{ruleCode}</if>
             <if test="agentCode != null and agentCode != ''">and agent_code = #{agentCode}</if>
+            <if test="accountCode != null and accountCode != ''">and account_code = #{accountCode}</if>
             <if test="scope != null and scope != ''">and scope = #{scope}</if>
             <if test="params.beginTime != null and params.beginTime != ''">
                 and create_time &gt;= cast(#{params.beginTime} as date)
@@ -41,9 +43,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <insert id="insertAbrBreakerTrip" parameterType="AbrBreakerTrip" useGeneratedKeys="true" keyProperty="tripId" keyColumn="trip_id">
-        insert into abr_breaker_trip (rule_id, rule_code, metric, scope, agent_code, metric_value, sample_size, threshold, window_start, action,
+        insert into abr_breaker_trip (rule_id, rule_code, metric, scope, agent_code, account_code, metric_value, sample_size, threshold, window_start, action,
                                       dedup_key, create_time)
-        values (#{ruleId}, #{ruleCode}, #{metric}, #{scope}, #{agentCode}, #{metricValue}, #{sampleSize}, #{threshold}, #{windowStart},
+        values (#{ruleId}, #{ruleCode}, #{metric}, #{scope}, #{agentCode}, #{accountCode}, #{metricValue}, #{sampleSize}, #{threshold}, #{windowStart},
                 coalesce(#{action}, ''), #{dedupKey}, now())
         on conflict (dedup_key) where dedup_key is not null do nothing
     </insert>
@@ -52,7 +54,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update abr_breaker_trip
         set resolved_by = #{resolvedBy}, resolved_time = now()
         where resolved_time is null and scope = #{scope} and rule_code not like 'budget%'
-        <if test="agentCode != null and agentCode != ''">and agent_code = #{agentCode}</if>
+        <if test="scope == 'agent'">and agent_code = #{code}</if>
+        <if test="scope == 'account'">and account_code = #{code}</if>
     </update>
 
 </mapper>

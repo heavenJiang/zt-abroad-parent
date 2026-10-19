@@ -142,7 +142,7 @@ xss:
   # 过滤开关
   enabled: true
   # 排除链接（多个用逗号分隔）
-  excludes: /system/notice,/abroad/questionnaire/**,/abroad/engine/**,/abroad/orchestrator/**,/app/assessment/**,/app/tool/**
+  excludes: /system/notice,/abroad/questionnaire/**,/abroad/engine/**,/abroad/orchestrator/**,/abroad/content/**,/app/assessment/**,/app/tool/**
   # 匹配链接
   urlPatterns: /system/*,/monitor/*,/tool/*,/abroad/*,/app/*
 
@@ -160,6 +160,9 @@ abroad:
   moment:
     # 转化时刻推荐：两次推荐展示的最小间隔（小时）；每类时刻每人只推荐一次，规则在管理端「转化时刻」配置
     min-interval-hours: 24
+  content:
+    # AI 生成标识：AI 生成的内容通过合规闸门前须在正文中带上这段文字
+    ai-label: 本文由 AI 辅助生成
   growth:
     # 营销编排器（定时任务 abrOrchestratorTask.dispatch() 每分钟一轮）：每轮最多执行的任务数
     batch-size: 10

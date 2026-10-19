@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import com.ygb.abroad.ai.AiCallGuard;
 import com.ygb.abroad.domain.AbrBreakerRule;
 import com.ygb.abroad.domain.AbrBreakerTrip;
+import com.ygb.abroad.domain.AbrChannelAccount;
 import com.ygb.abroad.domain.AbrEvent;
 import com.ygb.abroad.domain.AbrGrowthAgent;
 import com.ygb.abroad.domain.AbrGrowthSetting;
@@ -31,6 +32,7 @@ import com.ygb.abroad.growth.TouchRequest;
 import com.ygb.abroad.mapper.AbrAssessmentMapper;
 import com.ygb.abroad.mapper.AbrBreakerRuleMapper;
 import com.ygb.abroad.mapper.AbrBreakerTripMapper;
+import com.ygb.abroad.mapper.AbrChannelAccountMapper;
 import com.ygb.abroad.mapper.AbrGrowthAgentMapper;
 import com.ygb.abroad.mapper.AbrGrowthSettingMapper;
 import com.ygb.abroad.mapper.AbrGrowthSignalMapper;
@@ -81,6 +83,9 @@ public class AbrGrowthGuardServiceImpl implements IAbrGrowthGuardService, AiCall
 
     @Autowired
     private AbrAssessmentMapper assessmentMapper;
+
+    @Autowired
+    private AbrChannelAccountMapper accountMapper;
 
     @Autowired
     private IAbrEventService eventService;
@@ -229,7 +234,12 @@ public class AbrGrowthGuardServiceImpl implements IAbrGrowthGuardService, AiCall
         {
             try
             {
-                trips += AbrBreakerRule.SCOPE_GLOBAL.equals(rule.getScope()) ? evaluateGlobal(rule, setting) : evaluateAgents(rule, agents);
+                trips += switch (rule.getScope())
+                {
+                    case AbrBreakerRule.SCOPE_GLOBAL -> evaluateGlobal(rule, setting);
+                    case AbrBreakerRule.SCOPE_ACCOUNT -> evaluateAccounts(rule);
+                    default -> evaluateAgents(rule, agents);
+                };
             }
             catch (RuntimeException e)
             {
@@ -260,7 +270,7 @@ public class AbrGrowthGuardServiceImpl implements IAbrGrowthGuardService, AiCall
         {
             return 0;
         }
-        trip(rule, null, value, m[1], since, "全局暂停");
+        trip(rule, null, null, value, m[1], since, "全局暂停");
         return 1;
     }
 
@@ -295,7 +305,54 @@ public class AbrGrowthGuardServiceImpl implements IAbrGrowthGuardService, AiCall
             String reason = "熔断：" + rule.getRuleName() + "（当前 " + value.stripTrailingZeros().toPlainString() + "）";
             if (agentMapper.pauseAgent(agent.getAgentCode(), reason, BREAKER) > 0)
             {
-                trip(rule, agent.getAgentCode(), value, m[1], since, "暂停 " + agent.getAgentCode());
+                trip(rule, agent.getAgentCode(), null, value, m[1], since, "暂停 " + agent.getAgentCode());
+                trips++;
+            }
+        }
+        return trips;
+    }
+
+    /**
+     * 按账号规则：逐个渠道账号统计计数类信号，达到阈值时暂停该账号（比率类指标没有按账号的分母，不评估）
+     */
+    private int evaluateAccounts(AbrBreakerRule rule)
+    {
+        if (ratio(rule.getMetric()))
+        {
+            return 0;
+        }
+        Date windowStart = windowStart(rule, null);
+        int trips = 0;
+        for (Map<String, Object> row : signalMapper.countSignalsByAccount(rule.getMetric(), windowStart))
+        {
+            AbrChannelAccount account = accountMapper.selectAbrChannelAccountByCode(String.valueOf(row.get("accountCode")));
+            if (account == null || "Y".equals(account.getPaused()))
+            {
+                continue;
+            }
+            long count = ((Number) row.get("count")).longValue();
+            Date since = windowStart;
+            if (account.getResumeTime() != null && account.getResumeTime().after(windowStart))
+            {
+                since = account.getResumeTime();
+                count = 0;
+                for (Map<String, Object> r : signalMapper.countSignalsByAccount(rule.getMetric(), since))
+                {
+                    if (account.getAccountCode().equals(r.get("accountCode")))
+                    {
+                        count = ((Number) r.get("count")).longValue();
+                    }
+                }
+            }
+            BigDecimal value = TouchPolicy.breach(false, count, 0, rule.getThreshold(), 0);
+            if (value == null)
+            {
+                continue;
+            }
+            String reason = "熔断：" + rule.getRuleName() + "（当前 " + value.stripTrailingZeros().toPlainString() + "）";
+            if (accountMapper.pauseAccount(account.getAccountCode(), reason, BREAKER) > 0)
+            {
+                trip(rule, null, account.getAccountCode(), value, 0, since, "暂停账号 " + account.getAccountCode());
                 trips++;
             }
         }
@@ -361,7 +418,7 @@ public class AbrGrowthGuardServiceImpl implements IAbrGrowthGuardService, AiCall
         return resumeTime != null && resumeTime.after(start) ? resumeTime : start;
     }
 
-    private void trip(AbrBreakerRule rule, String agentCode, BigDecimal value, long sample, Date since, String action)
+    private void trip(AbrBreakerRule rule, String agentCode, String accountCode, BigDecimal value, long sample, Date since, String action)
     {
         AbrBreakerTrip t = new AbrBreakerTrip();
         t.setRuleId(rule.getRuleId());
@@ -369,6 +426,7 @@ public class AbrGrowthGuardServiceImpl implements IAbrGrowthGuardService, AiCall
         t.setMetric(rule.getMetric());
         t.setScope(rule.getScope());
         t.setAgentCode(agentCode);
+        t.setAccountCode(accountCode);
         t.setMetricValue(value);
         t.setSampleSize(ratio(rule.getMetric()) ? (int) sample : null);
         t.setThreshold(rule.getThreshold());
@@ -381,6 +439,7 @@ public class AbrGrowthGuardServiceImpl implements IAbrGrowthGuardService, AiCall
         payload.put("metric", rule.getMetric());
         payload.put("scope", rule.getScope());
         payload.put("agent_code", agentCode);
+        payload.put("account_code", accountCode);
         payload.put("value", value);
         payload.put("threshold", rule.getThreshold());
         payload.put("action", action);
