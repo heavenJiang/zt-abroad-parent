@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.ygb.abroad.domain.AbrMomentRule;
 import com.ygb.abroad.mapper.AbrMomentRuleMapper;
+import com.ygb.abroad.mapper.AbrProductMapper;
 import com.ygb.abroad.service.IAbrMomentRuleService;
 import com.ygb.common.exception.ServiceException;
 import com.ygb.common.utils.StringUtils;
@@ -24,6 +25,9 @@ public class AbrMomentRuleServiceImpl implements IAbrMomentRuleService
 
     @Autowired
     private AbrMomentRuleMapper ruleMapper;
+
+    @Autowired
+    private AbrProductMapper productMapper;
 
     @Override
     public List<AbrMomentRule> selectAbrMomentRuleList(AbrMomentRule rule)
@@ -60,6 +64,10 @@ public class AbrMomentRuleServiceImpl implements IAbrMomentRuleService
         rule.setRecommendLabel(StringUtils.trimToNull(rule.getRecommendLabel()));
         rule.setRecommendText(StringUtils.trimToNull(rule.getRecommendText()));
         rule.setRecommendProduct(StringUtils.trimToNull(rule.getRecommendProduct()));
+        if (rule.getRecommendProduct() != null && productMapper.selectAbrProductByCode(rule.getRecommendProduct()) == null)
+        {
+            throw new ServiceException("推荐的产品“" + rule.getRecommendProduct() + "”不存在（在“产品与报价”中维护）");
+        }
         return ruleMapper.updateAbrMomentRule(rule);
     }
 }

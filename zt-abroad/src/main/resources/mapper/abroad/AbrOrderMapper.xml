@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrOrderMapper">
+
+    <resultMap type="AbrOrder" id="AbrOrderResult">
+        <id     property="orderId"       column="order_id"       />
+        <result property="orderNo"       column="order_no"       />
+        <result property="leadId"        column="lead_id"        />
+        <result property="leadName"      column="lead_name"      />
+        <result property="productCode"   column="product_code"   />
+        <result property="productName"   column="product_name"   />
+        <result property="amount"        column="amount"         />
+        <result property="currency"      column="currency"       />
+        <result property="status"        column="status"         />
+        <result property="payMethod"     column="pay_method"     />
+        <result property="payNote"       column="pay_note"       />
+        <result property="paidTime"      column="paid_time"      />
+        <result property="confirmedBy"   column="confirmed_by"   />
+        <result property="cancelReason"  column="cancel_reason"  />
+        <result property="createBy"      column="create_by"      />
+        <result property="createTime"    column="create_time"    />
+        <result property="remark"        column="remark"         />
+    </resultMap>
+
+    <sql id="selectOrderVo">
+        select o.order_id, o.order_no, o.lead_id, l.display_name as lead_name, o.product_code, o.product_name, o.amount, o.currency, o.status, o.pay_method,
+               o.pay_note, o.paid_time, o.confirmed_by, o.cancel_reason, o.create_by, o.create_time, o.remark
+        from abr_order o
+        left join abr_lead l on l.lead_id = o.lead_id
+    </sql>
+
+    <select id="selectAbrOrderList" parameterType="AbrOrder" resultMap="AbrOrderResult">
+        <include refid="selectOrderVo"/>
+        <where>
+            <if test="leadId != null">and o.lead_id = #{leadId}</if>
+            <if test="status != null and status != ''">and o.status = #{status}</if>
+            <if test="productCode != null and productCode != ''">and o.product_code = #{productCode}</if>
+            <if test="orderNo != null and orderNo != ''">and o.order_no like concat('%', #{orderNo}, '%')</if>
+            <if test="params.beginTime != null and params.beginTime != ''">and o.create_time &gt;= cast(#{params.beginTime} as date)</if>
+            <if test="params.endTime != null and params.endTime != ''">and o.create_time &lt; cast(#{params.endTime} as date) + interval '1 day'</if>
+        </where>
+        order by o.order_id desc
+    </select>
+
+    <select id="selectAbrOrderById" parameterType="Long" resultMap="AbrOrderResult">
+        <include refid="selectOrderVo"/>
+        where o.order_id = #{orderId}
+    </select>
+
+    <insert id="insertAbrOrder" parameterType="AbrOrder" useGeneratedKeys="true" keyProperty="orderId" keyColumn="order_id">
+        insert into abr_order (order_no, lead_id, product_code, product_name, amount, currency, status, create_by, create_time, update_by, update_time, remark)
+        values (#{orderNo}, #{leadId}, #{productCode}, #{productName}, #{amount}, coalesce(#{currency}, 'CNY'), 'pending', #{createBy}, now(), #{createBy}, now(), #{remark})
+    </insert>
+
+    <update id="confirmPaid">
+        update abr_order
+        set status = 'paid', pay_method = #{payMethod}, pay_note = coalesce(#{payNote}, ''), paid_time = now(), confirmed_by = #{operator},
+            update_by = #{operator}, update_time = now()
+        where order_id = #{orderId} and status = 'pending'
+    </update>
+
+    <update id="changeStatus">
+        update abr_order set status = #{to}, cancel_reason = #{reason}, update_by = #{operator}, update_time = now()
+        where order_id = #{orderId} and status = #{from}
+    </update>
+</mapper>

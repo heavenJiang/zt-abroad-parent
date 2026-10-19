@@ -65,6 +65,11 @@ final class AbrLeadRules
     static final Map<String, String> TOUCH_LABELS = Map.of("registered", "C 端注册", "phone_bound", "绑定手机号", "plan_moment", "转化时刻",
             "plan_share", "分享选校单", "manual", "员工录入", "import", "表格导入", "api", "接口接入", "merged", "线索合并");
 
+    /** 时间线中预约、订单状态的后缀 */
+    static final Map<String, String> BOOKING_STATUS = Map.of("cancelled", "（已取消）", "done", "（已完成）", "no_show", "（未到）");
+
+    static final Map<String, String> ORDER_STATUS = Map.of("pending", "（待确认收款）", "paid", "（已确认收款）", "cancelled", "（已取消）", "refunded", "（已退款）");
+
     /** 时间线中工具的说明 */
     static final Map<String, String> TOOL_LABELS = Map.of("quick", "使用 30 秒快测", "recognition", "查询本校认可度", "ielts", "查询雅思够不够",
             "open", "查询现在还能申");
@@ -149,6 +154,8 @@ final class AbrLeadRules
             case "event" -> EVENT_LABELS.getOrDefault(type, type);
             case "tool" -> TOOL_LABELS.getOrDefault(type, "使用工具 " + type);
             case "assessment" -> "submitted".equals(type) ? "提交完整测评" : "开始完整测评";
+            case "booking" -> "预约：" + StringUtils.defaultString(summary) + BOOKING_STATUS.getOrDefault(type, "");
+            case "order" -> "订单：" + StringUtils.defaultString(summary) + ORDER_STATUS.getOrDefault(type, "");
             case "follow" -> switch (type)
             {
                 case "stage" -> "阶段变更" + (StringUtils.isBlank(summary) ? "" : "：" + summary);

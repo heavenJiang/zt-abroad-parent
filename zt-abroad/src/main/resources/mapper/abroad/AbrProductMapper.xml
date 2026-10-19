@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrProductMapper">
+
+    <resultMap type="AbrProduct" id="AbrProductResult">
+        <id     property="productId"        column="product_id"        />
+        <result property="productCode"      column="product_code"      />
+        <result property="productName"      column="product_name"      />
+        <result property="category"         column="category"          />
+        <result property="degrees"          column="degrees"           />
+        <result property="countries"        column="countries"         />
+        <result property="description"      column="description"       />
+        <result property="priceMin"         column="price_min"         />
+        <result property="priceMax"         column="price_max"         />
+        <result property="currency"         column="currency"          />
+        <result property="priceNote"        column="price_note"        />
+        <result property="bookable"         column="bookable"          />
+        <result property="durationMinutes"  column="duration_minutes"  />
+        <result property="sortOrder"        column="sort_order"        />
+        <result property="status"           column="status"            />
+        <result property="createBy"         column="create_by"         />
+        <result property="createTime"       column="create_time"       />
+        <result property="updateBy"         column="update_by"         />
+        <result property="updateTime"       column="update_time"       />
+        <result property="remark"           column="remark"            />
+    </resultMap>
+
+    <sql id="selectAbrProductVo">
+        select product_id, product_code, product_name, category, cast(degrees as text) as degrees, cast(countries as text) as countries, description,
+               price_min, price_max, currency, price_note, bookable, duration_minutes, sort_order, status, create_by, create_time, update_by, update_time, remark
+        from abr_product
+    </sql>
+
+    <select id="selectAbrProductList" parameterType="AbrProduct" resultMap="AbrProductResult">
+        <include refid="selectAbrProductVo"/>
+        <where>
+            <if test="category != null and category != ''">and category = #{category}</if>
+            <if test="status != null and status != ''">and status = #{status}</if>
+            <if test="bookable != null and bookable != ''">and bookable = #{bookable}</if>
+            <if test="productName != null and productName != ''">and product_name like concat('%', #{productName}, '%')</if>
+        </where>
+        order by sort_order, product_id
+    </select>
+
+    <select id="selectAbrProductById" parameterType="Long" resultMap="AbrProductResult">
+        <include refid="selectAbrProductVo"/>
+        where product_id = #{productId}
+    </select>
+
+    <select id="selectAbrProductByCode" parameterType="String" resultMap="AbrProductResult">
+        <include refid="selectAbrProductVo"/>
+        where product_code = #{productCode}
+    </select>
+
+    <insert id="insertAbrProduct" parameterType="AbrProduct" useGeneratedKeys="true" keyProperty="productId" keyColumn="product_id">
+        insert into abr_product (product_code, product_name, category, degrees, countries, description, price_min, price_max, currency, price_note,
+                                 bookable, duration_minutes, sort_order, status, create_by, create_time, remark)
+        values (#{productCode}, #{productName}, #{category}, cast(#{degrees} as jsonb), cast(#{countries} as jsonb), coalesce(#{description}, ''),
+                #{priceMin}, #{priceMax}, coalesce(#{currency}, 'CNY'), coalesce(#{priceNote}, ''), #{bookable}, #{durationMinutes},
+                coalesce(#{sortOrder}, 0), #{status}, #{createBy}, now(), #{remark})
+    </insert>
+
+    <update id="updateAbrProduct" parameterType="AbrProduct">
+        update abr_product
+        set product_name = #{productName}, category = #{category}, degrees = cast(#{degrees} as jsonb), countries = cast(#{countries} as jsonb),
+            description = coalesce(#{description}, ''), price_min = #{priceMin}, price_max = #{priceMax}, currency = coalesce(#{currency}, 'CNY'),
+            price_note = coalesce(#{priceNote}, ''), bookable = #{bookable}, duration_minutes = #{durationMinutes}, sort_order = coalesce(#{sortOrder}, 0),
+            status = #{status}, update_by = #{updateBy}, update_time = now(), remark = #{remark}
+        where product_id = #{productId}
+    </update>
+
+    <delete id="deleteAbrProductByIds" parameterType="Long">
+        delete from abr_product where product_id in
+        <foreach item="productId" collection="array" open="(" separator="," close=")">#{productId}</foreach>
+    </delete>
+
+    <select id="countReferences" parameterType="String" resultType="int">
+        select (select count(*) from abr_booking where product_code = #{productCode})
+             + (select count(*) from abr_order where product_code = #{productCode})
+             + (select count(*) from abr_moment_rule where recommend_product = #{productCode})
+             + (select count(*) from abr_playbook where products @&gt; jsonb_build_array(cast(#{productCode} as text)))
+    </select>
+</mapper>

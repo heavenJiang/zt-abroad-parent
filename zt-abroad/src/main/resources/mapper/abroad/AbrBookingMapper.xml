@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrBookingMapper">
+
+    <resultMap type="AbrBooking" id="AbrBookingResult">
+        <id     property="bookingId"        column="booking_id"        />
+        <result property="leadId"           column="lead_id"           />
+        <result property="visitorId"        column="visitor_id"        />
+        <result property="appUserId"        column="app_user_id"       />
+        <result property="productCode"      column="product_code"      />
+        <result property="productName"      column="product_name"      />
+        <result property="slotId"           column="slot_id"           />
+        <result property="consultantId"     column="consultant_id"     />
+        <result property="consultantName"   column="consultant_name"   />
+        <result property="leadName"         column="lead_name"         />
+        <result property="startTime"        column="start_time"        />
+        <result property="endTime"          column="end_time"          />
+        <result property="mode"             column="mode"              />
+        <result property="status"           column="status"            />
+        <result property="source"           column="source"            />
+        <result property="note"             column="note"              />
+        <result property="cancelReason"     column="cancel_reason"     />
+        <result property="rescheduleCount"  column="reschedule_count"  />
+        <result property="createBy"         column="create_by"         />
+        <result property="createTime"       column="create_time"       />
+    </resultMap>
+
+    <sql id="selectBookingVo">
+        select b.booking_id, b.lead_id, b.visitor_id, b.app_user_id, b.product_code, b.product_name, b.slot_id, b.consultant_id, u.nick_name as consultant_name,
+               l.display_name as lead_name, b.start_time, b.end_time, b.mode, b.status, b.source, b.note, b.cancel_reason, b.reschedule_count,
+               b.create_by, b.create_time
+        from abr_booking b
+        left join sys_user u on u.user_id = b.consultant_id
+        left join abr_lead l on l.lead_id = b.lead_id
+    </sql>
+
+    <select id="selectAbrBookingList" parameterType="AbrBooking" resultMap="AbrBookingResult">
+        <include refid="selectBookingVo"/>
+        <where>
+            <if test="leadId != null">and b.lead_id = #{leadId}</if>
+            <if test="consultantId != null">and b.consultant_id = #{consultantId}</if>
+            <if test="appUserId != null">and b.app_user_id = #{appUserId}</if>
+            <if test="status != null and status != ''">and b.status = #{status}</if>
+            <if test="productCode != null and productCode != ''">and b.product_code = #{productCode}</if>
+            <if test="params.beginTime != null and params.beginTime != ''">and b.start_time &gt;= cast(#{params.beginTime} as date)</if>
+            <if test="params.endTime != null and params.endTime != ''">and b.start_time &lt; cast(#{params.endTime} as date) + interval '1 day'</if>
+        </where>
+        order by b.start_time desc, b.booking_id desc
+    </select>
+
+    <select id="selectAbrBookingById" parameterType="Long" resultMap="AbrBookingResult">
+        <include refid="selectBookingVo"/>
+        where b.booking_id = #{bookingId}
+    </select>
+
+    <select id="countActiveFuture" parameterType="Long" resultType="int">
+        select count(*) from abr_booking where app_user_id = #{appUserId} and status = 'booked' and start_time &gt; now()
+    </select>
+
+    <insert id="insertAbrBooking" parameterType="AbrBooking" useGeneratedKeys="true" keyProperty="bookingId" keyColumn="booking_id">
+        insert into abr_booking (lead_id, visitor_id, app_user_id, product_code, product_name, slot_id, consultant_id, start_time, end_time, mode,
+                                 status, source, note, create_by, create_time, update_by, update_time)
+        values (#{leadId}, #{visitorId}, #{appUserId}, #{productCode}, #{productName}, #{slotId}, #{consultantId}, #{startTime}, #{endTime}, #{mode},
+                'booked', #{source}, coalesce(#{note}, ''), #{createBy}, now(), #{createBy}, now())
+    </insert>
+
+    <update id="reschedule" parameterType="AbrBooking">
+        update abr_booking
+        set slot_id = #{slotId}, consultant_id = #{consultantId}, start_time = #{startTime}, end_time = #{endTime}, mode = #{mode},
+            reschedule_count = reschedule_count + 1, update_by = #{updateBy}, update_time = now()
+        where booking_id = #{bookingId} and status = 'booked'
+    </update>
+
+    <update id="updateStatus">
+        update abr_booking set status = #{status}, cancel_reason = coalesce(#{reason}, ''), update_by = #{operator}, update_time = now()
+        where booking_id = #{bookingId} and status = 'booked'
+    </update>
+</mapper>

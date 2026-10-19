@@ -155,6 +155,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             select create_time, 'follow', follow_kind, method, content, '', '', 'follow', follow_id
             from abr_lead_follow where lead_id = #{leadId}
             union all
+            select create_time, 'booking', status, '', product_name || ' ' || to_char(start_time, 'MM-DD HH24:MI'), '', '', 'booking', booking_id
+            from abr_booking where lead_id = #{leadId}
+            union all
+            select create_time, 'order', status, '', product_name || ' ' || to_char(amount, 'FM999,999,990.00') || ' 元', '', '', 'order', order_id
+            from abr_order where lead_id = #{leadId}
+            union all
             select create_time, 'tool', tool, '', '', coalesce(channel_code, ''), coalesce(content_code, ''), 'tool_run', tool_run_id
             from abr_tool_run where visitor_id = #{visitorId}
             union all

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrConsultSlotMapper">
+
+    <resultMap type="AbrConsultSlot" id="AbrConsultSlotResult">
+        <id     property="slotId"          column="slot_id"          />
+        <result property="userId"          column="user_id"          />
+        <result property="consultantName"  column="consultant_name"  />
+        <result property="startTime"       column="start_time"       />
+        <result property="endTime"         column="end_time"         />
+        <result property="mode"            column="mode"             />
+        <result property="status"          column="status"           />
+        <result property="bookingId"       column="booking_id"       />
+        <result property="createBy"        column="create_by"        />
+        <result property="createTime"      column="create_time"      />
+    </resultMap>
+
+    <sql id="selectSlotVo">
+        select s.slot_id, s.user_id, u.nick_name as consultant_name, s.start_time, s.end_time, s.mode, s.status, s.booking_id, s.create_by, s.create_time
+        from abr_consult_slot s
+        left join sys_user u on u.user_id = s.user_id
+    </sql>
+
+    <select id="selectAbrConsultSlotList" parameterType="AbrConsultSlot" resultMap="AbrConsultSlotResult">
+        <include refid="selectSlotVo"/>
+        <where>
+            <if test="userId != null">and s.user_id = #{userId}</if>
+            <if test="status != null and status != ''">and s.status = #{status}</if>
+            <if test="params.beginTime != null and params.beginTime != ''">and s.start_time &gt;= cast(#{params.beginTime} as date)</if>
+            <if test="params.endTime != null and params.endTime != ''">and s.start_time &lt; cast(#{params.endTime} as date) + interval '1 day'</if>
+        </where>
+        order by s.start_time, s.user_id
+    </select>
+
+    <select id="selectAbrConsultSlotById" parameterType="Long" resultMap="AbrConsultSlotResult">
+        <include refid="selectSlotVo"/>
+        where s.slot_id = #{slotId}
+    </select>
+
+    <select id="selectOpenSlots" resultMap="AbrConsultSlotResult">
+        <include refid="selectSlotVo"/>
+        where s.status = 'open' and s.start_time &gt;= #{from} and s.start_time &lt; #{to}
+          and s.end_time &gt;= s.start_time + make_interval(mins =&gt; #{minutes})
+          and u.status = '0' and u.del_flag = '0'
+        order by s.start_time, s.user_id
+        limit 500
+    </select>
+
+    <insert id="insertSlotIgnore" parameterType="AbrConsultSlot">
+        insert into abr_consult_slot (user_id, start_time, end_time, mode, status, create_by, create_time, update_by, update_time)
+        values (#{userId}, #{startTime}, #{endTime}, #{mode}, 'open', #{createBy}, now(), #{createBy}, now())
+        on conflict (user_id, start_time) do nothing
+    </insert>
+
+    <update id="occupy">
+        update abr_consult_slot set status = 'booked', booking_id = #{bookingId}, update_time = now()
+        where slot_id = #{slotId} and status = 'open'
+    </update>
+
+    <update id="release">
+        update abr_consult_slot set status = 'open', booking_id = null, update_time = now()
+        where slot_id = #{slotId} and booking_id = #{bookingId} and status = 'booked'
+    </update>
+
+    <update id="closeSlots">
+        update abr_consult_slot set status = 'closed', update_by = #{operator}, update_time = now()
+        where status = 'open' and slot_id in
+        <foreach item="id" collection="slotIds" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+    <delete id="deleteFreeSlots">
+        delete from abr_consult_slot where status in ('open', 'closed') and booking_id is null and slot_id in
+        <foreach item="id" collection="slotIds" open="(" separator="," close=")">#{id}</foreach>
+    </delete>
+</mapper>
