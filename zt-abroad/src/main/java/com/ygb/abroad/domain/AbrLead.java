@@ -266,6 +266,74 @@ public class AbrLead extends BaseEntity
         this.targetCountries = targetCountries;
     }
 
+    /** 分配给当前负责人的时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date assignedTime;
+
+    /** 分配方式（auto / manual） */
+    private String assignType;
+
+    /** 首次联系到期时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date slaDueTime;
+
+    /** SLA 状态 */
+    private String slaStatus;
+
+    /** 分配后第一次跟进的时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date firstContactTime;
+
+    public Date getAssignedTime()
+    {
+        return assignedTime;
+    }
+
+    public void setAssignedTime(Date assignedTime)
+    {
+        this.assignedTime = assignedTime;
+    }
+
+    public String getAssignType()
+    {
+        return assignType;
+    }
+
+    public void setAssignType(String assignType)
+    {
+        this.assignType = assignType;
+    }
+
+    public Date getSlaDueTime()
+    {
+        return slaDueTime;
+    }
+
+    public void setSlaDueTime(Date slaDueTime)
+    {
+        this.slaDueTime = slaDueTime;
+    }
+
+    public String getSlaStatus()
+    {
+        return slaStatus;
+    }
+
+    public void setSlaStatus(String slaStatus)
+    {
+        this.slaStatus = slaStatus;
+    }
+
+    public Date getFirstContactTime()
+    {
+        return firstContactTime;
+    }
+
+    public void setFirstContactTime(Date firstContactTime)
+    {
+        this.firstContactTime = firstContactTime;
+    }
+
     public Long getLeadId()
     {
         return leadId;
@@ -511,6 +579,7 @@ public class AbrLead extends BaseEntity
             .append("gradeOverride", getGradeOverride())
             .append("nextFollowTime", getNextFollowTime())
             .append("lostReason", getLostReason())
+            .append("slaStatus", getSlaStatus())
             .append("mergedInto", getMergedInto())
             .append("delFlag", getDelFlag())
             .append("createBy", getCreateBy())

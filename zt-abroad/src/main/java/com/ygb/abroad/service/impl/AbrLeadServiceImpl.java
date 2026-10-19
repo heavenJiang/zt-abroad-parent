@@ -27,6 +27,7 @@ import com.ygb.abroad.mapper.AbrGrowthCursorMapper;
 import com.ygb.abroad.mapper.AbrLeadMapper;
 import com.ygb.abroad.service.IAbrAppAuthService;
 import com.ygb.abroad.service.IAbrEventService;
+import com.ygb.abroad.service.IAbrLeadAssignService;
 import com.ygb.abroad.service.IAbrLeadService;
 import com.ygb.common.exception.ServiceException;
 import com.ygb.common.utils.DateUtils;
@@ -74,6 +75,9 @@ public class AbrLeadServiceImpl implements IAbrLeadService
 
     @Autowired
     private TransactionTemplate tx;
+
+    @Autowired
+    private IAbrLeadAssignService assignService;
 
     /** 事件写入后多少秒视为已静置（与编排器一致：游标可越过之前的 ID 空洞） */
     @Value("${abroad.growth.event-settle-seconds:120}")
@@ -571,7 +575,9 @@ public class AbrLeadServiceImpl implements IAbrLeadService
         {
             throw new ServiceException("原因最多 500 字");
         }
-        leadMapper.updateOwner(l.getLeadId(), ownerUserId, operator);
+        leadMapper.updateOwner(l.getLeadId(), ownerUserId, "manual", assignService.slaDue(l.getGrade(), DateUtils.getNowDate()), operator);
+        assignService.notify(ownerUserId, "lead_assigned", "同事转给你一条线索", (StringUtils.isBlank(l.getDisplayName()) ? "线索 #" + l.getLeadId() : l.getDisplayName())
+                + (text.isEmpty() ? "" : "：" + text), l.getLeadId(), "lead_assigned:" + l.getLeadId() + ":" + ownerUserId + ":" + System.currentTimeMillis());
         AbrLeadFollow row = new AbrLeadFollow();
         row.setLeadId(l.getLeadId());
         row.setFollowKind(AbrLeadFollow.KIND_ASSIGN);

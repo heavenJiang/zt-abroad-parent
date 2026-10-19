@@ -232,14 +232,17 @@ public interface AbrLeadMapper
             @Param("operator") String operator);
 
     /**
-     * 改负责人
+     * 改负责人：重新计分配时间与首次联系时限（slaDueTime 为空表示无时限）
      *
      * @param leadId 线索ID
      * @param ownerUserId 负责人（sys_user）
+     * @param assignType 分配方式（auto / manual）
+     * @param slaDueTime 首次联系到期时间
      * @param operator 操作人
      * @return 结果
      */
-    public int updateOwner(@Param("leadId") Long leadId, @Param("ownerUserId") Long ownerUserId, @Param("operator") String operator);
+    public int updateOwner(@Param("leadId") Long leadId, @Param("ownerUserId") Long ownerUserId, @Param("assignType") String assignType,
+            @Param("slaDueTime") Date slaDueTime, @Param("operator") String operator);
 
     /**
      * 新增跟进记录

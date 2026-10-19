@@ -45,6 +45,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="lostReason"      column="lost_reason"       />
         <result property="ownerName"       column="owner_name"        />
         <result property="targetCountries" column="target_countries"  />
+        <result property="assignedTime"    column="assigned_time"     />
+        <result property="assignType"      column="assign_type"       />
+        <result property="slaDueTime"      column="sla_due_time"      />
+        <result property="slaStatus"       column="sla_status"        />
+        <result property="firstContactTime" column="first_contact_time" />
     </resultMap>
 
     <sql id="selectAbrLeadVo">
@@ -52,7 +57,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                first_source, first_channel, first_content, first_touch_time, last_source, last_channel, last_touch_time, touch_count,
                merged_into, del_flag, create_by, create_time, update_by, update_time, remark,
                rule_grade, cast(score_reasons as text) as score_reasons, scored_time, grade_override, override_reason, override_by, override_time,
-               next_follow_time, last_follow_time, stage_time, lost_reason,
+               next_follow_time, last_follow_time, stage_time, lost_reason, assigned_time, assign_type, sla_due_time, sla_status, first_contact_time,
                (select u.nick_name from sys_user u where u.user_id = abr_lead.owner_user_id) as owner_name,
                (select cast(v.profile -> 'target_countries' as text) from abr_visitor v where v.visitor_id = abr_lead.visitor_id) as target_countries
         from abr_lead
@@ -72,6 +77,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="params.endTime != null and params.endTime != ''">and first_touch_time &lt; cast(#{params.endTime} as date) + interval '1 day'</if>
         <if test="ownerUserId != null">and owner_user_id = #{ownerUserId}</if>
         <if test="params.unassigned != null and params.unassigned != ''">and owner_user_id is null</if>
+        <if test="slaStatus != null and slaStatus != ''">and sla_status = #{slaStatus}</if>
         <if test="params.due != null and params.due != ''">and next_follow_time is not null and next_follow_time &lt;= now() and stage not in ('won', 'lost')</if>
         order by case grade when 'A' then 1 when 'B' then 2 when 'C' then 3 else 4 end, next_follow_time nulls last, last_touch_time desc, lead_id desc
     </select>
@@ -241,6 +247,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <update id="recordFollow">
         update abr_lead
         set last_follow_time = now(), next_follow_time = #{nextFollowTime},
+            first_contact_time = case when owner_user_id is not null and first_contact_time is null then now() else first_contact_time end,
+            sla_status = case when sla_status = 'pending' then 'met' else sla_status end,
             stage = case when stage = 'new' then 'contacted' else stage end,
             stage_time = case when stage = 'new' then now() else stage_time end,
             update_by = #{operator}, update_time = now()
@@ -256,7 +264,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <update id="updateOwner">
-        update abr_lead set owner_user_id = #{ownerUserId}, update_by = #{operator}, update_time = now() where lead_id = #{leadId}
+        update abr_lead
+        set owner_user_id = #{ownerUserId}, assigned_time = now(), assign_type = #{assignType}, sla_due_time = #{slaDueTime},
+            sla_status = case when cast(#{slaDueTime} as timestamp) is null then 'none' else 'pending' end, first_contact_time = null,
+            update_by = #{operator}, update_time = now()
+        where lead_id = #{leadId}
     </update>
 
     <insert id="insertFollow" parameterType="AbrLeadFollow" useGeneratedKeys="true" keyProperty="followId" keyColumn="follow_id">

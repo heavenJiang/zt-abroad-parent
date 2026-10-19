@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrLeadAssignMapper">
+
+    <resultMap type="AbrConsultant" id="AbrConsultantResult">
+        <id     property="consultantId"      column="consultant_id"      />
+        <result property="userId"            column="user_id"            />
+        <result property="nickName"          column="nick_name"          />
+        <result property="countries"         column="countries"          />
+        <result property="degrees"           column="degrees"            />
+        <result property="maxActive"         column="max_active"         />
+        <result property="accepting"         column="accepting"          />
+        <result property="lastAssignedTime"  column="last_assigned_time" />
+        <result property="activeCount"       column="active_count"       />
+        <result property="createBy"          column="create_by"          />
+        <result property="createTime"        column="create_time"        />
+        <result property="updateBy"          column="update_by"          />
+        <result property="updateTime"        column="update_time"        />
+        <result property="remark"            column="remark"             />
+    </resultMap>
+
+    <sql id="selectConsultantVo">
+        select c.consultant_id, c.user_id, u.nick_name, cast(c.countries as text) as countries, cast(c.degrees as text) as degrees, c.max_active,
+               case when u.status = '0' and u.del_flag = '0' then c.accepting else 'N' end as accepting, c.last_assigned_time,
+               (select count(*) from abr_lead l where l.owner_user_id = c.user_id and l.merged_into is null and l.del_flag = '0'
+                  and l.stage not in ('won', 'lost')) as active_count,
+               c.create_by, c.create_time, c.update_by, c.update_time, c.remark
+        from abr_consultant c
+        left join sys_user u on u.user_id = c.user_id
+    </sql>
+
+    <select id="selectConsultants" resultMap="AbrConsultantResult">
+        <include refid="selectConsultantVo"/>
+        order by c.consultant_id
+    </select>
+
+    <select id="selectConsultantById" parameterType="Long" resultMap="AbrConsultantResult">
+        <include refid="selectConsultantVo"/>
+        where c.consultant_id = #{consultantId}
+    </select>
+
+    <select id="selectConsultantByUser" parameterType="Long" resultMap="AbrConsultantResult">
+        <include refid="selectConsultantVo"/>
+        where c.user_id = #{userId}
+    </select>
+
+    <insert id="insertConsultant" parameterType="AbrConsultant" useGeneratedKeys="true" keyProperty="consultantId" keyColumn="consultant_id">
+        insert into abr_consultant (user_id, countries, degrees, max_active, accepting, create_by, create_time, update_by, update_time, remark)
+        values (#{userId}, cast(#{countries} as jsonb), cast(#{degrees} as jsonb), #{maxActive}, #{accepting}, #{createBy}, now(), #{createBy}, now(), #{remark})
+    </insert>
+
+    <update id="updateConsultant" parameterType="AbrConsultant">
+        update abr_consultant
+        set countries = cast(#{countries} as jsonb), degrees = cast(#{degrees} as jsonb), max_active = #{maxActive}, accepting = #{accepting},
+            update_by = #{updateBy}, update_time = now(), remark = #{remark}
+        where consultant_id = #{consultantId}
+    </update>
+
+    <delete id="deleteConsultants" parameterType="Long">
+        delete from abr_consultant where consultant_id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">#{id}</foreach>
+    </delete>
+
+    <update id="touchAssigned" parameterType="Long">
+        update abr_consultant set last_assigned_time = now() where user_id = #{userId}
+    </update>
+
+    <select id="selectSetting" resultType="AbrLeadAssignSetting">
+        select s.setting_id as settingId, s.auto_assign as autoAssign, s.match_country as matchCountry, s.pick_strategy as pickStrategy,
+               cast(s.assign_grades as text) as assignGrades, cast(s.sla_hours as text) as slaHours, s.escalate_hours as escalateHours,
+               s.escalate_user_id as escalateUserId, u.nick_name as escalateUserName, s.update_by as updateBy, s.update_time as updateTime
+        from abr_lead_assign_setting s
+        left join sys_user u on u.user_id = s.escalate_user_id
+        where s.setting_id = 1
+    </select>
+
+    <update id="updateSetting" parameterType="AbrLeadAssignSetting">
+        update abr_lead_assign_setting
+        set auto_assign = #{autoAssign}, match_country = #{matchCountry}, pick_strategy = #{pickStrategy}, assign_grades = cast(#{assignGrades} as jsonb),
+            sla_hours = cast(#{slaHours} as jsonb), escalate_hours = #{escalateHours}, escalate_user_id = #{escalateUserId},
+            update_by = #{updateBy}, update_time = now()
+        where setting_id = 1
+    </update>
+
+    <select id="selectUnassigned" resultType="java.util.HashMap">
+        select l.lead_id as "leadId", l.grade as "grade", cast(v.profile -> 'target_countries' as text) as "countries",
+               (select p.target_degree from abr_profile p where p.visitor_id = l.visitor_id order by p.profile_id desc limit 1) as "degree"
+        from abr_lead l
+        left join abr_visitor v on v.visitor_id = l.visitor_id
+        where l.owner_user_id is null and l.merged_into is null and l.del_flag = '0' and l.stage not in ('won', 'lost')
+          and l.grade in <foreach collection="grades" item="g" open="(" separator="," close=")">#{g}</foreach>
+        order by case l.grade when 'A' then 1 when 'B' then 2 else 3 end, l.last_touch_time desc
+        limit #{limit}
+    </select>
+
+    <select id="selectSlaOverdue" resultType="java.util.HashMap">
+        select lead_id as "leadId", owner_user_id as "ownerUserId", display_name as "displayName", grade as "grade", sla_due_time as "slaDueTime"
+        from abr_lead
+        where sla_status = 'pending' and sla_due_time &lt; #{now} and first_contact_time is null and merged_into is null and stage not in ('won', 'lost')
+        order by sla_due_time limit 200
+    </select>
+
+    <select id="selectSlaToEscalate" resultType="java.util.HashMap">
+        select lead_id as "leadId", owner_user_id as "ownerUserId", display_name as "displayName", grade as "grade", sla_due_time as "slaDueTime"
+        from abr_lead
+        where sla_status = 'overdue' and sla_due_time &lt; #{before} and first_contact_time is null and merged_into is null and stage not in ('won', 'lost')
+        order by sla_due_time limit 200
+    </select>
+
+    <update id="updateSlaStatus">
+        update abr_lead set sla_status = #{to}, update_time = now() where lead_id = #{leadId} and sla_status = #{from}
+    </update>
+
+    <insert id="insertNotice" parameterType="AbrStaffNotice" useGeneratedKeys="true" keyProperty="noticeId" keyColumn="notice_id">
+        insert into abr_staff_notice (user_id, notice_kind, title, content, lead_id, dedup_key, channel_result, create_time)
+        values (#{userId}, #{noticeKind}, #{title}, coalesce(#{content}, ''), #{leadId}, #{dedupKey}, coalesce(#{channelResult}, ''), now())
+        on conflict (user_id, dedup_key) where dedup_key is not null do nothing
+    </insert>
+
+    <select id="selectNotices" resultType="AbrStaffNotice">
+        select notice_id as noticeId, user_id as userId, notice_kind as noticeKind, title, content, lead_id as leadId, read_flag as readFlag,
+               read_time as readTime, channel_result as channelResult, create_time as createTime
+        from abr_staff_notice
+        where user_id = #{userId} <if test="unreadOnly">and read_flag = 'N'</if>
+        order by notice_id desc limit 200
+    </select>
+
+    <select id="countUnread" parameterType="Long" resultType="int">
+        select count(*) from abr_staff_notice where user_id = #{userId} and read_flag = 'N'
+    </select>
+
+    <update id="markRead">
+        update abr_staff_notice set read_flag = 'Y', read_time = now()
+        where user_id = #{userId} and read_flag = 'N'
+        <if test="ids != null and ids.length > 0">
+          and notice_id in <foreach item="id" collection="ids" open="(" separator="," close=")">#{id}</foreach>
+        </if>
+    </update>
+</mapper>
