@@ -157,6 +157,8 @@ abroad:
     url: ${ABR_APP_URL:http://localhost:5173/}
     # 品牌名（分享海报顶部）
     brand-name: ${ABR_BRAND_NAME:留学工作室}
+    # 学生令牌（M4-04，请求头 X-App-Token，Redis 前缀 abr_app_token:）有效天数，每次使用顺延
+    token-days: 30
   moment:
     # 转化时刻推荐：两次推荐展示的最小间隔（小时）；每类时刻每人只推荐一次，规则在管理端「转化时刻」配置
     min-interval-hours: 24
@@ -186,6 +188,16 @@ abroad:
     recent-days: 60
     deadline-days: 45
     change-days: 14
+  wechat:
+    oa:
+      # 服务号网页授权登录（M4-04）：AppID / AppSecret 只从环境变量注入；未配置时 C 端提示“服务号登录尚未开通”
+      app-id: ${ABR_WECHAT_OA_APP_ID:}
+      app-secret: ${ABR_WECHAT_OA_APP_SECRET:}
+      # mock 登录（mock_ 开头的 code 直接作为 openid），只能用于本地开发
+      mock: ${ABR_WECHAT_OA_MOCK:false}
+  sms:
+    # 短信验证码（绑定手机号）：服务商随 M0-01 接入；mock 只把验证码写入日志，只能用于本地开发
+    mock: ${ABR_SMS_MOCK:false}
   compliance:
     # 合规闸门（M6-03）：AI 生成的消息（自动回复、培育消息）须带的标识；词表在管理端「合规词表」配置
     message-ai-label: （AI 回复）

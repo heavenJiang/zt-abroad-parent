@@ -12,6 +12,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="clientPlatform" column="client_platform" />
         <result property="profile"        column="profile"         />
         <result property="appUserId"      column="app_user_id"     />
+        <result property="mergedInto"     column="merged_into"     />
         <result property="lastSeenTime"   column="last_seen_time"  />
         <result property="delFlag"        column="del_flag"        />
         <result property="createBy"       column="create_by"       />
@@ -23,7 +24,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectAbrVisitorVo">
         select v.visitor_id, v.token_hash, v.channel_code, v.content_code, v.client_platform, cast(v.profile as text) as profile,
-               v.app_user_id, v.last_seen_time, v.del_flag, v.create_by, v.create_time, v.update_by, v.update_time, v.remark
+               v.app_user_id, v.merged_into, v.last_seen_time, v.del_flag, v.create_by, v.create_time, v.update_by, v.update_time, v.remark
         from abr_visitor v
     </sql>
 
@@ -64,4 +65,86 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where visitor_id = #{visitorId}
     </update>
 
+
+    <update id="bindAppUser">
+        update abr_visitor set app_user_id = #{appUserId}, update_time = now() where visitor_id = #{visitorId} and app_user_id is null
+    </update>
+
+    <update id="mergeProfileInto">
+        update abr_visitor t
+        set profile = coalesce(t.profile, '{}'::jsonb) || coalesce(f.profile, '{}'::jsonb), update_time = now()
+        from abr_visitor f
+        where t.visitor_id = #{toId} and f.visitor_id = #{fromId}
+    </update>
+
+    <update id="markMerged">
+        update abr_visitor set merged_into = #{toId}, app_user_id = #{appUserId}, update_time = now() where visitor_id = #{fromId}
+    </update>
+
+    <update id="moveAssessments">
+        update abr_assessment a set visitor_id = #{toId}
+        where a.visitor_id = #{fromId}
+          and not exists (select 1 from abr_assessment b where b.visitor_id = #{toId} and b.request_id = a.request_id)
+    </update>
+
+    <update id="moveProfiles">
+        update abr_profile set visitor_id = #{toId} where visitor_id = #{fromId}
+    </update>
+
+    <update id="moveAssessmentFiles">
+        update abr_assessment_file set visitor_id = #{toId} where visitor_id = #{fromId}
+    </update>
+
+    <update id="moveToolRuns">
+        update abr_tool_run set visitor_id = #{toId} where visitor_id = #{fromId}
+    </update>
+
+    <update id="movePlanItems">
+        update abr_plan_item a set visitor_id = #{toId}, app_user_id = #{appUserId}
+        where a.visitor_id = #{fromId}
+          and not exists (select 1 from abr_plan_item b where b.visitor_id = #{toId} and b.program_id = a.program_id)
+    </update>
+
+    <delete id="deletePlanItems">
+        delete from abr_plan_item where visitor_id = #{fromId}
+    </delete>
+
+    <update id="mergeMaterialDone">
+        update abr_plan_material t set done = true, done_time = coalesce(t.done_time, f.done_time), app_user_id = #{appUserId}, update_time = now()
+        from abr_plan_material f
+        where t.visitor_id = #{toId} and f.visitor_id = #{fromId} and t.material_key = f.material_key and f.done and not t.done
+    </update>
+
+    <update id="moveMaterials">
+        update abr_plan_material a set visitor_id = #{toId}, app_user_id = #{appUserId}
+        where a.visitor_id = #{fromId}
+          and not exists (select 1 from abr_plan_material b where b.visitor_id = #{toId} and b.material_key = a.material_key)
+    </update>
+
+    <delete id="deleteMaterials">
+        delete from abr_plan_material where visitor_id = #{fromId}
+    </delete>
+
+    <update id="moveShares">
+        update abr_share a set visitor_id = #{toId}, update_time = now()
+        where a.visitor_id = #{fromId}
+          and not exists (select 1 from abr_share b where b.visitor_id = #{toId} and b.kind = a.kind and b.ref_id = a.ref_id)
+    </update>
+
+    <update id="revokeShares">
+        update abr_share set revoked = true, update_time = now() where visitor_id = #{fromId} and not revoked
+    </update>
+
+    <update id="moveEvents">
+        update abr_event a set visitor_id = #{toId}, app_user_id = #{appUserId}
+        where a.visitor_id = #{fromId}
+          and (a.dedup_key is null
+               or not exists (select 1 from abr_event b where b.visitor_id = #{toId} and b.event_type = a.event_type and b.dedup_key = a.dedup_key))
+    </update>
+
+    <update id="tagAppUser">
+        with p as (update abr_plan_item set app_user_id = #{appUserId} where visitor_id = #{visitorId} and app_user_id is null returning 1),
+             m as (update abr_plan_material set app_user_id = #{appUserId} where visitor_id = #{visitorId} and app_user_id is null returning 1)
+        update abr_event set app_user_id = #{appUserId} where visitor_id = #{visitorId} and app_user_id is null
+    </update>
 </mapper>

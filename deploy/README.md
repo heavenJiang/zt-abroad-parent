@@ -41,6 +41,17 @@ cp .env.example .env && vi .env     # 填域名、数据库 / Redis 密码、TOK
 
 未填写时不提交，只生成站点地图（可在各平台后台手动提交 `https://WWW_DOMAIN/sitemap.xml`）。
 
+## C 端登录（M4-04）
+
+服务号认证（M0-01）后在 `.env` 中填写，`./deploy.sh` 生效；未填写时 C 端登录提示“服务号登录尚未开通”，匿名使用不受影响。
+
+| 变量 | 说明 |
+| --- | --- |
+| `WECHAT_OA_APP_ID` | 服务号 AppID（公众平台 → 设置与开发 → 基本配置） |
+| `WECHAT_OA_APP_SECRET` | 服务号 AppSecret（只放 `.env`，不要提交到仓库） |
+
+另需在公众平台「网页授权域名」中填写 `APP_DOMAIN`。绑定手机号的短信服务随 M0-01 开通后接入（`AbrSmsClient`），之前绑定手机号会提示“短信服务尚未开通”。
+
 ## HTTPS（上线前必须，小程序只能请求 HTTPS）
 
 1. 证书放到 `deploy/certs/`（如 `admin.pem` / `admin.key`，按域名命名）。

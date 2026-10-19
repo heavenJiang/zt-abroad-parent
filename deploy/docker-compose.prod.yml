@@ -70,6 +70,8 @@ services:
       ABR_SITE_URL: https://${WWW_DOMAIN}/
       ABR_SITE_BAIDU_TOKEN: ${SITE_BAIDU_TOKEN:-}
       ABR_SITE_INDEXNOW_KEY: ${SITE_INDEXNOW_KEY:-}
+      ABR_WECHAT_OA_APP_ID: ${WECHAT_OA_APP_ID:-}
+      ABR_WECHAT_OA_APP_SECRET: ${WECHAT_OA_APP_SECRET:-}
       TZ: Asia/Shanghai
     volumes:
       - abr-upload:/home/zt

@@ -36,6 +36,19 @@ public class AbrVisitor extends BaseEntity
     /** 学生账号ID（登录后关联） */
     private Long appUserId;
 
+    /** 合并进的主访客ID */
+    private Long mergedInto;
+
+    public Long getMergedInto()
+    {
+        return mergedInto;
+    }
+
+    public void setMergedInto(Long mergedInto)
+    {
+        this.mergedInto = mergedInto;
+    }
+
     /** 最近访问时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date lastSeenTime;

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrAppUserMapper">
+
+    <resultMap type="AbrAppUser" id="AbrAppUserResult">
+        <id     property="appUserId"            column="app_user_id"           />
+        <result property="nickname"             column="nickname"              />
+        <result property="oaOpenid"             column="oa_openid"             />
+        <result property="miniOpenid"           column="mini_openid"           />
+        <result property="unionid"              column="unionid"               />
+        <result property="phone"                column="phone"                 />
+        <result property="phoneConsentTime"     column="phone_consent_time"    />
+        <result property="phoneConsentVersion"  column="phone_consent_version" />
+        <result property="primaryVisitorId"     column="primary_visitor_id"    />
+        <result property="registerChannel"      column="register_channel"      />
+        <result property="registerContent"      column="register_content"      />
+        <result property="loginCount"           column="login_count"           />
+        <result property="lastLoginTime"        column="last_login_time"       />
+        <result property="status"               column="status"                />
+        <result property="delFlag"              column="del_flag"              />
+        <result property="createBy"             column="create_by"             />
+        <result property="createTime"           column="create_time"           />
+        <result property="updateBy"             column="update_by"             />
+        <result property="updateTime"           column="update_time"           />
+        <result property="remark"               column="remark"                />
+    </resultMap>
+
+    <sql id="selectAbrAppUserVo">
+        select app_user_id, nickname, oa_openid, mini_openid, unionid, phone, phone_consent_time, phone_consent_version, primary_visitor_id,
+               register_channel, register_content, login_count, last_login_time, status, del_flag, create_by, create_time, update_by, update_time, remark
+        from abr_app_user
+    </sql>
+
+    <select id="selectAbrAppUserList" parameterType="AbrAppUser" resultMap="AbrAppUserResult">
+        <include refid="selectAbrAppUserVo"/>
+        where del_flag = '0'
+        <if test="status != null and status != ''">and status = #{status}</if>
+        <if test="registerChannel != null and registerChannel != ''">and register_channel = #{registerChannel}</if>
+        <if test="nickname != null and nickname != ''">and nickname like concat('%', #{nickname}, '%')</if>
+        <if test="params.beginTime != null and params.beginTime != ''">and create_time &gt;= cast(#{params.beginTime} as date)</if>
+        <if test="params.endTime != null and params.endTime != ''">and create_time &lt; cast(#{params.endTime} as date) + interval '1 day'</if>
+        order by app_user_id desc
+    </select>
+
+    <select id="selectAbrAppUserById" parameterType="Long" resultMap="AbrAppUserResult">
+        <include refid="selectAbrAppUserVo"/>
+        where app_user_id = #{appUserId} and del_flag = '0'
+    </select>
+
+    <select id="selectByUnionid" parameterType="String" resultMap="AbrAppUserResult">
+        <include refid="selectAbrAppUserVo"/>
+        where unionid = #{unionid} and del_flag = '0'
+    </select>
+
+    <select id="selectByOaOpenid" parameterType="String" resultMap="AbrAppUserResult">
+        <include refid="selectAbrAppUserVo"/>
+        where oa_openid = #{openid} and del_flag = '0'
+    </select>
+
+    <select id="selectByPhone" parameterType="String" resultMap="AbrAppUserResult">
+        <include refid="selectAbrAppUserVo"/>
+        where phone = #{phone} and del_flag = '0'
+    </select>
+
+    <insert id="insertAbrAppUser" parameterType="AbrAppUser" useGeneratedKeys="true" keyProperty="appUserId" keyColumn="app_user_id">
+        insert into abr_app_user (nickname, oa_openid, mini_openid, unionid, register_channel, register_content, login_count, last_login_time,
+                                  status, create_by, create_time)
+        values (coalesce(#{nickname}, ''), #{oaOpenid}, #{miniOpenid}, #{unionid}, coalesce(#{registerChannel}, 'direct'), coalesce(#{registerContent}, ''),
+                1, now(), '0', 'app', now())
+    </insert>
+
+    <update id="updateLogin">
+        update abr_app_user
+        set login_count = coalesce(login_count, 0) + 1, last_login_time = now(),
+            oa_openid = coalesce(oa_openid, #{oaOpenid}), unionid = coalesce(unionid, #{unionid}), update_time = now()
+        where app_user_id = #{appUserId}
+    </update>
+
+    <update id="setPrimaryVisitor">
+        update abr_app_user set primary_visitor_id = #{visitorId}, update_time = now()
+        where app_user_id = #{appUserId} and primary_visitor_id is null
+    </update>
+
+    <update id="bindPhone">
+        update abr_app_user
+        set phone = #{phone}, phone_consent_time = now(), phone_consent_version = #{consentVersion}, update_by = 'app', update_time = now()
+        where app_user_id = #{appUserId}
+    </update>
+
+    <update id="updateStatus">
+        update abr_app_user set status = #{status}, update_by = #{updateBy}, update_time = now() where app_user_id = #{appUserId}
+    </update>
+</mapper>

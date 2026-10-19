@@ -10,9 +10,12 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.ygb.abroad.domain.AbrAppUser;
 import com.ygb.abroad.domain.AbrVisitor;
 import com.ygb.abroad.domain.vo.AppVisitorBody;
+import com.ygb.abroad.mapper.AbrAppUserMapper;
 import com.ygb.abroad.mapper.AbrVisitorMapper;
+import com.ygb.abroad.service.IAbrAppAuthService;
 import com.ygb.abroad.service.IAbrVisitorService;
 import com.ygb.common.constant.HttpStatus;
 import com.ygb.common.exception.ServiceException;
@@ -43,11 +46,19 @@ public class AbrVisitorServiceImpl implements IAbrVisitorService
     @Autowired
     private AbrVisitorMapper visitorMapper;
 
+    @Autowired
+    private AbrAppUserMapper appUserMapper;
+
+    @Autowired
+    private IAbrAppAuthService appAuthService;
+
     @Override
     public String enterVisitor(String existingToken, AppVisitorBody body)
     {
         AbrVisitor existing = findVisitor(existingToken);
-        if (existing != null)
+        // 已关联账号的访客只能凭该账号的学生令牌继续使用；退出登录或换了账号时发新的访客令牌
+        if (existing != null && (existing.getAppUserId() == null || existing.getAppUserId().equals(appAuthService.currentAppUserId()))
+                && existing.getMergedInto() == null)
         {
             visitorMapper.touchAbrVisitor(existing.getVisitorId());
             return existingToken;
@@ -67,7 +78,27 @@ public class AbrVisitorServiceImpl implements IAbrVisitorService
     @Override
     public AbrVisitor resolveVisitor(String token)
     {
-        AbrVisitor visitor = findVisitor(token);
+        Long appUserId = appAuthService.currentAppUserId();
+        AbrVisitor visitor;
+        if (appUserId != null)
+        {
+            // 已登录：本人取账号的主访客，不看访客令牌（各设备的记录都已合并到主访客）
+            AbrAppUser user = appUserMapper.selectAbrAppUserById(appUserId);
+            visitor = user == null || user.getPrimaryVisitorId() == null ? null : visitorMapper.selectAbrVisitorById(user.getPrimaryVisitorId());
+            if (visitor == null)
+            {
+                throw new ServiceException("登录状态异常，请重新登录", HttpStatus.UNAUTHORIZED);
+            }
+        }
+        else
+        {
+            visitor = findVisitor(token);
+            if (visitor != null && (visitor.getAppUserId() != null || visitor.getMergedInto() != null))
+            {
+                // 关联过账号的访客不能匿名使用：防止退出登录后同一设备的下一个人看到账号的记录
+                visitor = null;
+            }
+        }
         if (visitor == null)
         {
             throw new ServiceException("访客身份已失效，请刷新页面后重试", HttpStatus.UNAUTHORIZED);
