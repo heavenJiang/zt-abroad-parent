@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import com.ygb.abroad.domain.AbrPublishRecord;
+import com.ygb.abroad.domain.vo.AbrMetricsImportRow;
 
 /**
  * 发布记录 服务层：安排发布（账号暂停与每天上限）、发布后回填链接、失败与撤回、一键发布包
@@ -74,4 +75,23 @@ public interface IAbrPublishService
      * @return 发布包
      */
     public Map<String, Object> publishPackage(Long recordId);
+
+    /**
+     * 填写一条发布记录的效果数据（M7-06；只能填已发布的；未填的指标保留原值）
+     *
+     * @param recordId 记录ID
+     * @param metrics 指标（views、likes、favorites、comments、shares、dms、follows）
+     * @param operator 操作人
+     * @return 发布记录
+     */
+    public AbrPublishRecord updateMetrics(Long recordId, Map<String, ?> metrics, String operator);
+
+    /**
+     * 导入效果数据（按发布链接或内容编号匹配已发布的记录；逐行处理，失败的行返回原因）
+     *
+     * @param rows 导入行
+     * @param operator 操作人
+     * @return updated、failed（第几行与原因）
+     */
+    public Map<String, Object> importMetrics(List<AbrMetricsImportRow> rows, String operator);
 }

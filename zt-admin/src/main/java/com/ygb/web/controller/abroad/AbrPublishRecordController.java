@@ -3,6 +3,7 @@ package com.ygb.web.controller.abroad;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,7 +13,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import com.ygb.abroad.domain.AbrPublishRecord;
+import com.ygb.abroad.domain.vo.AbrMetricsImportRow;
 import com.ygb.abroad.service.IAbrPublishService;
 import com.ygb.common.annotation.Log;
 import com.ygb.common.core.controller.BaseController;
@@ -20,6 +23,7 @@ import com.ygb.common.core.domain.AjaxResult;
 import com.ygb.common.core.page.TableDataInfo;
 import com.ygb.common.enums.BusinessType;
 import com.ygb.common.utils.DateUtils;
+import com.ygb.common.utils.poi.ExcelUtil;
 
 /**
  * 内容引擎-发布记录（安排发布、发布后回填链接、失败与撤回、一键发布包）
@@ -138,5 +142,43 @@ public class AbrPublishRecordController extends BaseController
             return null;
         }
         return DateUtils.dateTime(DateUtils.YYYY_MM_DD_HH_MM_SS, s);
+    }
+
+    /**
+     * 填写效果数据（body：views、likes、favorites、comments、shares、dms、follows，未填的保留原值）
+     */
+    @PreAuthorize("@ss.hasPermi('abroad:publish:edit')")
+    @Log(title = "发布效果数据", businessType = BusinessType.UPDATE)
+    @PutMapping("/metrics/{recordId}")
+    public AjaxResult metrics(@PathVariable Long recordId, @RequestBody Map<String, Object> body)
+    {
+        return success(publishService.updateMetrics(recordId, body, getUsername()));
+    }
+
+    /**
+     * 效果数据导入模板
+     */
+    @PreAuthorize("@ss.hasPermi('abroad:publish:edit')")
+    @PostMapping("/metrics/importTemplate")
+    public void metricsTemplate(HttpServletResponse response)
+    {
+        ExcelUtil<AbrMetricsImportRow> util = new ExcelUtil<AbrMetricsImportRow>(AbrMetricsImportRow.class);
+        util.importTemplateExcel(response, "效果数据导入");
+    }
+
+    /**
+     * 导入效果数据（按发布链接或内容编号匹配已发布的记录；失败的行返回原因）
+     */
+    @PreAuthorize("@ss.hasPermi('abroad:publish:edit')")
+    @Log(title = "发布效果数据", businessType = BusinessType.IMPORT, isSaveRequestData = false)
+    @PostMapping("/metrics/importData")
+    public AjaxResult importMetrics(MultipartFile file) throws Exception
+    {
+        if (file == null || file.isEmpty())
+        {
+            return error("请选择要导入的文件");
+        }
+        ExcelUtil<AbrMetricsImportRow> util = new ExcelUtil<AbrMetricsImportRow>(AbrMetricsImportRow.class);
+        return success(publishService.importMetrics(util.importExcel(file.getInputStream()), getUsername()));
     }
 }

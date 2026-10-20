@@ -89,4 +89,30 @@ public interface AbrPublishRecordMapper
      * @return 记录
      */
     public List<AbrPublishRecord> selectDueRecords(@Param("now") Date now, @Param("publishMode") String publishMode);
+
+    /**
+     * 按发布链接找发布记录
+     *
+     * @param postUrl 发布链接
+     * @return 记录（多条时取最新）
+     */
+    public AbrPublishRecord selectByPostUrl(String postUrl);
+
+    /**
+     * 按内容编号找最近一次已发布的记录
+     *
+     * @param contentCode 内容编号
+     * @return 记录
+     */
+    public AbrPublishRecord selectLatestPublishedByContentCode(String contentCode);
+
+    /**
+     * 写效果数据
+     *
+     * @param recordId 记录ID
+     * @param metrics 效果数据（JSON 对象）
+     * @param updateBy 操作人
+     * @return 行数
+     */
+    public int updateMetrics(@Param("recordId") Long recordId, @Param("metrics") String metrics, @Param("updateBy") String updateBy);
 }

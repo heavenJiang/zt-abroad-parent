@@ -102,4 +102,23 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by r.planned_time, r.record_id
     </select>
 
+
+    <select id="selectByPostUrl" parameterType="String" resultMap="AbrPublishRecordResult">
+        <include refid="selectAbrPublishRecordVo"/>
+        where r.post_url = #{postUrl}
+        order by r.record_id desc
+        limit 1
+    </select>
+
+    <select id="selectLatestPublishedByContentCode" parameterType="String" resultMap="AbrPublishRecordResult">
+        <include refid="selectAbrPublishRecordVo"/>
+        where c.content_code = #{contentCode} and r.status = 'published'
+        order by r.published_time desc nulls last, r.record_id desc
+        limit 1
+    </select>
+
+    <update id="updateMetrics">
+        update abr_publish_record set metrics = cast(#{metrics} as jsonb), metrics_time = now(), update_by = #{updateBy}, update_time = now()
+        where record_id = #{recordId}
+    </update>
 </mapper>

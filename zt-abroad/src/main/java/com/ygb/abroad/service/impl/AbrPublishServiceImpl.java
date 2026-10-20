@@ -1,6 +1,7 @@
 package com.ygb.abroad.service.impl;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -13,6 +14,7 @@ import com.ygb.abroad.domain.AbrChannelAccount;
 import com.ygb.abroad.domain.AbrContent;
 import com.ygb.abroad.domain.AbrEvent;
 import com.ygb.abroad.domain.AbrPublishRecord;
+import com.ygb.abroad.domain.vo.AbrMetricsImportRow;
 import com.ygb.abroad.growth.MarketingCalendar;
 import com.ygb.abroad.mapper.AbrChannelAccountMapper;
 import com.ygb.abroad.mapper.AbrContentMapper;
@@ -37,6 +39,9 @@ import tools.jackson.databind.json.JsonMapper;
 public class AbrPublishServiceImpl implements IAbrPublishService
 {
     private static final ObjectMapper MAPPER = JsonMapper.builder().build();
+
+    /** 一次最多导入的效果数据行数 */
+    static final int MAX_METRICS_ROWS = 500;
 
     @Autowired
     private AbrPublishRecordMapper recordMapper;
@@ -212,5 +217,87 @@ public class AbrPublishServiceImpl implements IAbrPublishService
             throw new ServiceException("发布记录不存在");
         }
         return r;
+    }
+
+    @Override
+    public AbrPublishRecord updateMetrics(Long recordId, Map<String, ?> metrics, String operator)
+    {
+        AbrPublishRecord r = recordId == null ? null : recordMapper.selectAbrPublishRecordById(recordId);
+        if (r == null)
+        {
+            throw new ServiceException("发布记录不存在");
+        }
+        writeMetrics(r, metrics, operator);
+        return recordMapper.selectAbrPublishRecordById(recordId);
+    }
+
+    @Override
+    public Map<String, Object> importMetrics(List<AbrMetricsImportRow> rows, String operator)
+    {
+        if (rows == null || rows.isEmpty())
+        {
+            throw new ServiceException("表格中没有数据");
+        }
+        if (rows.size() > MAX_METRICS_ROWS)
+        {
+            throw new ServiceException("一次最多导入 " + MAX_METRICS_ROWS + " 行");
+        }
+        int updated = 0;
+        List<String> failed = new ArrayList<>();
+        for (int i = 0; i < rows.size(); i++)
+        {
+            AbrMetricsImportRow row = rows.get(i);
+            try
+            {
+                AbrPublishRecord r = null;
+                if (StringUtils.isNotBlank(row.getPostUrl()))
+                {
+                    r = recordMapper.selectByPostUrl(row.getPostUrl().trim());
+                }
+                if (r == null && StringUtils.isNotBlank(row.getContentCode()))
+                {
+                    r = recordMapper.selectLatestPublishedByContentCode(row.getContentCode().trim());
+                }
+                if (r == null)
+                {
+                    throw new ServiceException("找不到已发布的记录（按发布链接或内容编号）");
+                }
+                writeMetrics(r, AbrMetricsRules.fromRow(row), operator);
+                updated++;
+            }
+            catch (ServiceException e)
+            {
+                failed.add("第 " + (i + 2) + " 行：" + e.getMessage());
+            }
+        }
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("updated", updated);
+        out.put("failed", failed);
+        return out;
+    }
+
+    /**
+     * 合并写入效果数据（只能写已发布的记录）
+     */
+    private void writeMetrics(AbrPublishRecord r, Map<String, ?> metrics, String operator)
+    {
+        if (!"published".equals(r.getStatus()))
+        {
+            throw new ServiceException("只有已发布的记录可以填写效果数据");
+        }
+        Map<String, Object> merged = new LinkedHashMap<>();
+        JsonNode old = StringUtils.isBlank(r.getMetrics()) ? null : MAPPER.readTree(r.getMetrics());
+        if (old != null && old.isObject())
+        {
+            for (String k : AbrMetricsRules.KEYS)
+            {
+                if (old.path(k).isNumber())
+                {
+                    merged.put(k, old.path(k).asLong());
+                }
+            }
+        }
+        merged.putAll(AbrMetricsRules.normalize(metrics));
+        recordMapper.updateMetrics(r.getRecordId(), MAPPER.writeValueAsString(merged), operator);
     }
 }
