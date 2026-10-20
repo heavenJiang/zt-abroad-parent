@@ -8,6 +8,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="rewardId"    column="reward_id"    />
         <result property="appUserId"   column="app_user_id"  />
         <result property="leadId"      column="lead_id"      />
+        <result property="referrerId"  column="referrer_id"  />
         <result property="leadName"    column="lead_name"    />
         <result property="rewardType"  column="reward_type"  />
         <result property="title"       column="title"        />
@@ -24,15 +25,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectRewardVo">
-        select r.reward_id, r.app_user_id, r.lead_id, l.display_name as lead_name, r.reward_type, r.title, r.product_code, r.status, r.ref_type, r.ref_id,
+        select r.reward_id, r.app_user_id, r.lead_id, r.referrer_id, coalesce(l.display_name, f.display_name) as lead_name, r.reward_type, r.title, r.product_code, r.status, r.ref_type, r.ref_id,
                r.dedup_key, r.confirm_by, r.confirm_time, r.used_time, r.create_time, r.remark
         from abr_reward r
         left join abr_lead l on l.lead_id = r.lead_id
+        left join abr_referrer f on f.referrer_id = r.referrer_id
     </sql>
 
     <insert id="insertReward" parameterType="AbrReward" useGeneratedKeys="true" keyProperty="rewardId" keyColumn="reward_id">
-        insert into abr_reward (app_user_id, lead_id, reward_type, title, product_code, status, ref_type, ref_id, dedup_key, create_time, remark)
-        values (#{appUserId}, #{leadId}, #{rewardType}, #{title}, coalesce(#{productCode}, ''), #{status}, coalesce(#{refType}, ''), #{refId}, #{dedupKey},
+        insert into abr_reward (app_user_id, lead_id, referrer_id, reward_type, title, product_code, status, ref_type, ref_id, dedup_key, create_time, remark)
+        values (#{appUserId}, #{leadId}, #{referrerId}, #{rewardType}, #{title}, coalesce(#{productCode}, ''), #{status}, coalesce(#{refType}, ''), #{refId}, #{dedupKey},
                 now(), #{remark})
         on conflict (dedup_key) where dedup_key is not null do nothing
     </insert>
@@ -42,6 +44,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <where>
             <if test="appUserId != null">and r.app_user_id = #{appUserId}</if>
             <if test="leadId != null">and r.lead_id = #{leadId}</if>
+            <if test="referrerId != null">and r.referrer_id = #{referrerId}</if>
             <if test="rewardType != null and rewardType != ''">and r.reward_type = #{rewardType}</if>
             <if test="status != null and status != ''">and r.status = #{status}</if>
         </where>

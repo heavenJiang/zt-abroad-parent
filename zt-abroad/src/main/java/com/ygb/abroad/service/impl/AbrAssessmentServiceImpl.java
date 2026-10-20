@@ -35,6 +35,7 @@ import com.ygb.abroad.mapper.AbrEngineConfigMapper;
 import com.ygb.abroad.mapper.AbrProgramMapper;
 import com.ygb.abroad.mapper.AbrQuestionnaireMapper;
 import com.ygb.abroad.service.IAbrAssessmentService;
+import com.ygb.abroad.service.IAbrEventService;
 import com.ygb.abroad.service.IAbrPolicyService;
 import com.ygb.abroad.service.IAbrReportExplanationService;
 import com.ygb.abroad.service.IAbrSelectionService;
@@ -59,6 +60,12 @@ public class AbrAssessmentServiceImpl implements IAbrAssessmentService
     private static final int CACHE_LIMIT = 64;
 
     private final Map<Long, AbrAssessmentAnswers.Questionnaire> parsed = new ConcurrentHashMap<>();
+
+    /** 测评提交事件 */
+    static final String EVENT_SUBMITTED = "assessment_submitted";
+
+    @Autowired
+    private IAbrEventService eventService;
 
     @Autowired
     private AbrAssessmentMapper assessmentMapper;
@@ -282,6 +289,8 @@ public class AbrAssessmentServiceImpl implements IAbrAssessmentService
         {
             throw new ServiceException("测评已结束，不能提交");
         }
+        // 提交事件（推荐的有效测评判断等订阅）
+        eventService.recordAction(visitor, EVENT_SUBMITTED, "assessment", assessmentId, Map.of("assessment_id", assessmentId));
         boolean ready = false;
         try
         {

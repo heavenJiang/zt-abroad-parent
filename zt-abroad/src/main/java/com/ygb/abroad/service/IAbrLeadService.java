@@ -17,6 +17,9 @@ public interface IAbrLeadService
     /** 事件：新线索（lead_scorer M5-02、nurture_agent M8-03 订阅） */
     public static final String EVENT_CAPTURED = "lead_captured";
 
+    /** 线索阶段变更事件（payload：lead_id、from、to） */
+    public static final String EVENT_STAGE_CHANGED = "lead_stage_changed";
+
     /**
      * 收口一次来源或触达：按 学生账号 → unionid → 手机号哈希 找到线索（几条指向同一人时合并，保留首次触达最早的一条），
      * 没有时新建；同一业务事件只记一次

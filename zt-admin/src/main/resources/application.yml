@@ -223,6 +223,9 @@ abroad:
     reward-title: 免费定位咨询一次
     reward-product: consult_position
     reward-confirm: false
+  referral:
+    # 推荐（M9-02）：被推荐人的测评用时少于此秒数不算有效测评（防刷）；奖励规则在管理端「推荐与奖励」配置
+    min-assessment-seconds: 120
   compliance:
     # 合规闸门（M6-03）：AI 生成的消息（自动回复、培育消息）须带的标识；词表在管理端「合规词表」配置
     message-ai-label: （AI 回复）

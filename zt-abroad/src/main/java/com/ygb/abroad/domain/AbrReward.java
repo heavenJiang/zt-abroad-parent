@@ -24,6 +24,9 @@ public class AbrReward extends BaseEntity
     /** 线索 */
     private Long leadId;
 
+    /** 推荐人 */
+    private Long referrerId;
+
     /** 线索称呼 */
     private String leadName;
 
@@ -87,6 +90,16 @@ public class AbrReward extends BaseEntity
     public void setLeadId(Long leadId)
     {
         this.leadId = leadId;
+    }
+
+    public Long getReferrerId()
+    {
+        return referrerId;
+    }
+
+    public void setReferrerId(Long referrerId)
+    {
+        this.referrerId = referrerId;
     }
 
     public String getLeadName()
@@ -206,6 +219,7 @@ public class AbrReward extends BaseEntity
             .append("rewardId", getRewardId())
             .append("appUserId", getAppUserId())
             .append("leadId", getLeadId())
+            .append("referrerId", getReferrerId())
             .append("leadName", getLeadName())
             .append("rewardType", getRewardType())
             .append("title", getTitle())

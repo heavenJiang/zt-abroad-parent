@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrReferralMapper">
+
+    <resultMap type="AbrReferrer" id="AbrReferrerResult">
+        <result property="referrerId"      column="referrer_id"      />
+        <result property="referrerType"    column="referrer_type"    />
+        <result property="displayName"     column="display_name"     />
+        <result property="refCode"         column="ref_code"         />
+        <result property="appUserId"       column="app_user_id"      />
+        <result property="leadId"          column="lead_id"          />
+        <result property="status"          column="status"           />
+        <result property="registeredCount" column="registered_count" />
+        <result property="validCount"      column="valid_count"      />
+        <result property="signedCount"     column="signed_count"     />
+        <result property="createBy"        column="create_by"        />
+        <result property="createTime"      column="create_time"      />
+        <result property="updateBy"        column="update_by"        />
+        <result property="updateTime"      column="update_time"      />
+        <result property="remark"          column="remark"           />
+    </resultMap>
+
+    <resultMap type="AbrReferral" id="AbrReferralResult">
+        <result property="referralId"    column="referral_id"    />
+        <result property="referrerId"    column="referrer_id"    />
+        <result property="referrerName"  column="referrer_name"  />
+        <result property="refCode"       column="ref_code"       />
+        <result property="visitorId"     column="visitor_id"     />
+        <result property="appUserId"     column="app_user_id"    />
+        <result property="leadId"        column="lead_id"        />
+        <result property="leadName"      column="lead_name"      />
+        <result property="status"        column="status"         />
+        <result property="invalidReason" column="invalid_reason" />
+        <result property="validTime"     column="valid_time"     />
+        <result property="signedTime"    column="signed_time"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <resultMap type="AbrReferralRule" id="AbrReferralRuleResult">
+        <result property="ruleId"        column="rule_id"        />
+        <result property="referrerType"  column="referrer_type"  />
+        <result property="milestone"     column="milestone"      />
+        <result property="rewardTitle"   column="reward_title"   />
+        <result property="rewardProduct" column="reward_product" />
+        <result property="refereeTitle"  column="referee_title"  />
+        <result property="dailyCap"      column="daily_cap"      />
+        <result property="status"        column="status"         />
+        <result property="createBy"      column="create_by"      />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"      column="update_by"      />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"        column="remark"         />
+    </resultMap>
+
+    <sql id="selectReferrerVo">
+        select f.referrer_id, f.referrer_type, f.display_name, f.ref_code, f.app_user_id, f.lead_id, f.status, f.create_by, f.create_time, f.update_by,
+               f.update_time, f.remark,
+               (select count(*) from abr_referral r where r.referrer_id = f.referrer_id) as registered_count,
+               (select count(*) from abr_referral r where r.referrer_id = f.referrer_id and r.status in ('valid', 'signed')) as valid_count,
+               (select count(*) from abr_referral r where r.referrer_id = f.referrer_id and r.status = 'signed') as signed_count
+        from abr_referrer f
+    </sql>
+
+    <select id="selectReferrerList" parameterType="AbrReferrer" resultMap="AbrReferrerResult">
+        <include refid="selectReferrerVo"/>
+        <where>
+            <if test="referrerType != null and referrerType != ''">and f.referrer_type = #{referrerType}</if>
+            <if test="displayName != null and displayName != ''">and f.display_name like concat('%', #{displayName}, '%')</if>
+            <if test="refCode != null and refCode != ''">and f.ref_code = #{refCode}</if>
+            <if test="status != null and status != ''">and f.status = #{status}</if>
+            <if test="appUserId != null">and f.app_user_id = #{appUserId}</if>
+        </where>
+        order by f.referrer_id desc
+    </select>
+
+    <select id="selectReferrerById" parameterType="Long" resultMap="AbrReferrerResult">
+        <include refid="selectReferrerVo"/>
+        where f.referrer_id = #{referrerId}
+    </select>
+
+    <select id="selectActiveReferrerByCode" parameterType="String" resultMap="AbrReferrerResult">
+        <include refid="selectReferrerVo"/>
+        where f.ref_code = #{refCode} and f.status = '0'
+    </select>
+
+    <select id="selectReferrerByOwner" resultMap="AbrReferrerResult">
+        <include refid="selectReferrerVo"/>
+        where (false
+        <if test="leadId != null">or f.lead_id = #{leadId}</if>
+        <if test="appUserId != null">or f.app_user_id = #{appUserId}</if>)
+        order by f.referrer_id
+        limit 1
+    </select>
+
+    <select id="countRefCode" parameterType="String" resultType="int">
+        select count(*) from abr_referrer where ref_code = #{refCode}
+    </select>
+
+    <insert id="insertReferrer" parameterType="AbrReferrer" useGeneratedKeys="true" keyProperty="referrerId" keyColumn="referrer_id">
+        insert into abr_referrer (referrer_type, display_name, ref_code, app_user_id, lead_id, status, create_by, create_time, remark)
+        values (#{referrerType}, #{displayName}, #{refCode}, #{appUserId}, #{leadId}, #{status}, #{createBy}, now(), #{remark})
+    </insert>
+
+    <update id="updateReferrer" parameterType="AbrReferrer">
+        update abr_referrer
+        set referrer_type = #{referrerType}, display_name = #{displayName}, status = #{status}, remark = #{remark}, update_by = #{updateBy}, update_time = now()
+        where referrer_id = #{referrerId}
+    </update>
+
+    <delete id="deleteReferrers" parameterType="Long">
+        delete from abr_referrer f where f.referrer_id in
+        <foreach collection="array" item="id" open="(" separator="," close=")">#{id}</foreach>
+        and not exists (select 1 from abr_referral r where r.referrer_id = f.referrer_id)
+    </delete>
+
+    <select id="countReferrals" parameterType="Long" resultType="int">
+        select count(*) from abr_referral where referrer_id = #{referrerId}
+    </select>
+
+    <sql id="selectReferralVo">
+        select r.referral_id, r.referrer_id, f.display_name as referrer_name, f.ref_code, r.visitor_id, r.app_user_id, r.lead_id, l.display_name as lead_name,
+               r.status, r.invalid_reason, r.valid_time, r.signed_time, r.create_time, r.update_time
+        from abr_referral r
+        join abr_referrer f on f.referrer_id = r.referrer_id
+        left join abr_lead l on l.lead_id = r.lead_id
+    </sql>
+
+    <select id="selectReferralList" parameterType="AbrReferral" resultMap="AbrReferralResult">
+        <include refid="selectReferralVo"/>
+        <where>
+            <if test="referrerId != null">and r.referrer_id = #{referrerId}</if>
+            <if test="status != null and status != ''">and r.status = #{status}</if>
+        </where>
+        order by r.referral_id desc
+    </select>
+
+    <select id="selectReferralByVisitor" parameterType="Long" resultMap="AbrReferralResult">
+        <include refid="selectReferralVo"/>
+        where r.visitor_id = #{visitorId}
+    </select>
+
+    <select id="selectReferralByLead" parameterType="Long" resultMap="AbrReferralResult">
+        <include refid="selectReferralVo"/>
+        where r.lead_id = #{leadId}
+           or r.visitor_id = (select visitor_id from abr_lead where lead_id = #{leadId})
+        order by r.referral_id
+        limit 1
+    </select>
+
+    <insert id="insertReferral" parameterType="AbrReferral" useGeneratedKeys="true" keyProperty="referralId" keyColumn="referral_id">
+        insert into abr_referral (referrer_id, visitor_id, app_user_id, lead_id, status, invalid_reason, create_time, update_time)
+        values (#{referrerId}, #{visitorId}, #{appUserId}, #{leadId}, #{status}, coalesce(#{invalidReason}, ''), now(), now())
+        on conflict (visitor_id) do nothing
+    </insert>
+
+    <update id="updateReferral" parameterType="AbrReferral">
+        update abr_referral
+        set app_user_id = coalesce(#{appUserId}, app_user_id), lead_id = coalesce(#{leadId}, lead_id), status = #{status},
+            invalid_reason = coalesce(#{invalidReason}, ''), valid_time = #{validTime}, signed_time = #{signedTime}, update_time = now()
+        where referral_id = #{referralId}
+    </update>
+
+    <select id="selectVisitorAttribution" parameterType="Long" resultType="java.util.HashMap">
+        select channel_code as "channelCode", content_code as "contentCode", app_user_id as "appUserId"
+        from abr_visitor where visitor_id = #{visitorId}
+    </select>
+
+    <select id="selectAssessmentCheck" parameterType="Long" resultType="java.util.HashMap">
+        select visitor_id as "visitorId",
+               cast(extract(epoch from (coalesce(submitted_time, now()) - create_time)) as bigint) as "seconds",
+               (coalesce(flags ->> 'is_minor', 'false') = 'true' or coalesce(flags ->> 'exclude_from_referral_unlock', 'false') = 'true') as "minor"
+        from abr_assessment where assessment_id = #{assessmentId}
+    </select>
+
+    <select id="selectLeadInfo" parameterType="Long" resultType="java.util.HashMap">
+        with recursive chain(lead_id, merged_into, depth) as (
+            select lead_id, merged_into, 0 from abr_lead where lead_id = #{leadId}
+            union all
+            select l.lead_id, l.merged_into, c.depth + 1 from abr_lead l join chain c on l.lead_id = c.merged_into where c.depth &lt; 10
+        )
+        select l.lead_id as "leadId", l.visitor_id as "visitorId", l.app_user_id as "appUserId", l.stage as "stage", l.display_name as "displayName",
+               l.owner_user_id as "ownerUserId"
+        from chain c join abr_lead l on l.lead_id = c.lead_id
+        where c.merged_into is null
+        limit 1
+    </select>
+
+    <select id="countRewardsSince" resultType="int">
+        select count(*) from abr_reward
+        where referrer_id = #{referrerId} and reward_type = 'referral' and dedup_key like concat('%:', #{milestone}, ':referrer') and create_time &gt;= #{since}
+    </select>
+
+    <select id="selectRuleList" resultMap="AbrReferralRuleResult">
+        select rule_id, referrer_type, milestone, reward_title, reward_product, referee_title, daily_cap, status, create_by, create_time, update_by, update_time,
+               remark
+        from abr_referral_rule
+        order by referrer_type, milestone
+    </select>
+
+    <select id="selectActiveRule" resultMap="AbrReferralRuleResult">
+        select rule_id, referrer_type, milestone, reward_title, reward_product, referee_title, daily_cap, status, create_by, create_time, update_by, update_time,
+               remark
+        from abr_referral_rule
+        where referrer_type = #{referrerType} and milestone = #{milestone} and status = '0'
+    </select>
+
+    <update id="updateRule" parameterType="AbrReferralRule">
+        update abr_referral_rule
+        set reward_title = coalesce(#{rewardTitle}, ''), reward_product = coalesce(#{rewardProduct}, ''), referee_title = coalesce(#{refereeTitle}, ''),
+            daily_cap = #{dailyCap}, status = #{status}, remark = #{remark}, update_by = #{updateBy}, update_time = now()
+        where rule_id = #{ruleId}
+    </update>
+</mapper>

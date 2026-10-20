@@ -560,6 +560,11 @@ public class AbrLeadServiceImpl implements IAbrLeadService
         }
         leadMapper.updateStage(l.getLeadId(), to, AbrLeadRules.STAGE_LOST.equals(to) ? reason : "", operator);
         stageRow(l.getLeadId(), l.getStage(), to, reason, operator);
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("lead_id", l.getLeadId());
+        payload.put("from", l.getStage());
+        payload.put("to", to);
+        eventService.recordSystemEvent(EVENT_STAGE_CHANGED, null, payload);
         return selectAbrLeadById(l.getLeadId());
     }
 
