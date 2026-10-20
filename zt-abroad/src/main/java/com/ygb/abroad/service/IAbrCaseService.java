@@ -31,7 +31,7 @@ public interface IAbrCaseService
     public AbrCase selectCaseById(Long caseId);
 
     /**
-     * 新增或修改（同一线索同一项目同一申请季只能一条；授权从无到有记授权时间、全部撤回记撤回时间；新取得宣传授权且可公开时写 offer_authorized 事件）
+     * 新增或修改（同一线索同一项目同一申请季只能一条；授权从无到有记授权时间、全部撤回记撤回时间；由不可公开变为可公开（新取得宣传授权或核验升级）时写 offer_authorized 事件）
      *
      * @param c 案例
      * @param keepIdentity 是否保留原关联线索（操作人没有 abroad:case:identity 权限时为 true）

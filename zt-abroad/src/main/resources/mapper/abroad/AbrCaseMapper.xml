@@ -7,6 +7,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <resultMap type="AbrCase" id="AbrCaseResult">
         <result property="caseId"           column="case_id"           />
         <result property="leadId"           column="lead_id"           />
+        <result property="appUserId"        column="app_user_id"       />
         <result property="leadName"         column="lead_name"         />
         <result property="season"           column="season"            />
         <result property="country"          column="country"           />
@@ -38,7 +39,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectCaseVo">
-        select c.case_id, c.lead_id, l.display_name as lead_name, c.season, c.country, c.degree, c.program_id, c.school_name, c.program_name, c.result,
+        select c.case_id, c.lead_id, c.app_user_id, l.display_name as lead_name, c.season, c.country, c.degree, c.program_id, c.school_name, c.program_name, c.result,
                c.scholarship, c.undergrad_tier, c.major_direction, c.gpa, c.ielts, c.test_scores, c.experience, c.verify_level, c.source, c.algo_consent,
                c.publicity_consent, c.consent_time, c.revoke_time, c.offer_file, c.status, c.create_by, c.create_time, c.update_by, c.update_time, c.remark
         from abr_case c
@@ -55,6 +56,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="season != null and season != ''">and c.season = #{season}</if>
             <if test="schoolName != null and schoolName != ''">and (c.school_name like concat('%', #{schoolName}, '%') or c.program_name like concat('%', #{schoolName}, '%'))</if>
             <if test="leadId != null">and c.lead_id = #{leadId}</if>
+            <if test="appUserId != null">and c.app_user_id = #{appUserId}</if>
+            <if test="source != null and source != ''">and c.source = #{source}</if>
             <if test="params.consent == 'publicity'">and c.publicity_consent = 'Y'</if>
         </where>
         order by c.season desc, c.case_id desc
@@ -80,10 +83,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <insert id="insertCase" parameterType="AbrCase" useGeneratedKeys="true" keyProperty="caseId" keyColumn="case_id">
-        insert into abr_case (lead_id, season, country, degree, program_id, school_name, program_name, result, scholarship, undergrad_tier, major_direction,
+        insert into abr_case (lead_id, app_user_id, season, country, degree, program_id, school_name, program_name, result, scholarship, undergrad_tier, major_direction,
                               gpa, ielts, test_scores, experience, verify_level, source, algo_consent, publicity_consent, consent_time, revoke_time, status,
                               create_by, create_time, remark)
-        values (#{leadId}, #{season}, #{country}, #{degree}, #{programId}, #{schoolName}, #{programName}, #{result}, coalesce(#{scholarship}, ''),
+        values (#{leadId}, #{appUserId}, #{season}, #{country}, #{degree}, #{programId}, #{schoolName}, #{programName}, #{result}, coalesce(#{scholarship}, ''),
                 coalesce(#{undergradTier}, ''), coalesce(#{majorDirection}, ''), #{gpa}, #{ielts}, coalesce(#{testScores}, ''), coalesce(#{experience}, ''),
                 #{verifyLevel}, #{source}, #{algoConsent}, #{publicityConsent}, #{consentTime}, #{revokeTime}, #{status}, #{createBy}, now(), #{remark})
     </insert>
@@ -107,4 +110,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         delete from abr_case where case_id in
         <foreach collection="array" item="id" open="(" separator="," close=")">#{id}</foreach>
     </delete>
+
+    <select id="selectProfileSnapshot" parameterType="Long" resultType="java.util.HashMap">
+        select undergrad_tier as "undergradTier", gpa_percent as "gpa", ielts_equiv_total as "ielts"
+        from abr_profile where visitor_id = #{visitorId}
+        order by coalesce(normalized_time, create_time) desc
+        limit 1
+    </select>
 </mapper>

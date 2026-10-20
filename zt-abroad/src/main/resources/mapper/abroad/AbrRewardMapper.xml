@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrRewardMapper">
+
+    <resultMap type="AbrReward" id="AbrRewardResult">
+        <result property="rewardId"    column="reward_id"    />
+        <result property="appUserId"   column="app_user_id"  />
+        <result property="leadId"      column="lead_id"      />
+        <result property="leadName"    column="lead_name"    />
+        <result property="rewardType"  column="reward_type"  />
+        <result property="title"       column="title"        />
+        <result property="productCode" column="product_code" />
+        <result property="status"      column="status"       />
+        <result property="refType"     column="ref_type"     />
+        <result property="refId"       column="ref_id"       />
+        <result property="dedupKey"    column="dedup_key"    />
+        <result property="confirmBy"   column="confirm_by"   />
+        <result property="confirmTime" column="confirm_time" />
+        <result property="usedTime"    column="used_time"    />
+        <result property="createTime"  column="create_time"  />
+        <result property="remark"      column="remark"       />
+    </resultMap>
+
+    <sql id="selectRewardVo">
+        select r.reward_id, r.app_user_id, r.lead_id, l.display_name as lead_name, r.reward_type, r.title, r.product_code, r.status, r.ref_type, r.ref_id,
+               r.dedup_key, r.confirm_by, r.confirm_time, r.used_time, r.create_time, r.remark
+        from abr_reward r
+        left join abr_lead l on l.lead_id = r.lead_id
+    </sql>
+
+    <insert id="insertReward" parameterType="AbrReward" useGeneratedKeys="true" keyProperty="rewardId" keyColumn="reward_id">
+        insert into abr_reward (app_user_id, lead_id, reward_type, title, product_code, status, ref_type, ref_id, dedup_key, create_time, remark)
+        values (#{appUserId}, #{leadId}, #{rewardType}, #{title}, coalesce(#{productCode}, ''), #{status}, coalesce(#{refType}, ''), #{refId}, #{dedupKey},
+                now(), #{remark})
+        on conflict (dedup_key) where dedup_key is not null do nothing
+    </insert>
+
+    <select id="selectRewardList" parameterType="AbrReward" resultMap="AbrRewardResult">
+        <include refid="selectRewardVo"/>
+        <where>
+            <if test="appUserId != null">and r.app_user_id = #{appUserId}</if>
+            <if test="leadId != null">and r.lead_id = #{leadId}</if>
+            <if test="rewardType != null and rewardType != ''">and r.reward_type = #{rewardType}</if>
+            <if test="status != null and status != ''">and r.status = #{status}</if>
+        </where>
+        order by r.reward_id desc
+    </select>
+
+    <select id="selectRewardById" parameterType="Long" resultMap="AbrRewardResult">
+        <include refid="selectRewardVo"/>
+        where r.reward_id = #{rewardId}
+    </select>
+
+    <update id="updateStatus">
+        update abr_reward
+        set status = #{toStatus},
+            confirm_by = case when #{toStatus} = 'issued' then #{operator} else confirm_by end,
+            confirm_time = case when #{toStatus} = 'issued' then now() else confirm_time end,
+            used_time = case when #{toStatus} = 'used' then now() else used_time end
+        where reward_id = #{rewardId} and status = #{fromStatus}
+    </update>
+</mapper>

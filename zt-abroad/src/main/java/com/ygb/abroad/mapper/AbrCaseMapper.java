@@ -1,6 +1,7 @@
 package com.ygb.abroad.mapper;
 
 import java.util.List;
+import java.util.Map;
 import org.apache.ibatis.annotations.Param;
 import com.ygb.abroad.domain.AbrCase;
 
@@ -81,4 +82,12 @@ public interface AbrCaseMapper
      * @return 行数
      */
     public int deleteCaseByIds(Long[] caseIds);
+
+    /**
+     * 访客最新的背景档案（回填结果时快照：院校层次、均分、雅思当量）
+     *
+     * @param visitorId 访客ID
+     * @return undergradTier、gpa、ielts（没有档案为 null）
+     */
+    public Map<String, Object> selectProfileSnapshot(Long visitorId);
 }

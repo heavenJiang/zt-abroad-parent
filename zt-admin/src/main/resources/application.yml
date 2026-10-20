@@ -218,6 +218,11 @@ abroad:
     max-reschedule: 3
     # booking_agent 消息与邀约里的 C 端预约页（产品编码追加在后面；C 端页面随 C 端预约页上线）
     page-url: ${abroad.app.url}pages/booking/index?product=
+  outcome:
+    # 录取结果回填（M9-06）：首次回填（每个申请季一次）的感谢，只发服务抵扣不发现金；reward-confirm=true 时须员工确认后发放
+    reward-title: 免费定位咨询一次
+    reward-product: consult_position
+    reward-confirm: false
   compliance:
     # 合规闸门（M6-03）：AI 生成的消息（自动回复、培育消息）须带的标识；词表在管理端「合规词表」配置
     message-ai-label: （AI 回复）

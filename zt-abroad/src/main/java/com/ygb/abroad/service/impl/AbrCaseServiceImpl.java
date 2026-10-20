@@ -102,7 +102,8 @@ public class AbrCaseServiceImpl implements IAbrCaseService
         {
             caseMapper.updateCase(c);
         }
-        if (newPublicity && AbrCaseRules.publicEligible(c))
+        // 由不可公开变为可公开（新取得宣传授权，或核验升级到 A / B）时通知下游
+        if (AbrCaseRules.publicEligible(c) && !AbrCaseRules.publicEligible(old))
         {
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("case_id", c.getCaseId());

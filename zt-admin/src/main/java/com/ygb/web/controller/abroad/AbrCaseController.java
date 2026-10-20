@@ -52,6 +52,7 @@ public class AbrCaseController extends BaseController
         if (!identity)
         {
             c.setLeadId(null);
+            c.setAppUserId(null);
         }
         startPage();
         List<AbrCase> list = caseService.selectCaseList(c);
@@ -171,5 +172,6 @@ public class AbrCaseController extends BaseController
     {
         c.setLeadId(null);
         c.setLeadName(null);
+        c.setAppUserId(null);
     }
 }

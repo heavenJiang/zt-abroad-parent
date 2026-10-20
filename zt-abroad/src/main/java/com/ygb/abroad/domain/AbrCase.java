@@ -23,6 +23,9 @@ public class AbrCase extends BaseEntity
     /** 关联线索 */
     private Long leadId;
 
+    /** 回填的学生账号 */
+    private Long appUserId;
+
     /** 线索称呼 */
     private String leadName;
 
@@ -119,6 +122,16 @@ public class AbrCase extends BaseEntity
     public void setLeadId(Long leadId)
     {
         this.leadId = leadId;
+    }
+
+    public Long getAppUserId()
+    {
+        return appUserId;
+    }
+
+    public void setAppUserId(Long appUserId)
+    {
+        this.appUserId = appUserId;
     }
 
     public String getLeadName()
@@ -358,6 +371,7 @@ public class AbrCase extends BaseEntity
         return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
             .append("caseId", getCaseId())
             .append("leadId", getLeadId())
+            .append("appUserId", getAppUserId())
             .append("leadName", getLeadName())
             .append("season", getSeason())
             .append("country", getCountry())
