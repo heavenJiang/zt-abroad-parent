@@ -61,6 +61,9 @@ public final class ComplianceFacts
 
     private final List<String> citationProblems = new ArrayList<>();
 
+    /** 被引用案例中的学生成绩（均分区间端点、雅思）：正文写的是学生成绩而非项目要求时以此核对 */
+    private final Set<BigDecimal> caseScores = new LinkedHashSet<>();
+
     /**
      * 由项目与最新申请要求得到可核对事实
      *
@@ -137,6 +140,26 @@ public final class ComplianceFacts
         {
             citedSchools.add(fact.schoolId());
         }
+    }
+
+    /**
+     * 加入被引用案例中的学生成绩（对外只写均分区间端点与雅思）
+     *
+     * @param value 数值
+     */
+    public void addCaseScore(BigDecimal value)
+    {
+        add(caseScores, value);
+    }
+
+    /**
+     * 被引用案例中的学生成绩
+     *
+     * @return 数值
+     */
+    public Set<BigDecimal> caseScores()
+    {
+        return caseScores;
     }
 
     /**

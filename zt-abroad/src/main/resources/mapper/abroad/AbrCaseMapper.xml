@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrCaseMapper">
+
+    <resultMap type="AbrCase" id="AbrCaseResult">
+        <result property="caseId"           column="case_id"           />
+        <result property="leadId"           column="lead_id"           />
+        <result property="leadName"         column="lead_name"         />
+        <result property="season"           column="season"            />
+        <result property="country"          column="country"           />
+        <result property="degree"           column="degree"            />
+        <result property="programId"        column="program_id"        />
+        <result property="schoolName"       column="school_name"       />
+        <result property="programName"      column="program_name"      />
+        <result property="result"           column="result"            />
+        <result property="scholarship"      column="scholarship"       />
+        <result property="undergradTier"    column="undergrad_tier"    />
+        <result property="majorDirection"   column="major_direction"   />
+        <result property="gpa"              column="gpa"               />
+        <result property="ielts"            column="ielts"             />
+        <result property="testScores"       column="test_scores"       />
+        <result property="experience"       column="experience"        />
+        <result property="verifyLevel"      column="verify_level"      />
+        <result property="source"           column="source"            />
+        <result property="algoConsent"      column="algo_consent"      />
+        <result property="publicityConsent" column="publicity_consent" />
+        <result property="consentTime"      column="consent_time"      />
+        <result property="revokeTime"       column="revoke_time"       />
+        <result property="offerFile"        column="offer_file"        />
+        <result property="status"           column="status"            />
+        <result property="createBy"         column="create_by"         />
+        <result property="createTime"       column="create_time"       />
+        <result property="updateBy"         column="update_by"         />
+        <result property="updateTime"       column="update_time"       />
+        <result property="remark"           column="remark"            />
+    </resultMap>
+
+    <sql id="selectCaseVo">
+        select c.case_id, c.lead_id, l.display_name as lead_name, c.season, c.country, c.degree, c.program_id, c.school_name, c.program_name, c.result,
+               c.scholarship, c.undergrad_tier, c.major_direction, c.gpa, c.ielts, c.test_scores, c.experience, c.verify_level, c.source, c.algo_consent,
+               c.publicity_consent, c.consent_time, c.revoke_time, c.offer_file, c.status, c.create_by, c.create_time, c.update_by, c.update_time, c.remark
+        from abr_case c
+        left join abr_lead l on l.lead_id = c.lead_id
+    </sql>
+
+    <select id="selectCaseList" parameterType="AbrCase" resultMap="AbrCaseResult">
+        <include refid="selectCaseVo"/>
+        <where>
+            <if test="country != null and country != ''">and c.country = #{country}</if>
+            <if test="degree != null and degree != ''">and c.degree = #{degree}</if>
+            <if test="result != null and result != ''">and c.result = #{result}</if>
+            <if test="verifyLevel != null and verifyLevel != ''">and c.verify_level = #{verifyLevel}</if>
+            <if test="season != null and season != ''">and c.season = #{season}</if>
+            <if test="schoolName != null and schoolName != ''">and (c.school_name like concat('%', #{schoolName}, '%') or c.program_name like concat('%', #{schoolName}, '%'))</if>
+            <if test="leadId != null">and c.lead_id = #{leadId}</if>
+            <if test="params.consent == 'publicity'">and c.publicity_consent = 'Y'</if>
+        </where>
+        order by c.season desc, c.case_id desc
+    </select>
+
+    <select id="selectCaseById" parameterType="Long" resultMap="AbrCaseResult">
+        <include refid="selectCaseVo"/>
+        where c.case_id = #{caseId}
+    </select>
+
+    <select id="selectPublicOffers" resultMap="AbrCaseResult">
+        <include refid="selectCaseVo"/>
+        where c.result = 'admit' and c.verify_level in ('A', 'B') and c.publicity_consent = 'Y' and c.revoke_time is null and c.status = '0'
+        <if test="country != null and country != ''">and c.country = #{country}</if>
+        <if test="degree != null and degree != ''">and c.degree = #{degree}</if>
+        order by c.season desc, c.case_id desc
+    </select>
+
+    <select id="countDuplicate" resultType="int">
+        select count(*) from abr_case
+        where lead_id = #{leadId} and program_id = #{programId} and season = #{season}
+        <if test="caseId != null">and case_id &lt;&gt; #{caseId}</if>
+    </select>
+
+    <insert id="insertCase" parameterType="AbrCase" useGeneratedKeys="true" keyProperty="caseId" keyColumn="case_id">
+        insert into abr_case (lead_id, season, country, degree, program_id, school_name, program_name, result, scholarship, undergrad_tier, major_direction,
+                              gpa, ielts, test_scores, experience, verify_level, source, algo_consent, publicity_consent, consent_time, revoke_time, status,
+                              create_by, create_time, remark)
+        values (#{leadId}, #{season}, #{country}, #{degree}, #{programId}, #{schoolName}, #{programName}, #{result}, coalesce(#{scholarship}, ''),
+                coalesce(#{undergradTier}, ''), coalesce(#{majorDirection}, ''), #{gpa}, #{ielts}, coalesce(#{testScores}, ''), coalesce(#{experience}, ''),
+                #{verifyLevel}, #{source}, #{algoConsent}, #{publicityConsent}, #{consentTime}, #{revokeTime}, #{status}, #{createBy}, now(), #{remark})
+    </insert>
+
+    <update id="updateCase" parameterType="AbrCase">
+        update abr_case
+        set lead_id = #{leadId}, season = #{season}, country = #{country}, degree = #{degree}, program_id = #{programId}, school_name = #{schoolName},
+            program_name = #{programName}, result = #{result}, scholarship = coalesce(#{scholarship}, ''), undergrad_tier = coalesce(#{undergradTier}, ''),
+            major_direction = coalesce(#{majorDirection}, ''), gpa = #{gpa}, ielts = #{ielts}, test_scores = coalesce(#{testScores}, ''),
+            experience = coalesce(#{experience}, ''), verify_level = #{verifyLevel}, source = #{source}, algo_consent = #{algoConsent},
+            publicity_consent = #{publicityConsent}, consent_time = #{consentTime}, revoke_time = #{revokeTime}, status = #{status}, remark = #{remark},
+            update_by = #{updateBy}, update_time = now()
+        where case_id = #{caseId}
+    </update>
+
+    <update id="updateOfferFile">
+        update abr_case set offer_file = coalesce(#{offerFile}, ''), update_by = #{operator}, update_time = now() where case_id = #{caseId}
+    </update>
+
+    <delete id="deleteCaseByIds" parameterType="Long">
+        delete from abr_case where case_id in
+        <foreach collection="array" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </delete>
+</mapper>

@@ -130,6 +130,22 @@ class ComplianceCheckerTest
     }
 
     @Test
+    void caseScoresAllowStudentGrades()
+    {
+        String text = "伦敦大学学院计算机硕士录取：本科 985，均分 84–87，雅思 7.0。";
+        ComplianceFacts f = facts(ucl(false));
+        assertTrue(!ComplianceChecker.check(input(null, text), rules(), f).passed());
+        f.addCaseScore(new BigDecimal("84"));
+        f.addCaseScore(new BigDecimal("87"));
+        f.addCaseScore(new BigDecimal("7.0"));
+        ComplianceChecker.Result r = ComplianceChecker.check(input(null, text), rules(), f);
+        assertTrue(r.passed(), r.blocked().toString());
+        assertTrue(r.facts().stream().filter(x -> !"school".equals(x.get("kind"))).allMatch(x -> "与引用的案例中的学生成绩一致".equals(x.get("detail"))));
+        // 项目要求以外、案例中也没有的数值仍不一致
+        assertTrue(!ComplianceChecker.check(input(null, "伦敦大学学院 均分 90"), rules(), f).passed());
+    }
+
+    @Test
     void factsMismatchStaleAndUncited()
     {
         ComplianceChecker.Result r = ComplianceChecker.check(input(null, "伦敦大学学院 2027年1月20日截止，雅思 7，学费 3.5 万澳元，学制 18 个月"), rules(),

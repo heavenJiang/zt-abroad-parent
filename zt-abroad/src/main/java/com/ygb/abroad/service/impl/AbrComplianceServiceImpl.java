@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import com.ygb.abroad.domain.AbrCase;
 import com.ygb.abroad.domain.AbrComplianceRule;
 import com.ygb.abroad.domain.AbrContent;
 import com.ygb.abroad.domain.AbrProgram;
@@ -28,6 +29,7 @@ import com.ygb.abroad.mapper.AbrComplianceRuleMapper;
 import com.ygb.abroad.mapper.AbrProgramMapper;
 import com.ygb.abroad.mapper.AbrRequirementMapper;
 import com.ygb.abroad.mapper.AbrSchoolMapper;
+import com.ygb.abroad.service.IAbrCaseService;
 import com.ygb.abroad.service.IAbrComplianceService;
 import com.ygb.abroad.service.IAbrContentService;
 import com.ygb.common.exception.ServiceException;
@@ -57,6 +59,9 @@ public class AbrComplianceServiceImpl implements IAbrComplianceService
 
     /** 单条消息最多检查的字数 */
     private static final int MAX_MESSAGE_CHARS = 5000;
+
+    @Autowired
+    private IAbrCaseService caseService;
 
     @Autowired
     private AbrComplianceRuleMapper ruleMapper;
@@ -212,7 +217,7 @@ public class AbrComplianceServiceImpl implements IAbrComplianceService
     }
 
     /**
-     * 按引用依据读取院校库记录：项目（最新申请要求）、指定的申请要求、院校；记录不存在或已下线、案例与 offer（案例库未上线）记为引用问题
+     * 按引用依据读取院校库记录：项目（最新申请要求）、指定的申请要求、院校、案例与 offer（须可公开，带出其项目）；记录不存在、已下线或不可公开记为引用问题
      */
     private ComplianceFacts facts(String citationsJson, LocalDate today)
     {
@@ -262,7 +267,24 @@ public class AbrComplianceServiceImpl implements IAbrComplianceService
                     break;
                 case "case":
                 case "offer":
-                    facts.addCitationProblem("案例库尚未上线（M9-01），引用案例或 offer 的内容暂由员工审核");
+                    AbrCase pub = caseService.publicCase(id);
+                    if (pub == null)
+                    {
+                        facts.addCitationProblem("引用的案例 " + id + " 不存在、未取得宣传授权、已撤回或核验等级不足（须 A / B 且为录取）");
+                    }
+                    else
+                    {
+                        if (pub.getProgramId() != null)
+                        {
+                            programIds.add(pub.getProgramId());
+                        }
+                        // 案例内容可写学生的均分区间与雅思（对外只用区间端点）
+                        AbrCaseRules.gpaBounds(pub.getGpa()).forEach(facts::addCaseScore);
+                        if (pub.getIelts() != null)
+                        {
+                            facts.addCaseScore(pub.getIelts());
+                        }
+                    }
                     break;
                 default:
                     // field_source、policy、url：作为来源记录，不参与数字核对

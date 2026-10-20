@@ -22,7 +22,7 @@ import com.ygb.common.utils.StringUtils;
  * <ol>
  * <li>合规闸：词表与正则（广告违禁词、录取承诺、教育广告禁止情形、需核实的说法、平台导流、诱导分享、个人信息），按目标平台生效；</li>
  * <li>事实闸：正文中的截止日、雅思总分与小分、学费、学制、均分必须与引用的院校库记录一致，且该项目 90 天内核对过；
- * 提到的院校必须在引用依据中；引用的记录必须存在；案例库上线（M9-01）前，引用案例或 offer 的内容不能自动通过；</li>
+ * 提到的院校必须在引用依据中；引用的记录必须存在；引用的案例或 offer 须可公开（录取、核验 A / B、宣传授权未撤回）；</li>
  * <li>AI 生成标识：AI 生成的内容正文须带标识文字；需要在平台上声明的给出提示。</li>
  * </ol>
  * 任一项不合格即拦截；结果写明命中的文字、上下文与修改建议。
@@ -350,7 +350,8 @@ public final class ComplianceChecker
         while (m.find())
         {
             BigDecimal v = new BigDecimal(m.group(1));
-            out.add(compare(field, "ielts", m.group(), facts, p -> contains(p.ieltsOverall(), v), "雅思总分要求"));
+            out.add(contains(facts.caseScores(), v) ? caseScore(field, "ielts", m.group())
+                    : compare(field, "ielts", m.group(), facts, p -> contains(p.ieltsOverall(), v), "雅思总分要求"));
         }
         m = IELTS_SUB.matcher(clause);
         while (m.find())
@@ -404,7 +405,8 @@ public final class ComplianceChecker
             BigDecimal v = new BigDecimal(m.group(1));
             if (v.compareTo(new BigDecimal("60")) >= 0 && v.compareTo(new BigDecimal("100")) <= 0)
             {
-                out.add(compare(field, "gpa", m.group(), facts, p -> contains(p.gpa(), v), "均分要求"));
+                out.add(contains(facts.caseScores(), v) ? caseScore(field, "gpa", m.group())
+                        : compare(field, "gpa", m.group(), facts, p -> contains(p.gpa(), v), "均分要求"));
             }
         }
     }
@@ -412,6 +414,20 @@ public final class ComplianceChecker
     private static boolean contains(Set<BigDecimal> set, BigDecimal v)
     {
         return set.stream().anyMatch(x -> x.compareTo(v) == 0);
+    }
+
+    /**
+     * 与引用的案例中的学生成绩一致（案例内容写学生的均分区间、雅思，不是项目要求）
+     */
+    private static Map<String, Object> caseScore(String field, String kind, String text)
+    {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("kind", kind);
+        m.put("field", field);
+        m.put("text", text);
+        m.put("status", FACT_OK);
+        m.put("detail", "与引用的案例中的学生成绩一致");
+        return m;
     }
 
     /**
