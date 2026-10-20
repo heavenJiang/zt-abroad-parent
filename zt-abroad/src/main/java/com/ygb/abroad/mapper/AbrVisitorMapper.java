@@ -104,6 +104,13 @@ public interface AbrVisitorMapper
 
     public int deletePlanItems(@Param("fromId") Long fromId);
 
+    /**
+     * 选校单打开记录并入主访客（同一天合并：次数相加、项目数取大）
+     */
+    public int movePlanActive(@Param("fromId") Long fromId, @Param("toId") Long toId);
+
+    public int deletePlanActive(@Param("fromId") Long fromId);
+
     public int mergeMaterialDone(@Param("fromId") Long fromId, @Param("toId") Long toId, @Param("appUserId") Long appUserId);
 
     public int moveMaterials(@Param("fromId") Long fromId, @Param("toId") Long toId, @Param("appUserId") Long appUserId);

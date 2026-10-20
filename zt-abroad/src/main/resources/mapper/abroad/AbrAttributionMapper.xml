@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrAttributionMapper">
+
+    <resultMap type="com.ygb.abroad.domain.vo.AbrAttributionRow" id="AbrAttributionRowResult">
+        <result property="groupKey"      column="group_key"      />
+        <result property="groupLabel"    column="group_label"    />
+        <result property="visitors"      column="visitors"       />
+        <result property="toolUsers"     column="tool_users"     />
+        <result property="planUsers"     column="plan_users"     />
+        <result property="loginUsers"    column="login_users"    />
+        <result property="momentUsers"   column="moment_users"   />
+        <result property="bookedUsers"   column="booked_users"   />
+        <result property="signedUsers"   column="signed_users"   />
+        <result property="published"     column="published"      />
+        <result property="views"         column="views"          />
+        <result property="interactions"  column="interactions"   />
+        <result property="dms"           column="dms"            />
+        <result property="follows"       column="follows"        />
+    </resultMap>
+
+    <insert id="upsertPlanActive">
+        insert into abr_plan_active (visitor_id, active_date, item_count, open_count, first_time, last_time)
+        values (#{visitorId}, cast(#{activeDate} as date),
+                (select count(*) from abr_plan_item p where p.visitor_id = #{visitorId}), 1, now(), now())
+        on conflict (visitor_id, active_date) do update
+        set item_count = excluded.item_count, open_count = abr_plan_active.open_count + 1, last_time = now()
+    </insert>
+
+    <!-- 分组键与名称：d 为访客 + 内容 + 账号 + 剧本 -->
+    <sql id="groupKey">
+        <choose>
+            <when test="groupBy == 'account'">coalesce(cast(d.account_id as varchar), '')</when>
+            <when test="groupBy == 'content'">coalesce(d.content_code_hit, '')</when>
+            <when test="groupBy == 'playbook'">coalesce(d.playbook_code, '')</when>
+            <otherwise>coalesce(nullif(d.channel_code, ''), 'direct')</otherwise>
+        </choose>
+    </sql>
+
+    <sql id="groupLabel">
+        <choose>
+            <when test="groupBy == 'content'">d.title</when>
+            <when test="groupBy == 'playbook'">d.playbook_name</when>
+            <otherwise>d.account_name</otherwise>
+        </choose>
+    </sql>
+
+    <select id="selectFunnel" resultMap="AbrAttributionRowResult">
+        with d as (
+            select v.visitor_id, v.app_user_id, v.channel_code, c.content_code as content_code_hit, c.title,
+                   c.playbook_code, pb.playbook_name, coalesce(c.account_id, a.account_id) as account_id,
+                   coalesce(ca.account_name, a.account_name) as account_name
+            from abr_visitor v
+            left join abr_content c on c.content_code = v.content_code and v.content_code &lt;&gt; ''
+            left join abr_channel_account ca on ca.account_id = c.account_id
+            left join abr_channel_account a on a.account_code = v.channel_code
+            left join abr_playbook pb on pb.playbook_code = c.playbook_code
+            where v.merged_into is null and v.del_flag = '0'
+              and v.create_time &gt;= cast(#{beginDate} as date)
+              and v.create_time &lt; cast(#{endDate} as date) + interval '1 day'
+        ),
+        f as (
+            select d.*,
+                   (exists (select 1 from abr_tool_run t where t.visitor_id = d.visitor_id)
+                    or exists (select 1 from abr_assessment s where s.visitor_id = d.visitor_id and s.submitted_time is not null)) as tool_used,
+                   (exists (select 1 from abr_event e where e.visitor_id = d.visitor_id and e.event_type = 'plan_item_added')
+                    or exists (select 1 from abr_plan_item p where p.visitor_id = d.visitor_id)) as plan_added,
+                   exists (select 1 from abr_event e where e.visitor_id = d.visitor_id and e.event_type = 'plan_moment') as moment,
+                   exists (select 1 from abr_booking b
+                           where b.status &lt;&gt; 'cancelled'
+                             and (b.visitor_id = d.visitor_id
+                                  or (d.app_user_id is not null and b.app_user_id = d.app_user_id)
+                                  or b.lead_id in (select coalesce(l.merged_into, l.lead_id) from abr_lead l
+                                                   where l.visitor_id = d.visitor_id or (d.app_user_id is not null and l.app_user_id = d.app_user_id)))) as booked,
+                   exists (select 1 from abr_lead l join abr_lead k on k.lead_id = coalesce(l.merged_into, l.lead_id)
+                           where (l.visitor_id = d.visitor_id or (d.app_user_id is not null and l.app_user_id = d.app_user_id))
+                             and k.stage = 'won' and k.del_flag = '0') as signed
+            from d
+        )
+        select <include refid="groupKey"/> as group_key, max(<include refid="groupLabel"/>) as group_label,
+               count(*) as visitors,
+               count(*) filter (where d.tool_used) as tool_users,
+               count(*) filter (where d.plan_added) as plan_users,
+               count(*) filter (where d.app_user_id is not null) as login_users,
+               count(*) filter (where d.moment) as moment_users,
+               count(*) filter (where d.booked) as booked_users,
+               count(*) filter (where d.signed) as signed_users
+        from f d
+        group by 1
+        order by visitors desc, group_key
+    </select>
+
+    <select id="selectContentMetrics" resultMap="AbrAttributionRowResult">
+        with d as (
+            select r.record_id, r.metrics, c.content_id, a.account_code as channel_code, c.content_code as content_code_hit, c.title,
+                   c.playbook_code, pb.playbook_name, r.account_id, a.account_name
+            from abr_publish_record r
+            join abr_content c on c.content_id = r.content_id
+            join abr_channel_account a on a.account_id = r.account_id
+            left join abr_playbook pb on pb.playbook_code = c.playbook_code
+            where r.status = 'published'
+              and coalesce(r.published_time, r.planned_time) &gt;= cast(#{beginDate} as date)
+              and coalesce(r.published_time, r.planned_time) &lt; cast(#{endDate} as date) + interval '1 day'
+        )
+        select <include refid="groupKey"/> as group_key, max(<include refid="groupLabel"/>) as group_label,
+               count(distinct d.content_id) as published,
+               coalesce(sum(cast(d.metrics ->> 'views' as bigint)), 0) as views,
+               coalesce(sum(coalesce(cast(d.metrics ->> 'likes' as bigint), 0) + coalesce(cast(d.metrics ->> 'favorites' as bigint), 0)
+                          + coalesce(cast(d.metrics ->> 'comments' as bigint), 0) + coalesce(cast(d.metrics ->> 'shares' as bigint), 0)), 0) as interactions,
+               coalesce(sum(cast(d.metrics ->> 'dms' as bigint)), 0) as dms,
+               coalesce(sum(cast(d.metrics ->> 'follows' as bigint)), 0) as follows
+        from d
+        group by 1
+    </select>
+
+    <select id="selectActiveDays" resultType="java.util.HashMap">
+        select visitor_id, to_char(first_date, 'YYYY-MM-DD') as first_date, to_char(active_date, 'YYYY-MM-DD') as active_date
+        from (
+            select visitor_id, active_date, min(active_date) over (partition by visitor_id) as first_date
+            from abr_plan_active
+            where item_count &gt; 0
+        ) t
+        where first_date &gt;= cast(#{since} as date)
+        order by visitor_id, active_date
+    </select>
+
+    <select id="selectWeeklyActive" resultType="java.util.HashMap">
+        select to_char(date_trunc('week', active_date), 'YYYY-MM-DD') as week,
+               count(distinct visitor_id) filter (where item_count &gt; 0) as active,
+               count(distinct visitor_id) as opened
+        from abr_plan_active
+        where active_date &gt;= cast(#{since} as date)
+        group by 1
+        order by 1
+    </select>
+
+    <select id="countNaturalVisitors" resultType="java.util.HashMap">
+        select count(*) as total,
+               count(*) filter (where v.channel_code in
+               <foreach collection="channels" item="ch" open="(" separator="," close=")">#{ch}</foreach>) as natural_count
+        from abr_visitor v
+        where v.merged_into is null and v.del_flag = '0'
+          and v.create_time &gt;= cast(#{beginDate} as date)
+          and v.create_time &lt; cast(#{endDate} as date) + interval '1 day'
+    </select>
+
+    <select id="countSharers" resultType="java.util.HashMap">
+        select count(distinct a.visitor_id) as active,
+               count(distinct a.visitor_id) filter (where exists (
+                   select 1 from abr_event e
+                   where e.visitor_id = a.visitor_id and e.event_type = 'plan_share_created'
+                     and e.create_time &gt;= cast(#{beginDate} as date)
+                     and e.create_time &lt; cast(#{endDate} as date) + interval '1 day')) as sharers
+        from abr_plan_active a
+        where a.item_count &gt; 0
+          and a.active_date &gt;= cast(#{beginDate} as date) and a.active_date &lt;= cast(#{endDate} as date)
+    </select>
+
+</mapper>

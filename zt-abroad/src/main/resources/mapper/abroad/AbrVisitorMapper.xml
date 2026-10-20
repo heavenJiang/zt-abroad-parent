@@ -125,6 +125,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         delete from abr_plan_material where visitor_id = #{fromId}
     </delete>
 
+    <insert id="movePlanActive">
+        insert into abr_plan_active (visitor_id, active_date, item_count, open_count, first_time, last_time)
+        select #{toId}, f.active_date, f.item_count, f.open_count, f.first_time, f.last_time
+        from abr_plan_active f where f.visitor_id = #{fromId}
+        on conflict (visitor_id, active_date) do update
+        set item_count = greatest(abr_plan_active.item_count, excluded.item_count),
+            open_count = abr_plan_active.open_count + excluded.open_count,
+            first_time = least(abr_plan_active.first_time, excluded.first_time),
+            last_time = greatest(abr_plan_active.last_time, excluded.last_time)
+    </insert>
+
+    <delete id="deletePlanActive">
+        delete from abr_plan_active where visitor_id = #{fromId}
+    </delete>
+
     <update id="moveShares">
         update abr_share a set visitor_id = #{toId}, update_time = now()
         where a.visitor_id = #{fromId}

@@ -40,6 +40,7 @@ import com.ygb.abroad.engine.AnswerVisibility;
 import com.ygb.abroad.engine.BackgroundProfile;
 import com.ygb.abroad.engine.SelectionEngine;
 import com.ygb.abroad.mapper.AbrAssessmentMapper;
+import com.ygb.abroad.mapper.AbrAttributionMapper;
 import com.ygb.abroad.mapper.AbrEventMapper;
 import com.ygb.abroad.mapper.AbrMaterialTemplateMapper;
 import com.ygb.abroad.mapper.AbrPlanItemMapper;
@@ -123,6 +124,9 @@ public class AbrPlanServiceImpl implements IAbrPlanService
 
     @Autowired
     private AbrPlanItemMapper planItemMapper;
+
+    @Autowired
+    private AbrAttributionMapper attributionMapper;
 
     @Autowired
     private AbrProgramMapper programMapper;
@@ -234,6 +238,7 @@ public class AbrPlanServiceImpl implements IAbrPlanService
     @Override
     public AppPlanVo selectPlan(AbrVisitor visitor)
     {
+        markActive(visitor);
         AppPlanVo plan = plan(visitor);
         try
         {
@@ -245,6 +250,21 @@ public class AbrPlanServiceImpl implements IAbrPlanService
             log.warn("转化时刻判断失败 visitorId={}：{}", visitor.getVisitorId(), e.getMessage());
         }
         return plan.withRecommendation(eventService.takeRecommendation(visitor));
+    }
+
+    /**
+     * 记录今天打开过选校单（每周活跃选校单与留存，M9-03）；记录失败不影响选校单
+     */
+    private void markActive(AbrVisitor visitor)
+    {
+        try
+        {
+            attributionMapper.upsertPlanActive(visitor.getVisitorId(), LocalDate.now(AbrLookupTools.BEIJING).toString());
+        }
+        catch (RuntimeException e)
+        {
+            log.warn("选校单活跃记录失败 visitorId={}：{}", visitor.getVisitorId(), e.getMessage());
+        }
     }
 
     /**
@@ -364,6 +384,7 @@ public class AbrPlanServiceImpl implements IAbrPlanService
     @Override
     public AppCalendarVo selectCalendar(AbrVisitor visitor)
     {
+        markActive(visitor);
         return calendar(visitor.getVisitorId());
     }
 
@@ -396,6 +417,7 @@ public class AbrPlanServiceImpl implements IAbrPlanService
     @Override
     public AppMaterialsVo selectMaterials(AbrVisitor visitor)
     {
+        markActive(visitor);
         AppMaterialsVo vo = materials(visitor.getVisitorId());
         try
         {

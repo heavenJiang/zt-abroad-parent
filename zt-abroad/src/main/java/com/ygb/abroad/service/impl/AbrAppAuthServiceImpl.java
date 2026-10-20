@@ -258,6 +258,8 @@ public class AbrAppAuthServiceImpl implements IAbrAppAuthService
         visitorMapper.moveToolRuns(fromId, toId, uid);
         visitorMapper.movePlanItems(fromId, toId, uid);
         visitorMapper.deletePlanItems(fromId);
+        visitorMapper.movePlanActive(fromId, toId);
+        visitorMapper.deletePlanActive(fromId);
         visitorMapper.mergeMaterialDone(fromId, toId, uid);
         visitorMapper.moveMaterials(fromId, toId, uid);
         visitorMapper.deleteMaterials(fromId);
