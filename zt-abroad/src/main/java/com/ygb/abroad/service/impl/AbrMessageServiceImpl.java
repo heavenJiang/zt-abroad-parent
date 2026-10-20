@@ -130,7 +130,10 @@ public class AbrMessageServiceImpl implements IAbrMessageService
         }
         if (picked == null)
         {
-            return finish(rec, anyOff ? ChannelSendResult.OFF : STATUS_NO_CHANNEL, anyOff ? "可达的渠道尚未开通" : "学生没有可达的渠道（未关注服务号、未授权小程序、没有手机号）");
+            List<String> names = templates.stream().map(AbrMessageTemplate::getChannel).filter(AbrMessageRules.STUDENT_ORDER::contains).distinct()
+                    .map(AbrMessageRules::channelName).toList();
+            return finish(rec, anyOff ? ChannelSendResult.OFF : STATUS_NO_CHANNEL, anyOff ? "可达的渠道尚未开通"
+                    : names.isEmpty() ? "没有学生可用渠道的模板" : "学生在启用了模板的渠道（" + String.join("、", names) + "）上不可达");
         }
         rec.setChannel(picked.getChannel());
         rec.setCategory(picked.getCategory());

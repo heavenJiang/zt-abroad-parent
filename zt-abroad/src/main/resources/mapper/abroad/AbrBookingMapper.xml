@@ -70,7 +70,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <update id="reschedule" parameterType="AbrBooking">
         update abr_booking
         set slot_id = #{slotId}, consultant_id = #{consultantId}, start_time = #{startTime}, end_time = #{endTime}, mode = #{mode},
-            reschedule_count = reschedule_count + 1, update_by = #{updateBy}, update_time = now()
+            reschedule_count = reschedule_count + 1, reminded_time = null, update_by = #{updateBy}, update_time = now()
         where booking_id = #{bookingId} and status = 'booked'
     </update>
 
@@ -78,4 +78,38 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update abr_booking set status = #{status}, cancel_reason = coalesce(#{reason}, ''), update_by = #{operator}, update_time = now()
         where booking_id = #{bookingId} and status = 'booked'
     </update>
+
+    <select id="selectDueReminders" resultMap="AbrBookingResult">
+        <include refid="selectBookingVo"/>
+        where b.status = 'booked' and b.reminded_time is null
+          and b.start_time &gt; #{now} and b.start_time &lt;= #{until}
+          and b.create_time &lt;= b.start_time - make_interval(hours =&gt; #{hours})
+        order by b.start_time
+        limit 200
+    </select>
+
+    <update id="markReminded">
+        update abr_booking set reminded_time = now() where booking_id = #{bookingId} and reminded_time is null
+    </update>
+
+    <select id="selectInviteTarget" resultType="java.util.HashMap">
+        with recursive start as (
+            select lead_id from abr_lead
+            where del_flag = '0' and (lead_id = #{leadId}
+                <if test="appUserId != null">or app_user_id = #{appUserId}</if>
+                <if test="visitorId != null">or visitor_id = #{visitorId}</if>)
+        ),
+        chain(lead_id, merged_into, depth) as (
+            select l.lead_id, l.merged_into, 0 from abr_lead l join start s on s.lead_id = l.lead_id
+            union all
+            select l.lead_id, l.merged_into, c.depth + 1 from abr_lead l join chain c on l.lead_id = c.merged_into where c.depth &lt; 10
+        )
+        select l.lead_id as "leadId", l.stage as "stage", l.owner_user_id as "ownerUserId", l.minor as "minor", l.display_name as "displayName",
+               l.app_user_id as "appUserId",
+               (select count(*) from abr_booking b where b.lead_id = l.lead_id and b.status = 'booked' and b.start_time &gt; now()) as "activeBookings"
+        from chain c join abr_lead l on l.lead_id = c.lead_id
+        where c.merged_into is null and l.del_flag = '0'
+        order by l.lead_id
+        limit 1
+    </select>
 </mapper>

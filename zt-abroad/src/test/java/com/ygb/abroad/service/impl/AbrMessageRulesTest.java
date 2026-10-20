@@ -35,6 +35,17 @@ class AbrMessageRulesTest
     }
 
     @Test
+    void channelNames()
+    {
+        assertEquals("服务号：未关注", AbrMessageRules.channelName("service_account"));
+        assertEquals("短信：没有手机号", AbrMessageRules.channelName("sms"));
+        assertEquals("小程序：未授权", AbrMessageRules.channelName("mp_subscribe"));
+        assertEquals("企业微信", AbrMessageRules.channelName("wecom"));
+        assertEquals("x", AbrMessageRules.channelName("x"));
+        assertEquals("", AbrMessageRules.channelName(null));
+    }
+
+    @Test
     void variablesAndFieldMap()
     {
         assertEquals(Set.of("productName", "appUrl"), AbrMessageRules.variables("{productName} 见 {appUrl}"));

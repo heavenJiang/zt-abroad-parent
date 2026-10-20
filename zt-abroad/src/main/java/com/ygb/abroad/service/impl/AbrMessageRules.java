@@ -44,6 +44,24 @@ final class AbrMessageRules
     }
 
     /**
+     * 渠道名称
+     *
+     * @param channel 渠道编码
+     * @return 名称（未知时为编码）
+     */
+    static String channelName(String channel)
+    {
+        return switch (StringUtils.defaultString(channel))
+        {
+            case ChannelAdapter.SERVICE_ACCOUNT -> "服务号：未关注";
+            case ChannelAdapter.MP_SUBSCRIBE -> "小程序：未授权";
+            case ChannelAdapter.WECOM -> "企业微信";
+            case ChannelAdapter.SMS -> "短信：没有手机号";
+            default -> StringUtils.defaultString(channel);
+        };
+    }
+
+    /**
      * 渲染文字中的 {变量}
      *
      * @param text 文字
