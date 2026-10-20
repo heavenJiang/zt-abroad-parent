@@ -70,9 +70,10 @@ services:
       SPRING_DATA_REDIS_HOST: abr-redis
       SPRING_DATA_REDIS_PORT: "6379"
       ZT_PROFILE: /home/zt/uploadPath
-      # 本地开发：服务号登录与短信用 mock（生产不设置）
+      # 本地开发：服务号登录、短信验证码、消息渠道（服务号 / 小程序 / 企业微信 / 短信）用 mock（生产不设置）
       ABR_WECHAT_OA_MOCK: "true"
       ABR_SMS_MOCK: "true"
+      ABR_CHANNEL_MOCK: "true"
       TZ: Asia/Shanghai
     ports:
       - "8090:8090"

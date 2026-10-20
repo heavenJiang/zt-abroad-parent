@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrMessageMapper">
+
+    <resultMap type="AbrMessageTemplate" id="AbrMessageTemplateResult">
+        <result property="templateId"         column="template_id"          />
+        <result property="templateCode"       column="template_code"        />
+        <result property="channel"            column="channel"              />
+        <result property="templateName"       column="template_name"        />
+        <result property="category"           column="category"             />
+        <result property="platformTemplateId" column="platform_template_id" />
+        <result property="fieldMap"           column="field_map"            />
+        <result property="content"            column="content"              />
+        <result property="link"               column="link"                 />
+        <result property="status"             column="status"               />
+        <result property="createBy"           column="create_by"            />
+        <result property="createTime"         column="create_time"          />
+        <result property="updateBy"           column="update_by"            />
+        <result property="updateTime"         column="update_time"          />
+        <result property="remark"             column="remark"               />
+    </resultMap>
+
+    <resultMap type="AbrMessageSend" id="AbrMessageSendResult">
+        <result property="sendId"        column="send_id"         />
+        <result property="templateCode"  column="template_code"   />
+        <result property="channel"       column="channel"         />
+        <result property="category"      column="category"        />
+        <result property="targetType"    column="target_type"     />
+        <result property="targetId"      column="target_id"       />
+        <result property="recipient"     column="recipient"       />
+        <result property="agentCode"     column="agent_code"      />
+        <result property="taskId"        column="task_id"         />
+        <result property="status"        column="status"          />
+        <result property="reason"        column="reason"          />
+        <result property="platformMsgId" column="platform_msg_id" />
+        <result property="rendered"      column="rendered"        />
+        <result property="createBy"      column="create_by"       />
+        <result property="createTime"    column="create_time"     />
+    </resultMap>
+
+    <sql id="selectTemplateVo">
+        select template_id, template_code, channel, template_name, category, platform_template_id, cast(field_map as text) as field_map, content, link,
+               status, create_by, create_time, update_by, update_time, remark
+        from abr_message_template
+    </sql>
+
+    <select id="selectTemplateList" parameterType="AbrMessageTemplate" resultMap="AbrMessageTemplateResult">
+        <include refid="selectTemplateVo"/>
+        <where>
+            <if test="templateCode != null and templateCode != ''">and template_code like concat('%', #{templateCode}, '%')</if>
+            <if test="channel != null and channel != ''">and channel = #{channel}</if>
+            <if test="category != null and category != ''">and category = #{category}</if>
+            <if test="status != null and status != ''">and status = #{status}</if>
+        </where>
+        order by template_code, channel
+    </select>
+
+    <select id="selectTemplateById" parameterType="Long" resultMap="AbrMessageTemplateResult">
+        <include refid="selectTemplateVo"/>
+        where template_id = #{templateId}
+    </select>
+
+    <select id="selectEnabledByCode" parameterType="String" resultMap="AbrMessageTemplateResult">
+        <include refid="selectTemplateVo"/>
+        where template_code = #{templateCode} and status = '0'
+    </select>
+
+    <select id="countTemplate" resultType="int">
+        select count(*) from abr_message_template
+        where template_code = #{templateCode} and channel = #{channel}
+        <if test="templateId != null">and template_id &lt;&gt; #{templateId}</if>
+    </select>
+
+    <insert id="insertTemplate" parameterType="AbrMessageTemplate" useGeneratedKeys="true" keyProperty="templateId" keyColumn="template_id">
+        insert into abr_message_template (template_code, channel, template_name, category, platform_template_id, field_map, content, link, status,
+                                          create_by, create_time, remark)
+        values (#{templateCode}, #{channel}, #{templateName}, #{category}, coalesce(#{platformTemplateId}, ''), cast(#{fieldMap} as jsonb),
+                coalesce(#{content}, ''), coalesce(#{link}, ''), #{status}, #{createBy}, now(), #{remark})
+    </insert>
+
+    <update id="updateTemplate" parameterType="AbrMessageTemplate">
+        update abr_message_template
+        set template_code = #{templateCode}, channel = #{channel}, template_name = #{templateName}, category = #{category},
+            platform_template_id = coalesce(#{platformTemplateId}, ''), field_map = cast(#{fieldMap} as jsonb), content = coalesce(#{content}, ''),
+            link = coalesce(#{link}, ''), status = #{status}, remark = #{remark}, update_by = #{updateBy}, update_time = now()
+        where template_id = #{templateId}
+    </update>
+
+    <delete id="deleteTemplateByIds" parameterType="Long">
+        delete from abr_message_template where template_id in
+        <foreach collection="array" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </delete>
+
+    <insert id="insertSend" parameterType="AbrMessageSend" useGeneratedKeys="true" keyProperty="sendId" keyColumn="send_id">
+        insert into abr_message_send (template_code, channel, category, target_type, target_id, recipient, agent_code, task_id, status, reason,
+                                      platform_msg_id, rendered, create_by, create_time)
+        values (#{templateCode}, coalesce(#{channel}, ''), coalesce(#{category}, ''), #{targetType}, #{targetId}, coalesce(#{recipient}, ''),
+                coalesce(#{agentCode}, ''), #{taskId}, #{status}, coalesce(#{reason}, ''), coalesce(#{platformMsgId}, ''), coalesce(#{rendered}, ''),
+                coalesce(#{createBy}, 'system'), now())
+    </insert>
+
+    <select id="selectSendList" parameterType="AbrMessageSend" resultMap="AbrMessageSendResult">
+        select send_id, template_code, channel, category, target_type, target_id, recipient, agent_code, task_id, status, reason, platform_msg_id,
+               rendered, create_by, create_time
+        from abr_message_send
+        <where>
+            <if test="templateCode != null and templateCode != ''">and template_code = #{templateCode}</if>
+            <if test="channel != null and channel != ''">and channel = #{channel}</if>
+            <if test="status != null and status != ''">and status = #{status}</if>
+            <if test="targetType != null and targetType != ''">and target_type = #{targetType}</if>
+            <if test="targetId != null">and target_id = #{targetId}</if>
+            <if test="params.beginTime != null and params.beginTime != ''">and create_time &gt;= cast(#{params.beginTime} as date)</if>
+            <if test="params.endTime != null and params.endTime != ''">and create_time &lt; cast(#{params.endTime} as date) + interval '1 day'</if>
+        </where>
+        order by send_id desc
+    </select>
+
+    <select id="selectAppUserAddress" parameterType="Long" resultType="java.util.HashMap">
+        select oa_openid as "oaOpenid", mini_openid as "miniOpenid", phone as "phone", status as "status"
+        from abr_app_user where app_user_id = #{appUserId} and del_flag = '0'
+    </select>
+
+    <select id="selectLeadAddress" parameterType="Long" resultType="java.util.HashMap">
+        with recursive chain(lead_id, merged_into, depth) as (
+            select lead_id, merged_into, 0 from abr_lead where lead_id = #{leadId}
+            union all
+            select l.lead_id, l.merged_into, c.depth + 1 from abr_lead l join chain c on l.lead_id = c.merged_into where c.depth &lt; 10
+        )
+        select l.app_user_id as "appUserId", l.phone as "phone"
+        from chain c join abr_lead l on l.lead_id = c.lead_id
+        where c.merged_into is null and l.del_flag = '0'
+        limit 1
+    </select>
+
+    <select id="selectVisitorAppUser" parameterType="Long" resultType="Long">
+        select app_user_id from abr_visitor where visitor_id = #{visitorId}
+    </select>
+
+    <select id="selectStaffWecomAccount" parameterType="Long" resultType="String">
+        select user_name from sys_user where user_id = #{userId} and status = '0' and del_flag = '0'
+    </select>
+
+    <select id="selectUsersWithPerm" parameterType="String" resultType="Long">
+        select u.user_id from sys_user u
+        where u.status = '0' and u.del_flag = '0'
+          and (u.user_id = 1 or exists (
+                select 1 from sys_user_role ur
+                join sys_role r on r.role_id = ur.role_id and r.status = '0' and r.del_flag = '0'
+                join sys_role_menu rm on rm.role_id = r.role_id
+                join sys_menu m on m.menu_id = rm.menu_id and m.status = '0'
+                where ur.user_id = u.user_id and m.perms = #{perms}))
+        order by u.user_id
+    </select>
+</mapper>

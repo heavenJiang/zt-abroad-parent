@@ -49,6 +49,8 @@ cp .env.example .env && vi .env     # 填域名、数据库 / Redis 密码、TOK
 | --- | --- |
 | `WECHAT_OA_APP_ID` | 服务号 AppID（公众平台 → 设置与开发 → 基本配置） |
 | `WECHAT_OA_APP_SECRET` | 服务号 AppSecret（只放 `.env`，不要提交到仓库） |
+| `WECHAT_MINI_APP_ID` / `WECHAT_MINI_APP_SECRET` | 小程序 AppID / AppSecret（订阅消息用；未填时小程序订阅消息渠道为“未开通”） |
+| `WECOM_CORP_ID` / `WECOM_AGENT_ID` / `WECOM_SECRET` | 企业微信企业 ID、自建应用 AgentId 与 Secret（员工提醒、熔断通知用；员工的企业微信账号须与后台登录名一致） |
 
 另需在公众平台「网页授权域名」中填写 `APP_DOMAIN`。绑定手机号的短信服务随 M0-01 开通后接入（`AbrSmsClient`），之前绑定手机号会提示“短信服务尚未开通”。
 

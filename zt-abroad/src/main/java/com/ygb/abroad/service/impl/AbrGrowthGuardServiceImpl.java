@@ -13,6 +13,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import com.ygb.abroad.ai.AiCallGuard;
 import com.ygb.abroad.domain.AbrBreakerRule;
@@ -24,6 +25,7 @@ import com.ygb.abroad.domain.AbrGrowthSetting;
 import com.ygb.abroad.domain.AbrGrowthSignal;
 import com.ygb.abroad.domain.AbrGrowthTask;
 import com.ygb.abroad.domain.AbrTouchLog;
+import com.ygb.abroad.growth.BreakerTripped;
 import com.ygb.abroad.growth.MarketingCalendar;
 import com.ygb.abroad.growth.OutboundDecision;
 import com.ygb.abroad.growth.TouchDecision;
@@ -89,6 +91,9 @@ public class AbrGrowthGuardServiceImpl implements IAbrGrowthGuardService, AiCall
 
     @Autowired
     private IAbrEventService eventService;
+
+    @Autowired
+    private ApplicationEventPublisher publisher;
 
     @Override
     public String blockReason(String agentCode)
@@ -424,6 +429,11 @@ public class AbrGrowthGuardServiceImpl implements IAbrGrowthGuardService, AiCall
         return resumeTime != null && resumeTime.after(start) ? resumeTime : start;
     }
 
+    private static String plain(BigDecimal v)
+    {
+        return v == null ? "" : v.stripTrailingZeros().toPlainString();
+    }
+
     private void trip(AbrBreakerRule rule, String agentCode, String accountCode, BigDecimal value, long sample, Date since, String action)
     {
         AbrBreakerTrip t = new AbrBreakerTrip();
@@ -450,6 +460,9 @@ public class AbrGrowthGuardServiceImpl implements IAbrGrowthGuardService, AiCall
         payload.put("threshold", rule.getThreshold());
         payload.put("action", action);
         eventService.recordSystemEvent(AbrEvent.TYPE_CIRCUIT_BREAKER_TRIPPED, "trip:" + t.getTripId(), payload);
+        publisher.publishEvent(new BreakerTripped(t.getTripId(), false, "熔断：" + StringUtils.defaultString(rule.getRuleName(), rule.getRuleCode()),
+                "指标 " + rule.getMetric() + " = " + plain(value) + "（阈值 " + plain(rule.getThreshold()) + "）" + (agentCode == null ? "" : "，Agent " + agentCode)
+                        + (accountCode == null ? "" : "，账号 " + accountCode) + "；" + action + "。恢复须在管理后台操作"));
         log.warn("熔断触发：规则 {}，{}，指标 {} = {}（阈值 {}）", rule.getRuleCode(), action, rule.getMetric(), value, rule.getThreshold());
     }
 
@@ -528,6 +541,8 @@ public class AbrGrowthGuardServiceImpl implements IAbrGrowthGuardService, AiCall
             payload.put("value", t.getMetricValue());
             payload.put("budget", t.getThreshold());
             eventService.recordSystemEvent(AbrEvent.TYPE_BUDGET_EXCEEDED, t.getDedupKey(), payload);
+            publisher.publishEvent(new BreakerTripped(t.getTripId(), true, "AI 预算已用完：" + (agentCode == null ? "全部获客 Agent" : agentCode),
+                    "今天用量 " + plain(t.getMetricValue()) + "，上限 " + plain(t.getThreshold()) + "；当天停止调用模型，次日自动恢复"));
             log.warn("预算闸：{} 今天的 AI 用量 {} 已达上限 {}", agentCode == null ? "全部获客 Agent" : agentCode, t.getMetricValue(), t.getThreshold());
         }
     }

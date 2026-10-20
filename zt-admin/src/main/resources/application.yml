@@ -195,6 +195,19 @@ abroad:
       app-secret: ${ABR_WECHAT_OA_APP_SECRET:}
       # mock 登录（mock_ 开头的 code 直接作为 openid），只能用于本地开发
       mock: ${ABR_WECHAT_OA_MOCK:false}
+    # 小程序（M6-05 订阅消息）：AppID / AppSecret 只从环境变量注入；state 为订阅消息跳转的小程序版本 formal / trial / developer
+    mini:
+      app-id: ${ABR_WECHAT_MINI_APP_ID:}
+      app-secret: ${ABR_WECHAT_MINI_APP_SECRET:}
+      state: ${ABR_WECHAT_MINI_STATE:formal}
+  # 企业微信自建应用（M6-05 员工提醒）：企业 ID、AgentId、Secret 只从环境变量注入；成员账号取员工登录名
+  wecom:
+    corp-id: ${ABR_WECOM_CORP_ID:}
+    agent-id: ${ABR_WECOM_AGENT_ID:}
+    secret: ${ABR_WECOM_SECRET:}
+  # 消息渠道（M6-05）：mock=true 时各渠道不访问平台，只写日志、发送结果记为 mock，只能用于本地开发
+  channel:
+    mock: ${ABR_CHANNEL_MOCK:false}
   sms:
     # 短信验证码（绑定手机号）：服务商随 M0-01 接入；mock 只把验证码写入日志，只能用于本地开发
     mock: ${ABR_SMS_MOCK:false}
