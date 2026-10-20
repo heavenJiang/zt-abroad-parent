@@ -229,6 +229,14 @@ abroad:
   attribution:
     # 归因看板（M9-03）：算作“自然推荐”的渠道码（分享、推荐码、offer 卡）
     natural-channels: share,ref,offer
+  growth-analyst:
+    # 增长分析（M9-04）：每周按近 mix-window-days 天各内容类型“每条内容带来的工具使用人数”微调剧本内容配比；
+    # 发布数达到 mix-min-contents 的类型才参与，比整体平均高 / 低 mix-threshold 以上的类型加 / 减 mix-step 个百分点，每类不超出 mix-bounds
+    mix-bounds: case:15-50,flash:15-50,longtail:10-40,invite:5-25
+    mix-step: 5
+    mix-window-days: 28
+    mix-min-contents: 3
+    mix-threshold: 0.2
   partner:
     # 合作方分成（M9-05）：合作方没单独设置时的分成比例（%，0 表示须在合作方上设置才分成）与归因有效天数（进入后多少天内收款的订单分成）
     default-rate: 0

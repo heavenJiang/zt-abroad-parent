@@ -37,6 +37,7 @@ import com.ygb.abroad.service.IAbrComplianceService;
 import com.ygb.abroad.service.IAbrContentService;
 import com.ygb.abroad.service.IAbrContentWriterService;
 import com.ygb.abroad.service.IAbrExceptionService;
+import com.ygb.abroad.service.IAbrExperimentService;
 import com.ygb.abroad.service.IAbrGrowthGuardService;
 import com.ygb.common.exception.ServiceException;
 import com.ygb.common.utils.DictUtils;
@@ -72,6 +73,9 @@ public class AbrContentWriterServiceImpl implements IAbrContentWriterService
     static final int MAX_ATTEMPTS = 2;
 
     private final ReentrantLock lock = new ReentrantLock();
+
+    @Autowired
+    private IAbrExperimentService experimentService;
 
     @Autowired
     private AbrTopicMapper topicMapper;
@@ -234,7 +238,9 @@ public class AbrContentWriterServiceImpl implements IAbrContentWriterService
         String firstInput = MAPPER.writeValueAsString(input);
         String hook = label("abr_hook_tool", topic.getHookTool());
         String codeword = unusedCodeword();
-        String closing = AbrContentWriterRules.closing(closingTemplate(account.getPlatform()), codeword, hook);
+        // 钩子文案 A/B 实验（M9-04）：运行中的实验按选题分组，已结束的用胜出文案，没有实验用配置
+        IAbrExperimentService.HookCopy copy = experimentService.hookCopy(account.getPlatform(), topic.getTopicId());
+        String closing = AbrContentWriterRules.closing(copy != null ? copy.template() : closingTemplate(account.getPlatform()), codeword, hook);
         AbrContent draft = null;
         Long callId = null;
         ComplianceChecker.Result check = null;
@@ -276,6 +282,10 @@ public class AbrContentWriterServiceImpl implements IAbrContentWriterService
         draft.setAiInput(firstInput);
         draft.setRemark(check != null && !check.passed() ? "重写后仍未通过合规检查，待闸门处理" : null);
         AbrContent saved = contentService.insertAgentContent(draft, AGENT, callId);
+        if (copy != null)
+        {
+            experimentService.recordUnit(copy.experimentId(), saved.getContentId(), copy.variant());
+        }
         if (topicMapper.markDrafted(topic.getTopicId(), saved.getContentId(), operator) == 0)
         {
             log.warn("选题 {} 已被其他写稿记为已写稿，本次内容 {} 保留为草稿", topic.getTopicId(), saved.getContentId());

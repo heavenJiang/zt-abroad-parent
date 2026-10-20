@@ -1,0 +1,30 @@
+{
+  "name": "基本周报：数字取自数据，不自行计算百分比",
+  "input": {
+    "data": {
+      "week": { "begin": "2026-10-12", "end": "2026-10-18" },
+      "funnel": {
+        "thisWeek": { "visitors": 120, "toolUsers": 64, "planUsers": 30, "loginUsers": 12, "momentUsers": 9, "bookedUsers": 3, "signedUsers": 1, "published": 7, "views": 5400 },
+        "lastWeek": { "visitors": 95, "toolUsers": 50, "planUsers": 22, "loginUsers": 10, "momentUsers": 6, "bookedUsers": 2, "signedUsers": 0, "published": 6, "views": 4100 }
+      },
+      "weeklyActive": { "thisWeek": 41, "lastWeek": 33 },
+      "topContents": [ { "contentCode": "c100000001", "title": "英国硕士第二轮截止前要准备什么", "visitors": 38, "toolUsers": 25, "views": 2100 } ],
+      "bottomContents": [ { "contentCode": "c100000007", "title": "讲座邀约：申请季答疑", "visitors": 0, "toolUsers": 0, "views": 300 } ],
+      "kinds": [ { "kind": "flash", "contents": 6, "toolUsers": 40, "perContent": 6.67 }, { "kind": "invite", "contents": 4, "toolUsers": 2, "perContent": 0.5 } ],
+      "breakers": [],
+      "experiments": [ { "name": "小红书文末引导：提问式", "platform": "xiaohongshu", "status": "running", "winner": null, "reason": "样本不足（每组至少 1000），继续运行" } ],
+      "params": []
+    },
+    "_mockOutput": {
+      "summary": "本周新访客 120，比上周的 95 多，用过工具 64、加入选校单 30、预约 3、签约 1。每周活跃选校单 41（上周 33）。截止类快讯带来的工具使用最多。",
+      "highlights": ["「英国硕士第二轮截止前要准备什么」带来 25 位用过工具的访客，值得复用写法", "讲座邀约本周没有带来访客"],
+      "suggestions": ["下周多排截止相关的快讯选题"]
+    }
+  },
+  "knownNames": [],
+  "expectStatus": "success",
+  "expect": [
+    { "path": "/summary", "contains": "120" },
+    { "path": "/summary", "notContains": "%" }
+  ]
+}

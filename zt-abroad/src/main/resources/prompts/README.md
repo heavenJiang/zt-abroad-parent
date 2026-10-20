@@ -34,3 +34,6 @@ prompts/
   输出 `school{name, overseas}`、`major`、`gpa{type, total, max}`、`english{type, total, min_sub}`、`research{count, level}`、`work{count, total_months, fulltime_months}`、`awards{count, level}`，没有的填 null。
   调用方 `AbrResumeServiceImpl` 逐项校验（校名、专业须在原文中逐字出现；分数须在原文中出现且符合问卷分制范围与步长；级别须是问卷选项），不合格的字段丢弃，结果只作建议值由学生确认。
   mock.json 返回一份固定样例，校验会丢掉原文中没有的项。eval/：中文简历、成绩单只有 4 分制绩点、没有可填内容。
+- `growth_analyst/v1`（M9-04 增长周报）：输入 `data`（系统算好的周数据：本周与上周漏斗、每周活跃选校单、最好 / 最差的内容、近 28 天各内容类型表现、熔断、A/B 实验、内容配比调整）；
+  输出 `summary`、`highlights[]`、`suggestions[]`。调用方 `AbrGrowthAnalystServiceImpl` 校验输出中的每个数字都在数据中原样出现（不允许模型自己算比率），不合格整份改用模板文字；
+  审核策略内部可见。mock.json 用输入渲染一段固定摘要。eval/：基本周报。

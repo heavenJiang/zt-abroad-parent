@@ -1,0 +1,5 @@
+{
+  "summary": "本周新访客 {{data.funnel.thisWeek.visitors}}（上周 {{data.funnel.lastWeek.visitors}}），用过工具 {{data.funnel.thisWeek.toolUsers}}，加入选校单 {{data.funnel.thisWeek.planUsers}}，预约 {{data.funnel.thisWeek.bookedUsers}}。每周活跃选校单 {{data.weeklyActive.thisWeek}}（上周 {{data.weeklyActive.lastWeek}}）。",
+  "highlights": ["本周数据由 mock 模型整理，仅用于本地开发"],
+  "suggestions": ["继续按剧本排期，下周关注工具使用的变化"]
+}

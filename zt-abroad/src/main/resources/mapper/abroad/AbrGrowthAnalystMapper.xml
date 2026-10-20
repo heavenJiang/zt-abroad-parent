@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrGrowthAnalystMapper">
+
+    <resultMap type="AbrExperiment" id="AbrExperimentResult">
+        <result property="experimentId"     column="experiment_id"    />
+        <result property="experimentName"   column="experiment_name"  />
+        <result property="experimentType"   column="experiment_type"  />
+        <result property="platform"         column="platform"         />
+        <result property="metric"           column="metric"           />
+        <result property="variants"         column="variants"         />
+        <result property="minSample"        column="min_sample"       />
+        <result property="maxDays"          column="max_days"         />
+        <result property="alpha"            column="alpha"            />
+        <result property="status"           column="status"           />
+        <result property="winnerCode"       column="winner_code"      />
+        <result property="result"           column="result"           />
+        <result property="startTime"        column="start_time"       />
+        <result property="endTime"          column="end_time"         />
+        <result property="evaluatedTime"    column="evaluated_time"   />
+        <result property="conclusionReason" column="conclude_reason"  />
+        <result property="unitCount"        column="unit_count"       />
+        <result property="createBy"         column="create_by"        />
+        <result property="createTime"       column="create_time"      />
+        <result property="updateBy"         column="update_by"        />
+        <result property="updateTime"       column="update_time"      />
+        <result property="remark"           column="remark"           />
+    </resultMap>
+
+    <resultMap type="AbrGrowthReport" id="AbrGrowthReportResult">
+        <result property="reportId"    column="report_id"    />
+        <result property="weekStart"   column="week_start"   />
+        <result property="data"        column="data"         />
+        <result property="narrative"   column="narrative"    />
+        <result property="aiStatus"    column="ai_status"    />
+        <result property="aiCallId"    column="ai_call_id"   />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"  column="create_time"  />
+        <result property="updateTime"  column="update_time"  />
+    </resultMap>
+
+    <resultMap type="AbrGrowthParamLog" id="AbrGrowthParamLogResult">
+        <result property="logId"      column="log_id"      />
+        <result property="paramKey"   column="param_key"   />
+        <result property="scope"      column="scope"       />
+        <result property="scopeName"  column="scope_name"  />
+        <result property="oldValue"   column="old_value"   />
+        <result property="newValue"   column="new_value"   />
+        <result property="reason"     column="reason"      />
+        <result property="status"     column="status"      />
+        <result property="reportId"   column="report_id"   />
+        <result property="createBy"   column="create_by"   />
+        <result property="createTime" column="create_time" />
+        <result property="updateBy"   column="update_by"   />
+        <result property="updateTime" column="update_time" />
+    </resultMap>
+
+    <sql id="selectExperimentVo">
+        select e.experiment_id, e.experiment_name, e.experiment_type, e.platform, e.metric, e.variants, e.min_sample, e.max_days, e.alpha, e.status,
+               e.winner_code, e.result, e.start_time, e.end_time, e.evaluated_time, e.conclude_reason, e.create_by, e.create_time, e.update_by,
+               e.update_time, e.remark,
+               (select count(*) from abr_experiment_unit u where u.experiment_id = e.experiment_id) as unit_count
+        from abr_experiment e
+    </sql>
+
+    <select id="selectExperimentList" parameterType="AbrExperiment" resultMap="AbrExperimentResult">
+        <include refid="selectExperimentVo"/>
+        <where>
+            <if test="platform != null and platform != ''">and e.platform = #{platform}</if>
+            <if test="status != null and status != ''">and e.status = #{status}</if>
+            <if test="experimentName != null and experimentName != ''">and e.experiment_name like concat('%', #{experimentName}, '%')</if>
+        </where>
+        order by e.experiment_id desc
+    </select>
+
+    <select id="selectExperimentById" parameterType="Long" resultMap="AbrExperimentResult">
+        <include refid="selectExperimentVo"/>
+        where e.experiment_id = #{experimentId}
+    </select>
+
+    <select id="selectRunningExperiments" resultMap="AbrExperimentResult">
+        <include refid="selectExperimentVo"/>
+        where e.status in ('running', 'ready')
+        order by e.experiment_id
+    </select>
+
+    <select id="selectRunningByPlatform" resultMap="AbrExperimentResult">
+        <include refid="selectExperimentVo"/>
+        where e.experiment_type = #{type} and e.platform = #{platform} and e.status = 'running'
+        limit 1
+    </select>
+
+    <select id="selectLatestWinner" resultMap="AbrExperimentResult">
+        <include refid="selectExperimentVo"/>
+        where e.experiment_type = #{type} and e.platform = #{platform} and e.status = 'concluded' and e.winner_code is not null
+        order by e.end_time desc, e.experiment_id desc
+        limit 1
+    </select>
+
+    <insert id="insertExperiment" parameterType="AbrExperiment" useGeneratedKeys="true" keyProperty="experimentId" keyColumn="experiment_id">
+        insert into abr_experiment (experiment_name, experiment_type, platform, metric, variants, min_sample, max_days, alpha, status, create_by, create_time, remark)
+        values (#{experimentName}, #{experimentType}, #{platform}, #{metric}, cast(#{variants} as jsonb), #{minSample}, #{maxDays}, #{alpha}, 'draft',
+                #{createBy}, now(), #{remark})
+    </insert>
+
+    <update id="updateDraftExperiment" parameterType="AbrExperiment">
+        update abr_experiment
+        set experiment_name = #{experimentName}, platform = #{platform}, metric = #{metric}, variants = cast(#{variants} as jsonb),
+            min_sample = #{minSample}, max_days = #{maxDays}, alpha = #{alpha}, remark = #{remark}, update_by = #{updateBy}, update_time = now()
+        where experiment_id = #{experimentId} and status = 'draft'
+    </update>
+
+    <delete id="deleteDraftExperiments" parameterType="Long">
+        delete from abr_experiment where status = 'draft' and experiment_id in
+        <foreach collection="array" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </delete>
+
+    <update id="startExperiment">
+        update abr_experiment set status = 'running', start_time = now(), update_by = #{operator}, update_time = now()
+        where experiment_id = #{id} and status = 'draft'
+    </update>
+
+    <update id="stopExperiment">
+        update abr_experiment set status = 'stopped', end_time = now(), conclude_reason = #{reason}, update_by = #{operator}, update_time = now()
+        where experiment_id = #{id} and status in ('running', 'ready')
+    </update>
+
+    <update id="concludeExperiment">
+        update abr_experiment set status = 'concluded', winner_code = #{winner}, end_time = now(), conclude_reason = #{reason},
+               update_by = #{operator}, update_time = now()
+        where experiment_id = #{id} and status in ('running', 'ready')
+    </update>
+
+    <update id="saveEvaluation">
+        update abr_experiment
+        set result = cast(#{result} as jsonb), evaluated_time = now()
+            <if test="status != null and status != ''">, status = #{status}, conclude_reason = #{reason}</if>
+        where experiment_id = #{id} and status in ('running', 'ready')
+    </update>
+
+    <insert id="insertUnit">
+        insert into abr_experiment_unit (experiment_id, unit_type, unit_id, variant_code, create_time)
+        values (#{experimentId}, #{unitType}, #{unitId}, #{variant}, now())
+        on conflict (experiment_id, unit_type, unit_id) do nothing
+    </insert>
+
+    <!-- 每条内容：回填的阅读（没回填为空）、首次经它进入的访客、其中用过工具的；再按组合计 -->
+    <select id="selectVariantStats" parameterType="Long" resultType="java.util.HashMap">
+        with per as (
+            select u.variant_code, c.content_id,
+                   (select sum(cast(r.metrics ->> 'views' as bigint)) from abr_publish_record r
+                    where r.content_id = c.content_id and r.status = 'published' and r.metrics ->> 'views' is not null) as views,
+                   (select count(*) from abr_visitor v
+                    where v.content_code = c.content_code and v.merged_into is null and v.del_flag = '0') as visitors,
+                   (select count(*) from abr_visitor v
+                    where v.content_code = c.content_code and v.merged_into is null and v.del_flag = '0'
+                      and (exists (select 1 from abr_tool_run t where t.visitor_id = v.visitor_id)
+                           or exists (select 1 from abr_assessment s where s.visitor_id = v.visitor_id and s.submitted_time is not null))) as tool_visitors
+            from abr_experiment_unit u
+            join abr_content c on c.content_id = u.unit_id
+            where u.experiment_id = #{experimentId} and u.unit_type = 'content'
+        )
+        select variant_code, count(*) as contents, coalesce(sum(views), 0) as views,
+               coalesce(sum(visitors) filter (where views is not null), 0) as visitors_with_views,
+               coalesce(sum(visitors), 0) as visitors, coalesce(sum(tool_visitors), 0) as tool_visitors
+        from per
+        group by variant_code
+    </select>
+
+    <select id="selectReportList" resultMap="AbrGrowthReportResult">
+        select report_id, week_start, null as data, narrative, ai_status, ai_call_id, create_by, create_time, update_time
+        from abr_growth_report
+        order by week_start desc
+    </select>
+
+    <select id="selectReportById" parameterType="Long" resultMap="AbrGrowthReportResult">
+        select report_id, week_start, data, narrative, ai_status, ai_call_id, create_by, create_time, update_time
+        from abr_growth_report where report_id = #{reportId}
+    </select>
+
+    <select id="selectReportByWeek" parameterType="String" resultMap="AbrGrowthReportResult">
+        select report_id, week_start, data, narrative, ai_status, ai_call_id, create_by, create_time, update_time
+        from abr_growth_report where week_start = cast(#{weekStart} as date)
+    </select>
+
+    <insert id="insertReport" parameterType="AbrGrowthReport" useGeneratedKeys="true" keyProperty="reportId" keyColumn="report_id">
+        insert into abr_growth_report (week_start, data, narrative, ai_status, ai_call_id, create_by, create_time)
+        values (#{weekStart}, cast(#{data} as jsonb), cast(#{narrative} as jsonb), #{aiStatus}, #{aiCallId}, #{createBy}, now())
+    </insert>
+
+    <update id="updateReport" parameterType="AbrGrowthReport">
+        update abr_growth_report
+        set data = cast(#{data} as jsonb), narrative = cast(#{narrative} as jsonb), ai_status = #{aiStatus}, ai_call_id = #{aiCallId}, update_time = now()
+        where report_id = #{reportId}
+    </update>
+
+    <sql id="selectParamLogVo">
+        select g.log_id, g.param_key, g.scope, p.playbook_name as scope_name, g.old_value, g.new_value, g.reason, g.status, g.report_id,
+               g.create_by, g.create_time, g.update_by, g.update_time
+        from abr_growth_param_log g
+        left join abr_playbook p on p.playbook_code = g.scope
+    </sql>
+
+    <select id="selectParamLogList" parameterType="AbrGrowthParamLog" resultMap="AbrGrowthParamLogResult">
+        <include refid="selectParamLogVo"/>
+        <where>
+            <if test="reportId != null">and g.report_id = #{reportId}</if>
+            <if test="status != null and status != ''">and g.status = #{status}</if>
+            <if test="scope != null and scope != ''">and g.scope = #{scope}</if>
+        </where>
+        order by g.log_id desc
+    </select>
+
+    <select id="selectParamLogById" parameterType="Long" resultMap="AbrGrowthParamLogResult">
+        <include refid="selectParamLogVo"/>
+        where g.log_id = #{logId}
+    </select>
+
+    <insert id="insertParamLog" parameterType="AbrGrowthParamLog" useGeneratedKeys="true" keyProperty="logId" keyColumn="log_id">
+        insert into abr_growth_param_log (param_key, scope, old_value, new_value, reason, status, report_id, create_by, create_time)
+        values (#{paramKey}, #{scope}, cast(#{oldValue} as jsonb), cast(#{newValue} as jsonb), #{reason}, #{status}, #{reportId}, #{createBy}, now())
+    </insert>
+
+    <update id="changeParamLogStatus">
+        update abr_growth_param_log set status = #{to}, update_by = #{operator}, update_time = now()
+        where log_id = #{id} and status = #{from}
+    </update>
+
+    <select id="countParamLogs" resultType="int">
+        select count(*) from abr_growth_param_log where report_id = #{reportId} and param_key = #{paramKey}
+    </select>
+
+    <select id="selectPlaybookMixes" resultType="java.util.HashMap">
+        select playbook_code, playbook_name, cast(content_mix as text) as content_mix
+        from abr_playbook
+        where status = '0'
+        order by priority desc, playbook_id
+    </select>
+
+    <select id="selectPlaybookMix" parameterType="String" resultType="String">
+        select cast(content_mix as text) from abr_playbook where playbook_code = #{playbookCode}
+    </select>
+
+    <update id="updatePlaybookMix">
+        update abr_playbook set content_mix = cast(#{mix} as jsonb), update_by = #{operator}, update_time = now()
+        where playbook_code = #{code}
+    </update>
+
+    <select id="selectKindPerformance" resultType="java.util.HashMap">
+        with c as (
+            select distinct c.content_id, c.content_code, c.content_kind
+            from abr_content c
+            join abr_publish_record r on r.content_id = c.content_id and r.status = 'published'
+            where coalesce(r.published_time, r.planned_time) &gt;= cast(#{beginDate} as date)
+              and coalesce(r.published_time, r.planned_time) &lt; cast(#{endDate} as date) + interval '1 day'
+        )
+        select c.content_kind, count(distinct c.content_id) as contents,
+               count(distinct v.visitor_id) filter (where exists (select 1 from abr_tool_run t where t.visitor_id = v.visitor_id)
+                   or exists (select 1 from abr_assessment s where s.visitor_id = v.visitor_id and s.submitted_time is not null)) as tool_users
+        from c
+        left join abr_visitor v on v.content_code = c.content_code and v.merged_into is null and v.del_flag = '0'
+        group by c.content_kind
+    </select>
+
+    <select id="selectBreakerTrips" resultType="java.util.HashMap">
+        select rule_code, scope, coalesce(agent_code, '') as agent_code, coalesce(account_code, '') as account_code, action,
+               to_char(create_time, 'YYYY-MM-DD HH24:MI') as trip_time
+        from abr_breaker_trip
+        where create_time &gt;= cast(#{beginDate} as date) and create_time &lt; cast(#{endDate} as date) + interval '1 day'
+        order by trip_id
+    </select>
+
+</mapper>
