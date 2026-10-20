@@ -267,4 +267,11 @@ public interface AbrLeadMapper
      * @return 1 在用，0 不存在或已停用
      */
     public int countActiveUser(Long userId);
+
+    /**
+     * 在用员工（转给同事的候选）
+     *
+     * @return userId、nickName、userName
+     */
+    public List<Map<String, Object>> selectActiveStaff();
 }

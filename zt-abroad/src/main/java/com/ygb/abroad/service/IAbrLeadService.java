@@ -59,6 +59,13 @@ public interface IAbrLeadService
     public List<Map<String, Object>> timeline(Long leadId, int limit);
 
     /**
+     * 在用员工（转给同事的候选，只含姓名与登录名）
+     *
+     * @return userId、nickName、userName
+     */
+    public List<Map<String, Object>> selectActiveStaff();
+
+    /**
      * 手机号明文（须单独权限，调用方记操作日志）
      *
      * @param leadId 线索ID

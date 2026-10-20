@@ -37,6 +37,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="leadId != null">and o.lead_id = #{leadId}</if>
             <if test="status != null and status != ''">and o.status = #{status}</if>
             <if test="productCode != null and productCode != ''">and o.product_code = #{productCode}</if>
+            <if test="params.scopeUserId != null">and l.owner_user_id = #{params.scopeUserId}</if>
             <if test="orderNo != null and orderNo != ''">and o.order_no like concat('%', #{orderNo}, '%')</if>
             <if test="params.beginTime != null and params.beginTime != ''">and o.create_time &gt;= cast(#{params.beginTime} as date)</if>
             <if test="params.endTime != null and params.endTime != ''">and o.create_time &lt; cast(#{params.endTime} as date) + interval '1 day'</if>

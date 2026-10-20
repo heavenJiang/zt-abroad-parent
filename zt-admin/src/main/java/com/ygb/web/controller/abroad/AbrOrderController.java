@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.ygb.abroad.domain.AbrOrder;
+import com.ygb.abroad.service.AbrLeadScope;
 import com.ygb.abroad.service.IAbrOrderService;
 import com.ygb.common.annotation.Log;
 import com.ygb.common.core.controller.BaseController;
@@ -33,6 +34,9 @@ public class AbrOrderController extends BaseController
     @Autowired
     private IAbrOrderService orderService;
 
+    @Autowired
+    private AbrLeadScope leadScope;
+
     /**
      * 查询订单
      */
@@ -40,6 +44,7 @@ public class AbrOrderController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(AbrOrder order)
     {
+        order.getParams().put("scopeUserId", leadScope.scopeUserId());
         startPage();
         List<AbrOrder> list = orderService.selectAbrOrderList(order);
         return getDataTable(list);
@@ -48,7 +53,7 @@ public class AbrOrderController extends BaseController
     /**
      * 订单详情
      */
-    @PreAuthorize("@ss.hasPermi('abroad:order:list')")
+    @PreAuthorize("@ss.hasPermi('abroad:order:list') and @abrLeadScope.order(#p0)")
     @GetMapping("/{orderId}")
     public AjaxResult getInfo(@PathVariable Long orderId)
     {
@@ -58,7 +63,7 @@ public class AbrOrderController extends BaseController
     /**
      * 新建订单（leadId、productCode、amount、remark）
      */
-    @PreAuthorize("@ss.hasPermi('abroad:order:add')")
+    @PreAuthorize("@ss.hasPermi('abroad:order:add') and @abrLeadScope.leadOf(#p0)")
     @Log(title = "订单", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody Map<String, Object> body)
@@ -81,7 +86,7 @@ public class AbrOrderController extends BaseController
     /**
      * 确认收款（payMethod、payNote）
      */
-    @PreAuthorize("@ss.hasPermi('abroad:order:confirm')")
+    @PreAuthorize("@ss.hasPermi('abroad:order:confirm') and @abrLeadScope.order(#p0)")
     @Log(title = "订单", businessType = BusinessType.UPDATE)
     @PutMapping("/confirm/{orderId}")
     public AjaxResult confirm(@PathVariable Long orderId, @RequestBody Map<String, String> body)
@@ -92,7 +97,7 @@ public class AbrOrderController extends BaseController
     /**
      * 取消待确认收款的订单（reason）
      */
-    @PreAuthorize("@ss.hasPermi('abroad:order:edit')")
+    @PreAuthorize("@ss.hasPermi('abroad:order:edit') and @abrLeadScope.order(#p0)")
     @Log(title = "订单", businessType = BusinessType.UPDATE)
     @PutMapping("/cancel/{orderId}")
     public AjaxResult cancel(@PathVariable Long orderId, @RequestBody Map<String, String> body)
@@ -103,7 +108,7 @@ public class AbrOrderController extends BaseController
     /**
      * 已确认收款的订单退款（reason）
      */
-    @PreAuthorize("@ss.hasPermi('abroad:order:edit')")
+    @PreAuthorize("@ss.hasPermi('abroad:order:edit') and @abrLeadScope.order(#p0)")
     @Log(title = "订单", businessType = BusinessType.UPDATE)
     @PutMapping("/refund/{orderId}")
     public AjaxResult refund(@PathVariable Long orderId, @RequestBody Map<String, String> body)

@@ -286,4 +286,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="countActiveUser" parameterType="Long" resultType="int">
         select count(*) from sys_user where user_id = #{userId} and status = '0' and del_flag = '0'
     </select>
+    <select id="selectActiveStaff" resultType="java.util.LinkedHashMap">
+        select user_id as "userId", nick_name as "nickName", user_name as "userName"
+        from sys_user where status = '0' and del_flag = '0' order by user_id
+    </select>
 </mapper>

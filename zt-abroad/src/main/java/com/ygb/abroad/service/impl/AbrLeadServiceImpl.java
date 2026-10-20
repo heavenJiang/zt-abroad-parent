@@ -388,6 +388,12 @@ public class AbrLeadServiceImpl implements IAbrLeadService
     }
 
     @Override
+    public List<Map<String, Object>> selectActiveStaff()
+    {
+        return leadMapper.selectActiveStaff();
+    }
+
+    @Override
     public String selectPhone(Long leadId)
     {
         AbrLead l = leadId == null ? null : leadMapper.selectAbrLeadById(leadId);

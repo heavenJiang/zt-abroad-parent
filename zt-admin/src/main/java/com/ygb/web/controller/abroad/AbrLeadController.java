@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.ygb.abroad.domain.AbrLead;
 import com.ygb.abroad.domain.AbrLeadFollow;
 import com.ygb.abroad.domain.vo.AbrLeadImportRow;
+import com.ygb.abroad.service.AbrLeadScope;
 import com.ygb.abroad.service.IAbrLeadCardService;
 import com.ygb.abroad.service.IAbrLeadScoreService;
 import com.ygb.abroad.service.IAbrLeadService;
@@ -45,6 +46,9 @@ public class AbrLeadController extends BaseController
     @Autowired
     private IAbrLeadCardService cardService;
 
+    @Autowired
+    private AbrLeadScope leadScope;
+
     /**
      * 查询线索列表：默认按 意向度 → 下次联系时间 → 最近触达 排序。params[keyword] 为称呼或 11 位手机号；params[beginTime] / params[endTime]
      * 为首次触达日期；params[mine]=1 只看我负责的，params[unassigned]=1 只看未分配的，params[due]=1 只看到期待联系的；ownerUserId 按负责人
@@ -53,7 +57,7 @@ public class AbrLeadController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(AbrLead lead)
     {
-        if (lead.getParams().get("mine") != null && !"".equals(lead.getParams().get("mine")))
+        if (!leadScope.all() || (lead.getParams().get("mine") != null && !"".equals(lead.getParams().get("mine"))))
         {
             lead.setOwnerUserId(getUserId());
         }
@@ -63,9 +67,19 @@ public class AbrLeadController extends BaseController
     }
 
     /**
+     * 可转给的同事（在用员工的姓名与登录名；顾问没有用户管理权限时也能选）
+     */
+    @PreAuthorize("@ss.hasPermi('abroad:lead:assign')")
+    @GetMapping("/staff")
+    public AjaxResult staff()
+    {
+        return success(leadService.selectActiveStaff());
+    }
+
+    /**
      * 线索详情
      */
-    @PreAuthorize("@ss.hasPermi('abroad:lead:query')")
+    @PreAuthorize("@ss.hasPermi('abroad:lead:query') and @abrLeadScope.lead(#p0)")
     @GetMapping("/{leadId}")
     public AjaxResult getInfo(@PathVariable Long leadId)
     {
@@ -75,7 +89,7 @@ public class AbrLeadController extends BaseController
     /**
      * 时间线
      */
-    @PreAuthorize("@ss.hasPermi('abroad:lead:query')")
+    @PreAuthorize("@ss.hasPermi('abroad:lead:query') and @abrLeadScope.lead(#p0)")
     @GetMapping("/timeline/{leadId}")
     public AjaxResult timeline(@PathVariable Long leadId, @RequestParam(defaultValue = "200") int limit)
     {
@@ -85,7 +99,7 @@ public class AbrLeadController extends BaseController
     /**
      * 查看手机号明文（记操作日志，日志不保存返回内容）
      */
-    @PreAuthorize("@ss.hasPermi('abroad:lead:phone')")
+    @PreAuthorize("@ss.hasPermi('abroad:lead:phone') and @abrLeadScope.lead(#p0)")
     @Log(title = "线索-查看手机号", businessType = BusinessType.OTHER, isSaveResponseData = false)
     @GetMapping("/phone/{leadId}")
     public AjaxResult phone(@PathVariable Long leadId)
@@ -134,7 +148,7 @@ public class AbrLeadController extends BaseController
     /**
      * 修改意向度（grade 为 A / B / C，须填原因 reason；grade 为空时撤销修改、恢复规则等级）
      */
-    @PreAuthorize("@ss.hasPermi('abroad:lead:grade')")
+    @PreAuthorize("@ss.hasPermi('abroad:lead:grade') and @abrLeadScope.lead(#p0)")
     @Log(title = "线索意向度", businessType = BusinessType.UPDATE)
     @PutMapping("/grade/{leadId}")
     public AjaxResult grade(@PathVariable Long leadId, @RequestBody Map<String, String> body)
@@ -145,7 +159,7 @@ public class AbrLeadController extends BaseController
     /**
      * 立即重新评分
      */
-    @PreAuthorize("@ss.hasPermi('abroad:lead:score')")
+    @PreAuthorize("@ss.hasPermi('abroad:lead:score') and @abrLeadScope.lead(#p0)")
     @Log(title = "线索意向度", businessType = BusinessType.OTHER)
     @PostMapping("/score/{leadId}")
     public AjaxResult score(@PathVariable Long leadId)
@@ -156,7 +170,7 @@ public class AbrLeadController extends BaseController
     /**
      * 意向度历史
      */
-    @PreAuthorize("@ss.hasPermi('abroad:lead:query')")
+    @PreAuthorize("@ss.hasPermi('abroad:lead:query') and @abrLeadScope.lead(#p0)")
     @GetMapping("/score/log/{leadId}")
     public AjaxResult scoreLog(@PathVariable Long leadId)
     {
@@ -166,7 +180,7 @@ public class AbrLeadController extends BaseController
     /**
      * 修改称呼与备注
      */
-    @PreAuthorize("@ss.hasPermi('abroad:lead:edit')")
+    @PreAuthorize("@ss.hasPermi('abroad:lead:edit') and @abrLeadScope.lead(#p0.leadId)")
     @Log(title = "线索", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody AbrLead lead)
@@ -177,7 +191,7 @@ public class AbrLeadController extends BaseController
     /**
      * 记跟进（method、content、nextFollowTime；可带 stageTo / lostReason 同时改阶段）
      */
-    @PreAuthorize("@ss.hasPermi('abroad:lead:follow')")
+    @PreAuthorize("@ss.hasPermi('abroad:lead:follow') and @abrLeadScope.lead(#p0)")
     @Log(title = "线索跟进", businessType = BusinessType.INSERT)
     @PostMapping("/follow/{leadId}")
     public AjaxResult follow(@PathVariable Long leadId, @RequestBody AbrLeadFollow follow)
@@ -188,7 +202,7 @@ public class AbrLeadController extends BaseController
     /**
      * 跟进记录
      */
-    @PreAuthorize("@ss.hasPermi('abroad:lead:query')")
+    @PreAuthorize("@ss.hasPermi('abroad:lead:query') and @abrLeadScope.lead(#p0)")
     @GetMapping("/follow/{leadId}")
     public AjaxResult follows(@PathVariable Long leadId)
     {
@@ -198,7 +212,7 @@ public class AbrLeadController extends BaseController
     /**
      * 改阶段（stage；流失须填 lostReason）
      */
-    @PreAuthorize("@ss.hasPermi('abroad:lead:stage')")
+    @PreAuthorize("@ss.hasPermi('abroad:lead:stage') and @abrLeadScope.lead(#p0)")
     @Log(title = "线索阶段", businessType = BusinessType.UPDATE)
     @PutMapping("/stage/{leadId}")
     public AjaxResult stage(@PathVariable Long leadId, @RequestBody Map<String, String> body)
@@ -209,7 +223,7 @@ public class AbrLeadController extends BaseController
     /**
      * 转给同事（ownerUserId、reason）
      */
-    @PreAuthorize("@ss.hasPermi('abroad:lead:assign')")
+    @PreAuthorize("@ss.hasPermi('abroad:lead:assign') and @abrLeadScope.lead(#p0)")
     @Log(title = "线索转交", businessType = BusinessType.UPDATE)
     @PutMapping("/owner/{leadId}")
     public AjaxResult owner(@PathVariable Long leadId, @RequestBody Map<String, Object> body)
@@ -222,7 +236,7 @@ public class AbrLeadController extends BaseController
     /**
      * 线索卡片（仅内部可见；没有时为空）
      */
-    @PreAuthorize("@ss.hasPermi('abroad:lead:query')")
+    @PreAuthorize("@ss.hasPermi('abroad:lead:query') and @abrLeadScope.lead(#p0)")
     @GetMapping("/card/{leadId}")
     public AjaxResult card(@PathVariable Long leadId)
     {
@@ -232,7 +246,7 @@ public class AbrLeadController extends BaseController
     /**
      * 重新生成线索卡片（强制重新调用模型）
      */
-    @PreAuthorize("@ss.hasPermi('abroad:lead:card')")
+    @PreAuthorize("@ss.hasPermi('abroad:lead:card') and @abrLeadScope.lead(#p0)")
     @Log(title = "线索卡片", businessType = BusinessType.OTHER)
     @PostMapping("/card/{leadId}")
     public AjaxResult generateCard(@PathVariable Long leadId)

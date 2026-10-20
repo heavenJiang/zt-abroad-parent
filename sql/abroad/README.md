@@ -12,3 +12,4 @@
 
 - 脚本必须可重复执行（`create table if not exists`、`add column if not exists`、`on conflict do nothing`），表和字段都写 `comment on`，种子数据后重置序列；菜单 ID 从 2000 起由序列分配，不写显式 ID。
 - 提交前在临时库上实际执行验证（见 `doc/开发规范.md` 第 6、7 章）。
+- 预置角色（`update_20261019_z_roles.sql`：负责人 `abr_owner` / 顾问 `abr_consultant` / 数据录入 `abr_editor`）按权限标识授予菜单；之后新增的菜单和按钮须在各自脚本中授予对应角色（至少负责人）。

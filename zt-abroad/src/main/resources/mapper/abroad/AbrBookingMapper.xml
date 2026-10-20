@@ -44,6 +44,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="appUserId != null">and b.app_user_id = #{appUserId}</if>
             <if test="status != null and status != ''">and b.status = #{status}</if>
             <if test="productCode != null and productCode != ''">and b.product_code = #{productCode}</if>
+            <if test="params.scopeUserId != null">and (l.owner_user_id = #{params.scopeUserId} or b.consultant_id = #{params.scopeUserId})</if>
             <if test="params.beginTime != null and params.beginTime != ''">and b.start_time &gt;= cast(#{params.beginTime} as date)</if>
             <if test="params.endTime != null and params.endTime != ''">and b.start_time &lt; cast(#{params.endTime} as date) + interval '1 day'</if>
         </where>

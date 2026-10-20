@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.ygb.abroad.domain.AbrBooking;
+import com.ygb.abroad.service.AbrLeadScope;
 import com.ygb.abroad.domain.AbrConsultSlot;
 import com.ygb.abroad.domain.vo.AbrSlotBatchBody;
 import com.ygb.abroad.service.IAbrBookingService;
@@ -34,6 +35,9 @@ public class AbrBookingController extends BaseController
     @Autowired
     private IAbrBookingService bookingService;
 
+    @Autowired
+    private AbrLeadScope leadScope;
+
     /**
      * 查询预约（leadId、consultantId、status、productCode；params[beginTime] / params[endTime] 开始日期）
      */
@@ -41,6 +45,7 @@ public class AbrBookingController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(AbrBooking booking)
     {
+        booking.getParams().put("scopeUserId", leadScope.scopeUserId());
         startPage();
         List<AbrBooking> list = bookingService.selectBookings(booking);
         return getDataTable(list);
@@ -49,7 +54,7 @@ public class AbrBookingController extends BaseController
     /**
      * 预约详情
      */
-    @PreAuthorize("@ss.hasPermi('abroad:booking:list')")
+    @PreAuthorize("@ss.hasPermi('abroad:booking:list') and @abrLeadScope.booking(#p0)")
     @GetMapping("/{bookingId}")
     public AjaxResult getInfo(@PathVariable Long bookingId)
     {
@@ -59,7 +64,7 @@ public class AbrBookingController extends BaseController
     /**
      * 员工代约（leadId、productCode、slotId、note）
      */
-    @PreAuthorize("@ss.hasPermi('abroad:booking:add')")
+    @PreAuthorize("@ss.hasPermi('abroad:booking:add') and @abrLeadScope.leadOf(#p0)")
     @Log(title = "预约", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody Map<String, Object> body)
@@ -71,7 +76,7 @@ public class AbrBookingController extends BaseController
     /**
      * 改约（slotId）
      */
-    @PreAuthorize("@ss.hasPermi('abroad:booking:edit')")
+    @PreAuthorize("@ss.hasPermi('abroad:booking:edit') and @abrLeadScope.booking(#p0)")
     @Log(title = "预约", businessType = BusinessType.UPDATE)
     @PutMapping("/reschedule/{bookingId}")
     public AjaxResult reschedule(@PathVariable Long bookingId, @RequestBody Map<String, Object> body)
@@ -82,7 +87,7 @@ public class AbrBookingController extends BaseController
     /**
      * 取消（reason 必填）
      */
-    @PreAuthorize("@ss.hasPermi('abroad:booking:edit')")
+    @PreAuthorize("@ss.hasPermi('abroad:booking:edit') and @abrLeadScope.booking(#p0)")
     @Log(title = "预约", businessType = BusinessType.UPDATE)
     @PutMapping("/cancel/{bookingId}")
     public AjaxResult cancel(@PathVariable Long bookingId, @RequestBody Map<String, Object> body)
@@ -93,7 +98,7 @@ public class AbrBookingController extends BaseController
     /**
      * 标记已完成（done）或未到（no_show）
      */
-    @PreAuthorize("@ss.hasPermi('abroad:booking:edit')")
+    @PreAuthorize("@ss.hasPermi('abroad:booking:edit') and @abrLeadScope.booking(#p0)")
     @Log(title = "预约", businessType = BusinessType.UPDATE)
     @PutMapping("/finish/{bookingId}/{status}")
     public AjaxResult finish(@PathVariable Long bookingId, @PathVariable String status)
@@ -102,9 +107,9 @@ public class AbrBookingController extends BaseController
     }
 
     /**
-     * 查询顾问时段（userId、status；params[beginTime] / params[endTime]）
+     * 查询顾问时段（userId、status；params[beginTime] / params[endTime]）；代约时选可约时段也用它
      */
-    @PreAuthorize("@ss.hasPermi('abroad:booking:slot')")
+    @PreAuthorize("@ss.hasAnyPermi('abroad:booking:slot,abroad:booking:add')")
     @GetMapping("/slot/list")
     public TableDataInfo slots(AbrConsultSlot slot)
     {
