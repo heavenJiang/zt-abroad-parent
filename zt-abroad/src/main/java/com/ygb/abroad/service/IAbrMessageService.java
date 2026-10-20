@@ -33,6 +33,22 @@ public interface IAbrMessageService
             boolean aiGenerated);
 
     /**
+     * 发给学生的一条消息，带引用依据（文字中有截止日、院校等事实时，营销类合规闸门按它核对）
+     *
+     * @param templateCode 业务编码
+     * @param targetType 对象类型（app_user / lead / visitor）
+     * @param targetId 对象ID
+     * @param vars 变量
+     * @param agentCode 发出的 Agent
+     * @param taskId 编排任务ID（可为 null）
+     * @param aiGenerated 文字是否由大模型生成
+     * @param citationsJson 引用依据（JSON 数组，如 [{"type": "program", "id": 5}]；可为 null）
+     * @return 结果
+     */
+    public Result sendToStudent(String templateCode, String targetType, Long targetId, Map<String, ?> vars, String agentCode, Long taskId,
+            boolean aiGenerated, String citationsJson);
+
+    /**
      * 发给员工的提醒（企业微信应用消息，模板 staff_alert；成员账号取员工登录名）
      *
      * @param userId 员工

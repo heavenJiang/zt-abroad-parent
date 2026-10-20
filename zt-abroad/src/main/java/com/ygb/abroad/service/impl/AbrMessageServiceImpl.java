@@ -104,6 +104,13 @@ public class AbrMessageServiceImpl implements IAbrMessageService
     public Result sendToStudent(String templateCode, String targetType, Long targetId, Map<String, ?> vars, String agentCode, Long taskId,
             boolean aiGenerated)
     {
+        return sendToStudent(templateCode, targetType, targetId, vars, agentCode, taskId, aiGenerated, null);
+    }
+
+    @Override
+    public Result sendToStudent(String templateCode, String targetType, Long targetId, Map<String, ?> vars, String agentCode, Long taskId,
+            boolean aiGenerated, String citationsJson)
+    {
         AbrMessageSend rec = record(templateCode, targetType, targetId, agentCode, taskId, "system");
         List<AbrMessageTemplate> templates = messageMapper.selectEnabledByCode(templateCode);
         if (templates.isEmpty())
@@ -163,7 +170,7 @@ public class AbrMessageServiceImpl implements IAbrMessageService
         rec.setRendered(StringUtils.substring(msg.text(), 0, 1000));
         if (AbrTouchLog.CATEGORY_MARKETING.equals(picked.getCategory()))
         {
-            ComplianceChecker.Result check = complianceService.checkMessage(picked.getChannel(), msg.text(), null, aiGenerated);
+            ComplianceChecker.Result check = complianceService.checkMessage(picked.getChannel(), msg.text(), citationsJson, aiGenerated);
             if (!check.passed())
             {
                 guardService.recordTouch(touch, AbrTouchLog.STATUS_BLOCKED, "合规闸门拦截");

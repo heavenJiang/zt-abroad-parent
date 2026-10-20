@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrNurtureMapper">
+
+    <resultMap type="AbrNurtureSequence" id="AbrNurtureSequenceResult">
+        <result property="sequenceId"    column="sequence_id"    />
+        <result property="sequenceCode"  column="sequence_code"  />
+        <result property="sequenceName"  column="sequence_name"  />
+        <result property="enrollEvent"   column="enroll_event"   />
+        <result property="inactiveDays"  column="inactive_days"  />
+        <result property="status"        column="status"         />
+        <result property="activeCount"   column="active_count"   />
+        <result property="waitingCount"  column="waiting_count"  />
+        <result property="createBy"      column="create_by"      />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"      column="update_by"      />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"        column="remark"         />
+    </resultMap>
+
+    <resultMap type="AbrNurtureStep" id="AbrNurtureStepResult">
+        <result property="stepId"        column="step_id"        />
+        <result property="sequenceId"    column="sequence_id"    />
+        <result property="stepNo"        column="step_no"        />
+        <result property="stepName"      column="step_name"      />
+        <result property="delayDays"     column="delay_days"     />
+        <result property="sendHour"      column="send_hour"      />
+        <result property="templateCode"  column="template_code"  />
+        <result property="conditionCode" column="condition_code" />
+        <result property="playbookCodes" column="playbook_codes" />
+        <result property="status"        column="status"         />
+        <result property="remark"        column="remark"         />
+    </resultMap>
+
+    <resultMap type="AbrNurtureEnrollment" id="AbrNurtureEnrollmentResult">
+        <result property="enrollmentId"  column="enrollment_id"  />
+        <result property="sequenceId"    column="sequence_id"    />
+        <result property="sequenceCode"  column="sequence_code"  />
+        <result property="sequenceName"  column="sequence_name"  />
+        <result property="targetType"    column="target_type"    />
+        <result property="targetId"      column="target_id"      />
+        <result property="targetName"    column="target_name"    />
+        <result property="nextStepNo"    column="next_step_no"   />
+        <result property="nextStepName"  column="next_step_name" />
+        <result property="nextDueTime"   column="next_due_time"  />
+        <result property="status"        column="status"         />
+        <result property="exitReason"    column="exit_reason"    />
+        <result property="lastResult"    column="last_result"    />
+        <result property="lastSentTime"  column="last_sent_time" />
+        <result property="enrolledTime"  column="enrolled_time"  />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectSequenceVo">
+        select s.sequence_id, s.sequence_code, s.sequence_name, s.enroll_event, s.inactive_days, s.status, s.create_by, s.create_time, s.update_by,
+               s.update_time, s.remark,
+               (select count(*) from abr_nurture_enrollment e where e.sequence_id = s.sequence_id and e.status = 'active') as active_count,
+               (select count(*) from abr_nurture_enrollment e where e.sequence_id = s.sequence_id and e.status = 'waiting_confirm') as waiting_count
+        from abr_nurture_sequence s
+    </sql>
+
+    <select id="selectSequenceList" parameterType="AbrNurtureSequence" resultMap="AbrNurtureSequenceResult">
+        <include refid="selectSequenceVo"/>
+        <where>
+            <if test="sequenceName != null and sequenceName != ''">and s.sequence_name like concat('%', #{sequenceName}, '%')</if>
+            <if test="status != null and status != ''">and s.status = #{status}</if>
+        </where>
+        order by s.sequence_id
+    </select>
+
+    <select id="selectSequenceById" parameterType="Long" resultMap="AbrNurtureSequenceResult">
+        <include refid="selectSequenceVo"/>
+        where s.sequence_id = #{sequenceId}
+    </select>
+
+    <select id="selectSequenceByCode" parameterType="String" resultMap="AbrNurtureSequenceResult">
+        <include refid="selectSequenceVo"/>
+        where s.sequence_code = #{sequenceCode}
+    </select>
+
+    <select id="countSequenceCode" resultType="int">
+        select count(*) from abr_nurture_sequence where sequence_code = #{sequenceCode}
+        <if test="sequenceId != null">and sequence_id &lt;&gt; #{sequenceId}</if>
+    </select>
+
+    <insert id="insertSequence" parameterType="AbrNurtureSequence" useGeneratedKeys="true" keyProperty="sequenceId" keyColumn="sequence_id">
+        insert into abr_nurture_sequence (sequence_code, sequence_name, enroll_event, inactive_days, status, create_by, create_time, remark)
+        values (#{sequenceCode}, #{sequenceName}, #{enrollEvent}, #{inactiveDays}, #{status}, #{createBy}, now(), #{remark})
+    </insert>
+
+    <update id="updateSequence" parameterType="AbrNurtureSequence">
+        update abr_nurture_sequence
+        set sequence_code = #{sequenceCode}, sequence_name = #{sequenceName}, enroll_event = #{enrollEvent}, inactive_days = #{inactiveDays},
+            status = #{status}, remark = #{remark}, update_by = #{updateBy}, update_time = now()
+        where sequence_id = #{sequenceId}
+    </update>
+
+    <delete id="deleteSequence" parameterType="Long">
+        with e as (delete from abr_nurture_enrollment where sequence_id = #{sequenceId}),
+             t as (delete from abr_nurture_step where sequence_id = #{sequenceId})
+        delete from abr_nurture_sequence where sequence_id = #{sequenceId}
+    </delete>
+
+    <select id="selectSteps" parameterType="Long" resultMap="AbrNurtureStepResult">
+        select step_id, sequence_id, step_no, step_name, delay_days, send_hour, template_code, condition_code, cast(playbook_codes as text) as playbook_codes,
+               status, remark
+        from abr_nurture_step where sequence_id = #{sequenceId} order by step_no
+    </select>
+
+    <delete id="deleteSteps" parameterType="Long">
+        delete from abr_nurture_step where sequence_id = #{sequenceId}
+    </delete>
+
+    <insert id="insertStep" parameterType="AbrNurtureStep">
+        insert into abr_nurture_step (sequence_id, step_no, step_name, delay_days, send_hour, template_code, condition_code, playbook_codes, status, remark)
+        values (#{sequenceId}, #{stepNo}, #{stepName}, #{delayDays}, #{sendHour}, #{templateCode}, #{conditionCode}, cast(#{playbookCodes} as jsonb), #{status},
+                #{remark})
+    </insert>
+
+    <insert id="insertEnrollment" parameterType="AbrNurtureEnrollment" useGeneratedKeys="true" keyProperty="enrollmentId" keyColumn="enrollment_id">
+        insert into abr_nurture_enrollment (sequence_id, target_type, target_id, next_step_no, next_due_time, status, enrolled_time, update_time)
+        values (#{sequenceId}, #{targetType}, #{targetId}, #{nextStepNo}, #{nextDueTime}, #{status}, #{enrolledTime}, now())
+        on conflict (sequence_id, target_type, target_id) do nothing
+    </insert>
+
+    <sql id="selectEnrollmentVo">
+        select e.enrollment_id, e.sequence_id, s.sequence_code, s.sequence_name, e.target_type, e.target_id,
+               case when e.target_type = 'lead' then (select l.display_name from abr_lead l where l.lead_id = e.target_id) end as target_name,
+               e.next_step_no, (select t.step_name from abr_nurture_step t where t.sequence_id = e.sequence_id and t.step_no = e.next_step_no) as next_step_name,
+               e.next_due_time, e.status, e.exit_reason, e.last_result, e.last_sent_time, e.enrolled_time, e.update_time
+        from abr_nurture_enrollment e
+        join abr_nurture_sequence s on s.sequence_id = e.sequence_id
+    </sql>
+
+    <select id="selectEnrollmentList" parameterType="AbrNurtureEnrollment" resultMap="AbrNurtureEnrollmentResult">
+        <include refid="selectEnrollmentVo"/>
+        <where>
+            <if test="sequenceId != null">and e.sequence_id = #{sequenceId}</if>
+            <if test="status != null and status != ''">and e.status = #{status}</if>
+            <if test="targetType != null and targetType != ''">and e.target_type = #{targetType}</if>
+            <if test="targetId != null">and e.target_id = #{targetId}</if>
+        </where>
+        order by case e.status when 'waiting_confirm' then 0 when 'active' then 1 else 2 end, e.next_due_time, e.enrollment_id desc
+    </select>
+
+    <select id="selectEnrollmentById" parameterType="Long" resultMap="AbrNurtureEnrollmentResult">
+        <include refid="selectEnrollmentVo"/>
+        where e.enrollment_id = #{enrollmentId}
+    </select>
+
+    <select id="selectDueEnrollments" resultMap="AbrNurtureEnrollmentResult">
+        <include refid="selectEnrollmentVo"/>
+        where e.status = 'active' and s.status = '0' and e.next_due_time &lt;= #{now}
+        order by e.next_due_time
+        limit #{limit}
+    </select>
+
+    <update id="updateEnrollment" parameterType="AbrNurtureEnrollment">
+        update abr_nurture_enrollment
+        set status = #{status}, next_step_no = #{nextStepNo}, next_due_time = #{nextDueTime}, exit_reason = coalesce(#{exitReason}, ''),
+            last_result = coalesce(#{lastResult}, ''), last_sent_time = coalesce(#{lastSentTime}, last_sent_time), update_time = now()
+        where enrollment_id = #{enrollmentId}
+    </update>
+
+    <select id="selectTargetFacts" resultType="java.util.HashMap">
+        <choose>
+            <when test="targetType == 'lead'">
+                with recursive chain(lead_id, merged_into, depth) as (
+                    select lead_id, merged_into, 0 from abr_lead where lead_id = #{targetId}
+                    union all
+                    select l.lead_id, l.merged_into, c.depth + 1 from abr_lead l join chain c on l.lead_id = c.merged_into where c.depth &lt; 10
+                ), root as (
+                    select l.* from chain c join abr_lead l on l.lead_id = c.lead_id where c.merged_into is null and l.del_flag = '0' limit 1
+                )
+                select r.stage as "stage", r.visitor_id as "visitorId", r.app_user_id as "appUserId",
+                       (select count(*) from abr_booking b where b.lead_id = r.lead_id and b.status = 'booked' and b.start_time &gt; now()) as "activeBookings",
+                       greatest(r.last_touch_time, (select max(ev.create_time) from abr_event ev
+                                where (ev.visitor_id = r.visitor_id or (r.app_user_id is not null and ev.app_user_id = r.app_user_id))
+                                  and ev.event_type not in ('plan_moment'))) as "lastActivity"
+                from root r
+            </when>
+            <when test="targetType == 'app_user'">
+                select null as "stage", u.primary_visitor_id as "visitorId", u.app_user_id as "appUserId",
+                       (select count(*) from abr_booking b where b.app_user_id = u.app_user_id and b.status = 'booked' and b.start_time &gt; now()) as "activeBookings",
+                       greatest(u.last_login_time, (select max(ev.create_time) from abr_event ev where ev.app_user_id = u.app_user_id)) as "lastActivity"
+                from abr_app_user u where u.app_user_id = #{targetId} and u.del_flag = '0'
+            </when>
+            <otherwise>
+                select null as "stage", v.visitor_id as "visitorId", v.app_user_id as "appUserId",
+                       (select count(*) from abr_booking b where b.visitor_id = v.visitor_id and b.status = 'booked' and b.start_time &gt; now()) as "activeBookings",
+                       greatest(v.last_seen_time, (select max(ev.create_time) from abr_event ev where ev.visitor_id = v.visitor_id)) as "lastActivity"
+                from abr_visitor v where v.visitor_id = #{targetId}
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="selectPlanTierCounts" resultType="java.util.HashMap">
+        select tier_snapshot as "tier", count(*) as "count"
+        from abr_plan_item
+        where visitor_id = #{visitorId}
+        <if test="appUserId != null">or app_user_id = #{appUserId}</if>
+        group by tier_snapshot
+    </select>
+</mapper>

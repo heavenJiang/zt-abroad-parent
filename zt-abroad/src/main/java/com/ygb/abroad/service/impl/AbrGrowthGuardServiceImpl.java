@@ -89,6 +89,9 @@ public class AbrGrowthGuardServiceImpl implements IAbrGrowthGuardService, AiCall
     @Autowired
     private AbrChannelAccountMapper accountMapper;
 
+    /** 对象类型：线索 */
+    static final String TARGET_LEAD = "lead";
+
     @Autowired
     private IAbrEventService eventService;
 
@@ -563,10 +566,17 @@ public class AbrGrowthGuardServiceImpl implements IAbrGrowthGuardService, AiCall
                 return "未成年人不接收营销消息";
             }
         }
+        else if (AbrGrowthTask.TARGET_APP_USER.equals(req.targetType()) || TARGET_LEAD.equals(req.targetType()))
+        {
+            // 与访客同一口径：线索标记为未成年或关联访客有未成年测评时不发；家长账号关系随 M4-15 接入
+            if (assessmentMapper.countMinorForTarget(req.targetType(), req.targetId()) > 0)
+            {
+                return "未成年人不接收营销消息";
+            }
+        }
         else
         {
-            // 学生账号、线索的年龄与家长关系在 M4-15 / M5-01 接入；接入前无法核验是否成年，营销消息一律不发
-            return "暂无法核验该对象是否成年（" + req.targetType() + "），营销消息不发";
+            return "不支持的对象类型（" + req.targetType() + "），营销消息不发";
         }
         int cap = setting.getWeeklyTouchCap() == null ? 0 : setting.getWeeklyTouchCap();
         if (touchMapper.countMarketingSent(req.targetType(), req.targetId(), daysAgo(7)) >= cap)

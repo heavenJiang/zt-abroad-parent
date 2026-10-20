@@ -97,6 +97,24 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         limit 1
     </select>
 
+    <select id="countMinorForTarget" resultType="int">
+        <choose>
+            <when test="targetType == 'lead'">
+                select (select count(*) from abr_lead l where l.lead_id = #{targetId} and l.minor = 'Y')
+                     + (select count(*) from abr_assessment a
+                        where a.del_flag = '0' and a.flags ->> 'is_minor' = 'true'
+                          and a.visitor_id in (select v.visitor_id from abr_visitor v join abr_lead l on l.lead_id = #{targetId}
+                                               where v.visitor_id = l.visitor_id or (l.app_user_id is not null and v.app_user_id = l.app_user_id)))
+            </when>
+            <otherwise>
+                select count(*) from abr_assessment a
+                where a.del_flag = '0' and a.flags ->> 'is_minor' = 'true'
+                  and a.visitor_id in (select v.visitor_id from abr_visitor v where v.app_user_id = #{targetId}
+                                       union select u.primary_visitor_id from abr_app_user u where u.app_user_id = #{targetId})
+            </otherwise>
+        </choose>
+    </select>
+
     <select id="countMinorAssessments" parameterType="Long" resultType="int">
         select count(*) from abr_assessment where visitor_id = #{visitorId} and del_flag = '0' and flags ->> 'is_minor' = 'true'
     </select>

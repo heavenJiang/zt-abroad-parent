@@ -100,4 +100,13 @@ public interface AbrAssessmentMapper
      * @return 数量
      */
     public int countMinorAssessments(Long visitorId);
+
+    /**
+     * 线索或学生账号是否未成年：线索标记为未成年，或关联访客（线索的访客、学生账号的访客）有未成年测评
+     *
+     * @param targetType 对象类型（lead / app_user）
+     * @param targetId 对象ID
+     * @return 大于 0 为未成年
+     */
+    public int countMinorForTarget(@Param("targetType") String targetType, @Param("targetId") Long targetId);
 }
