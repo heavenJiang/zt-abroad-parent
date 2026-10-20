@@ -22,6 +22,8 @@ mkdir -p site/admin site/app site/www backups certs
 if [ -z "${SKIP_BUILD:-}" ]; then
   echo "== 构建后端镜像"
   docker build -t "zt-abroad-admin:${IMAGE_TAG:-latest}" --target admin "$ROOT"
+  echo "== 构建文字识别镜像（模型在构建时下载；国内服务器可设 PIP_INDEX_URL 换镜像源）"
+  docker build -t "zt-abroad-ocr:${IMAGE_TAG:-latest}" --build-arg "PIP_INDEX_URL=${PIP_INDEX_URL:-https://pypi.org/simple}" "$ROOT/ocr"
   echo "== 构建管理后台"
   docker run --rm -v "$WORK/zt-abroad-vue":/src:ro -v abr-npm-cache:/root/.npm -v "$PWD/site/admin":/out -w /work node:20 \
     sh -c 'cp -r /src/. /work/ && npm ci --no-audit --no-fund && npm run build:prod && rm -rf /out/* && cp -r dist/. /out/'

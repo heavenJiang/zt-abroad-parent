@@ -219,16 +219,19 @@ abroad:
     # booking_agent 消息与邀约里的 C 端预约页（产品编码追加在后面；C 端页面随 C 端预约页上线）
     page-url: ${abroad.app.url}pages/booking/index?product=
   outcome:
-    # 录取结果回填（M9-06）：首次回填（每个申请季一次）的感谢，只发服务抵扣不发现金；reward-confirm=true 时须员工确认后发放
+    # 录取结果回填（M9-06）：首次回填（每个申请季一次）的感谢，只发服务抵扣不发现金；和所有出款一样须员工核对后确认发放
     reward-title: 免费定位咨询一次
     reward-product: consult_position
-    reward-confirm: false
   referral:
     # 推荐（M9-02）：被推荐人的测评用时少于此秒数不算有效测评（防刷）；奖励规则在管理端「推荐与奖励」配置
     min-assessment-seconds: 120
   attribution:
     # 归因看板（M9-03）：算作“自然推荐”的渠道码（分享、推荐码、offer 卡）
     natural-channels: share,ref,offer
+  ocr:
+    # 内嵌文字识别（MA-15）：同一部署内的 abr-ocr 服务（RapidOCR + PaddleOCR 开源模型），图片不出服务器；为空时不启用（图片 / 扫描件提示手动填写）
+    url: ${ABR_OCR_URL:}
+    timeout-seconds: 60
   growth-analyst:
     # 增长分析（M9-04）：每周按近 mix-window-days 天各内容类型“每条内容带来的工具使用人数”微调剧本内容配比；
     # 发布数达到 mix-min-contents 的类型才参与，比整体平均高 / 低 mix-threshold 以上的类型加 / 减 mix-step 个百分点，每类不超出 mix-bounds

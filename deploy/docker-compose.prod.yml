@@ -45,6 +45,11 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     restart: unless-stopped
 
+  # 内嵌文字识别（MA-15）：只在内网提供给 abr-admin，不映射端口；图片不出服务器
+  abr-ocr:
+    image: zt-abroad-ocr:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+
   abr-admin:
     image: zt-abroad-admin:${IMAGE_TAG:-latest}
     depends_on:
@@ -77,6 +82,7 @@ services:
       ABR_WECOM_CORP_ID: ${WECOM_CORP_ID:-}
       ABR_WECOM_AGENT_ID: ${WECOM_AGENT_ID:-}
       ABR_WECOM_SECRET: ${WECOM_SECRET:-}
+      ABR_OCR_URL: http://abr-ocr:9003
       TZ: Asia/Shanghai
     volumes:
       - abr-upload:/home/zt

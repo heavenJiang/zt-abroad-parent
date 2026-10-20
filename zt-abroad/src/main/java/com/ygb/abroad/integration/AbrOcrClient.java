@@ -3,7 +3,8 @@ package com.ygb.abroad.integration;
 /**
  * 文字识别（OCR）接口：图片简历、扫描版 PDF 先识别成文字，去标识化后再交给大模型（图片原件不送大模型）
  * <p>
- * 1a 尚未接入境内 OCR 服务（接入后受托方要写进隐私政策）；没有实现类时，图片与扫描件提示学生手动填写。
+ * 实现为内嵌的开源识别服务 {@link AbrRapidOcrClient}（MA-15，同一部署内运行，不涉及第三方受托方）；
+ * 未配置 abroad.ocr.url 时没有实现类，图片与扫描件提示学生手动填写。
  * </p>
  *
  * @author ygb

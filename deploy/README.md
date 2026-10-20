@@ -54,6 +54,14 @@ cp .env.example .env && vi .env     # 填域名、数据库 / Redis 密码、TOK
 
 另需在公众平台「网页授权域名」中填写 `APP_DOMAIN`。绑定手机号的短信服务随 M0-01 开通后接入（`AbrSmsClient`），之前绑定手机号会提示“短信服务尚未开通”。
 
+## 文字识别（MA-15）
+
+`abr-ocr` 是内嵌的开源文字识别服务（`ocr/`：RapidOCR 3.9.2 + PaddleOCR 开源模型，默认 PP-OCRv6，ONNX Runtime CPU），用于图片 / 扫描版简历与成绩单、offer 截图。`deploy.sh` 会构建镜像 `zt-abroad-ocr`，模型在构建时下载并固定，运行时不访问外网；容器只在内网提供给 `abr-admin`（`ABR_OCR_URL=http://abr-ocr:9003`），不映射端口，图片不出服务器。
+
+- 国内服务器构建慢或失败时换 pip 镜像源：`PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple ./deploy.sh`
+- 资源：镜像约 460 MB，常驻内存约 300–500 MB，CPU 识别一页 0.5–2 秒（并发请求排队）
+- 停用：去掉 `abr-admin` 的 `ABR_OCR_URL` 即可，学生上传图片时会提示手动填写
+
 ## HTTPS（上线前必须，小程序只能请求 HTTPS）
 
 1. 证书放到 `deploy/certs/`（如 `admin.pem` / `admin.key`，按域名命名）。

@@ -85,10 +85,6 @@ public class AbrOutcomeServiceImpl implements IAbrOutcomeService
     @Value("${abroad.outcome.reward-product:consult_position}")
     private String rewardProduct;
 
-    /** 感谢是否须员工确认后发放 */
-    @Value("${abroad.outcome.reward-confirm:false}")
-    private boolean rewardConfirm;
-
     @Override
     public AppOutcomeVo mine()
     {
@@ -198,7 +194,8 @@ public class AbrOutcomeServiceImpl implements IAbrOutcomeService
         r.setRewardType(REWARD_TYPE);
         r.setTitle(StringUtils.substring(rewardTitle, 0, 100));
         r.setProductCode(rewardProduct);
-        r.setStatus(rewardConfirm ? "pending" : "issued");
+        // 所有出款（含服务抵扣）只生成待确认记录，由员工核对后发放（开发规范 14.6）
+        r.setStatus("pending");
         r.setRefType("case");
         r.setRefId(c.getCaseId());
         r.setDedupKey("outcome:" + user.getAppUserId() + ":" + c.getSeason());

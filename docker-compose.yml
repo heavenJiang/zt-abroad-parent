@@ -5,7 +5,7 @@
 #   docker compose down              停止并删除容器（数据保留在 abr-pgdata 卷中）
 #
 # 端口与容器名均与 zt-vision-parent 错开，两个项目可在同一台机器上同时运行：
-#   PostgreSQL 5433、Redis 6380、后端 8090
+#   PostgreSQL 5433、Redis 6380、后端 8090；文字识别 abr-ocr 只在内网，不映射端口
 #
 # 数据库首次启动（卷为空）时会自动执行 sql/ 下的初始化脚本和 sql/abroad/ 下的增量脚本；卷中已有数据时不会重复执行，
 # 拉取到新的增量脚本后执行 sql/abroad/migrate.sh（见 sql/abroad/README.md）。
@@ -51,6 +51,14 @@ services:
       retries: 20
     restart: unless-stopped
 
+  # 内嵌文字识别（MA-15）：RapidOCR + PaddleOCR 开源模型，只在内网提供给 abr-admin，不映射端口
+  abr-ocr:
+    build:
+      context: ./ocr
+    image: zt-abroad-ocr:latest
+    container_name: abr-ocr
+    restart: unless-stopped
+
   abr-admin:
     build:
       context: .
@@ -74,6 +82,7 @@ services:
       ABR_WECHAT_OA_MOCK: "true"
       ABR_SMS_MOCK: "true"
       ABR_CHANNEL_MOCK: "true"
+      ABR_OCR_URL: http://abr-ocr:9003
       TZ: Asia/Shanghai
     ports:
       - "8090:8090"
