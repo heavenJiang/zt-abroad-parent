@@ -1,6 +1,7 @@
 package com.ygb.abroad.integration;
 
 import java.util.Date;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * 抓取到的网页（已转为纯文本）
@@ -26,6 +27,10 @@ public class AbrWebPage
 
     /** 纯文本正文（已截断到最大字符数） */
     private String text;
+
+    /** 原始 HTML（纯文本页面为 null；不序列化给前端） */
+    @JsonIgnore
+    private String html;
 
     /** 正文是否被截断 */
     private boolean truncated;
@@ -90,6 +95,16 @@ public class AbrWebPage
     public void setTitle(String title)
     {
         this.title = title;
+    }
+
+    public String getHtml()
+    {
+        return html;
+    }
+
+    public void setHtml(String html)
+    {
+        this.html = html;
     }
 
     public String getText()

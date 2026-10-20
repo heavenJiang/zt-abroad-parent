@@ -90,6 +90,19 @@ public class AbrWebPageFetcher
      */
     public AbrWebPage fetch(String url)
     {
+        return fetch(url, 0);
+    }
+
+    /**
+     * 抓取页面并转为纯文本，同时保留原始 HTML（项目采集发现链接用）
+     *
+     * @param url 页面链接
+     * @param maxChars 纯文本最大字符数（0 为按配置）
+     * @return 页面
+     * @throws AbrFetchException 抓取失败（消息为中文原因）
+     */
+    public AbrWebPage fetch(String url, int maxChars)
+    {
         long start = System.nanoTime();
         long deadline = start + TimeUnit.MILLISECONDS.toNanos(properties.getTotalTimeoutMs());
         URI uri = parse(url);
@@ -136,7 +149,7 @@ public class AbrWebPageFetcher
             {
                 checkContentType("application/pdf");
             }
-            return toPage(url, uri, mime, response.headers().firstValue("content-type").orElse(""), body, redirects, start);
+            return toPage(url, uri, mime, response.headers().firstValue("content-type").orElse(""), body, redirects, start, maxChars);
         }
     }
 
@@ -441,7 +454,8 @@ public class AbrWebPageFetcher
         return new LimitedSubscriber(properties.getMaxBytes());
     }
 
-    private AbrWebPage toPage(String requestUrl, URI finalUri, String mime, String contentTypeHeader, byte[] body, int redirects, long start)
+    private AbrWebPage toPage(String requestUrl, URI finalUri, String mime, String contentTypeHeader, byte[] body, int redirects, long start,
+            int maxChars)
     {
         Charset charset = charset(contentTypeHeader, body);
         String raw = new String(body, charset);
@@ -457,7 +471,7 @@ public class AbrWebPageFetcher
         page.setContentType(mime.isEmpty() ? "text/html" : mime);
         page.setCharset(charset.name());
         page.setTitle(html ? AbrHtmlText.title(raw) : "");
-        int max = properties.getMaxChars() > 0 ? properties.getMaxChars() : AbrFetchProperties.DEFAULT_MAX_CHARS;
+        int max = maxChars > 0 ? maxChars : properties.getMaxChars() > 0 ? properties.getMaxChars() : AbrFetchProperties.DEFAULT_MAX_CHARS;
         if (text.length() > max)
         {
             int cut = Character.isHighSurrogate(text.charAt(max - 1)) ? max - 1 : max;
@@ -465,6 +479,7 @@ public class AbrWebPageFetcher
             page.setTruncated(true);
         }
         page.setText(text);
+        page.setHtml(html ? raw : null);
         page.setBytes(body.length);
         page.setRedirects(redirects);
         page.setFetchedAt(new Date());

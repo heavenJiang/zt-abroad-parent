@@ -239,6 +239,17 @@ abroad:
     scorecard-refresh-days: 7
     # 自动抓取官网首页的间隔（毫秒；只在 robots.txt 允许时抓取）
     homepage-interval-ms: 1000
+  crawl:
+    # 项目自动采集（M2-08）：采集的国家 / 地区；同一站点两次请求的最短间隔（秒，robots 声明的 Crawl-delay 更长时用它）；每个站点最多页面数；每轮最长时间
+    countries: UK,HK,SG,AU
+    min-delay-seconds: 5
+    max-pages-per-site: 3000
+    round-seconds: 100
+    # 多少天后重新发现站点；项目页多少天后重新抓取；页面纯文本最多字符数；写入的申请季（为空按日期推算：8 月起为下一年秋季）
+    rediscover-days: 7
+    refetch-days: 30
+    max-chars: 150000
+    season: ""
   ocr:
     # 内嵌文字识别（MA-15）：同一部署内的 abr-ocr 服务（RapidOCR + PaddleOCR 开源模型），图片不出服务器；为空时不启用（图片 / 扫描件提示手动填写）
     url: ${ABR_OCR_URL:}

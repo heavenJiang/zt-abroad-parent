@@ -1,0 +1,21 @@
+{
+  "_comment": "按“英语等级”标注语言要求的学校（M2-08）：系统抓取官方等级说明页并存档，从原文解析等级 → 雅思总分与小分；项目页按 pageMarker 找到等级后套用。style：inline 为 IELTS 小节下每行一个等级（UCL），section 为每个等级一个小节、小节内 IELTS 下一行是分数（KCL）",
+  "bands": [
+    {
+      "school": "University College London",
+      "url": "https://www.ucl.ac.uk/prospective-students/graduate/english-language-requirements",
+      "style": "inline",
+      "test": "IELTS",
+      "label": "Level [1-5]",
+      "pageMarker": "(?i)English language level for this (?:course|programme) is:?\\s*(Level [1-5])"
+    },
+    {
+      "school": "King's College London",
+      "url": "https://www.kcl.ac.uk/study/postgraduate-taught/how-to-apply/entry-requirements/english-language-requirements",
+      "style": "section",
+      "test": "IELTS (Academic)",
+      "label": "Band [A-E]",
+      "pageMarker": "(?i)English language[^\\n]{0,80}?\\b(Band [A-E])\\b"
+    }
+  ]
+}

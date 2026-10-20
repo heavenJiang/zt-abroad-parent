@@ -1,0 +1,74 @@
+# 第 1 批（英国、中国香港、新加坡、澳洲）学校档案种子（M2-13）：热门方向头部院校
+# 名次不在此填写，由榜单导入（M2-10）从存档的官方榜单填入；身份与官网以 registries.json 中的官方名录核对
+# 国家	名录	中文名	英文名	城市	官网
+UK	ofs	牛津大学	University of Oxford	Oxford	https://www.ox.ac.uk/
+UK	ofs	剑桥大学	University of Cambridge	Cambridge	https://www.cam.ac.uk/
+UK	ofs	帝国理工学院	Imperial College London	London	https://www.imperial.ac.uk/
+UK	ofs	伦敦大学学院	University College London	London	https://www.ucl.ac.uk/
+UK	ofs	伦敦政治经济学院	London School of Economics and Political Science	London	https://www.lse.ac.uk/
+UK	ofs	伦敦国王学院	King's College London	London	https://www.kcl.ac.uk/
+UK	ofs	曼彻斯特大学	University of Manchester	Manchester	https://www.manchester.ac.uk/
+UK	ofs	布里斯托大学	University of Bristol	Bristol	https://www.bristol.ac.uk/
+UK	ofs	华威大学	University of Warwick	Coventry	https://warwick.ac.uk/
+UK	ofs	杜伦大学	Durham University	Durham	https://www.durham.ac.uk/
+UK	ofs	南安普顿大学	University of Southampton	Southampton	https://www.southampton.ac.uk/
+UK	ofs	伯明翰大学	University of Birmingham	Birmingham	https://www.birmingham.ac.uk/
+UK	ofs	利兹大学	University of Leeds	Leeds	https://www.leeds.ac.uk/
+UK	ofs	谢菲尔德大学	University of Sheffield	Sheffield	https://www.sheffield.ac.uk/
+UK	ofs	诺丁汉大学	University of Nottingham	Nottingham	https://www.nottingham.ac.uk/
+UK	ofs	伦敦玛丽女王大学	Queen Mary University of London	London	https://www.qmul.ac.uk/
+UK	ofs	纽卡斯尔大学	Newcastle University	Newcastle upon Tyne	https://www.ncl.ac.uk/
+UK	ofs	兰卡斯特大学	Lancaster University	Lancaster	https://www.lancaster.ac.uk/
+UK	ofs	埃克塞特大学	University of Exeter	Exeter	https://www.exeter.ac.uk/
+UK	ofs	约克大学	University of York	York	https://www.york.ac.uk/
+UK	ofs	巴斯大学	University of Bath	Bath	https://www.bath.ac.uk/
+UK	ofs	利物浦大学	University of Liverpool	Liverpool	https://www.liverpool.ac.uk/
+UK	ofs	拉夫堡大学	Loughborough University	Loughborough	https://www.lboro.ac.uk/
+UK	ofs	萨里大学	University of Surrey	Guildford	https://www.surrey.ac.uk/
+UK	ofs	萨塞克斯大学	University of Sussex	Brighton	https://www.sussex.ac.uk/
+UK	ofs	莱斯特大学	University of Leicester	Leicester	https://le.ac.uk/
+UK	ofs	雷丁大学	University of Reading	Reading	https://www.reading.ac.uk/
+UK	ofs	伦敦大学皇家霍洛威学院	Royal Holloway, University of London	Egham	https://www.royalholloway.ac.uk/
+UK	ofs	伦敦城市圣乔治大学	City St George's, University of London	London	https://www.citystgeorges.ac.uk/
+UK	ofs	克兰菲尔德大学	Cranfield University	Cranfield	https://www.cranfield.ac.uk/
+UK	ofs	伦敦大学亚非学院	SOAS University of London	London	https://www.soas.ac.uk/
+UK	ofs	阿斯顿大学	Aston University	Birmingham	https://www.aston.ac.uk/
+UK	ofs	东英吉利大学	University of East Anglia	Norwich	https://www.uea.ac.uk/
+UK	scot	爱丁堡大学	University of Edinburgh	Edinburgh	https://www.ed.ac.uk/
+UK	scot	格拉斯哥大学	University of Glasgow	Glasgow	https://www.gla.ac.uk/
+UK	scot	圣安德鲁斯大学	University of St Andrews	St Andrews	https://www.st-andrews.ac.uk/
+UK	scot	阿伯丁大学	University of Aberdeen	Aberdeen	https://www.abdn.ac.uk/
+UK	scot	斯特拉斯克莱德大学	University of Strathclyde	Glasgow	https://www.strath.ac.uk/
+UK	scot	赫瑞瓦特大学	Heriot-Watt University	Edinburgh	https://www.hw.ac.uk/
+UK	wales	卡迪夫大学	Cardiff University	Cardiff	https://www.cardiff.ac.uk/
+UK	ni	贝尔法斯特女王大学	Queen's University Belfast	Belfast	https://www.qub.ac.uk/
+HK	ugc	香港大学	The University of Hong Kong	Hong Kong	https://www.hku.hk/
+HK	ugc	香港中文大学	The Chinese University of Hong Kong	Hong Kong	https://www.cuhk.edu.hk/
+HK	ugc	香港科技大学	The Hong Kong University of Science and Technology	Hong Kong	https://hkust.edu.hk/
+HK	ugc	香港理工大学	The Hong Kong Polytechnic University	Hong Kong	https://www.polyu.edu.hk/
+HK	ugc	香港城市大学	City University of Hong Kong	Hong Kong	https://www.cityu.edu.hk/
+HK	ugc	香港浸会大学	Hong Kong Baptist University	Hong Kong	https://www.hkbu.edu.hk/
+HK	ugc	岭南大学	Lingnan University	Hong Kong	https://www.ln.edu.hk/
+HK	ugc	香港教育大学	The Education University of Hong Kong	Hong Kong	https://www.eduhk.hk/
+SG	moe	新加坡国立大学	National University of Singapore	Singapore	https://nus.edu.sg/
+SG	moe	南洋理工大学	Nanyang Technological University	Singapore	https://www.ntu.edu.sg/
+SG	moe	新加坡管理大学	Singapore Management University	Singapore	https://www.smu.edu.sg/
+SG	moe	新加坡科技设计大学	Singapore University of Technology and Design	Singapore	https://www.sutd.edu.sg/
+SG	moe	新加坡理工大学	Singapore Institute of Technology	Singapore	https://www.singaporetech.edu.sg/
+SG	moe	新加坡新跃社科大学	Singapore University of Social Sciences	Singapore	https://www.suss.edu.sg/
+AU	study_au	墨尔本大学	University of Melbourne	Melbourne	https://www.unimelb.edu.au/
+AU	study_au	悉尼大学	University of Sydney	Sydney	https://www.sydney.edu.au/
+AU	study_au	澳大利亚国立大学	Australian National University	Canberra	https://www.anu.edu.au/
+AU	study_au	昆士兰大学	University of Queensland	Brisbane	https://www.uq.edu.au/
+AU	study_au	新南威尔士大学	University of New South Wales	Sydney	https://www.unsw.edu.au/
+AU	study_au	莫纳什大学	Monash University	Melbourne	https://www.monash.edu/
+AU	study_au	西澳大学	University of Western Australia	Perth	https://www.uwa.edu.au/
+AU	study_au	阿德莱德大学	Adelaide University	Adelaide	https://www.adelaide.edu.au/
+AU	study_au	悉尼科技大学	University of Technology Sydney	Sydney	https://www.uts.edu.au/
+AU	study_au	麦考瑞大学	Macquarie University	Sydney	https://www.mq.edu.au/
+AU	study_au	皇家墨尔本理工大学	RMIT University	Melbourne	https://www.rmit.edu.au/
+AU	study_au	迪肯大学	Deakin University	Melbourne	https://www.deakin.edu.au/
+AU	study_au	昆士兰科技大学	Queensland University of Technology	Brisbane	https://www.qut.edu.au/
+AU	study_au	科廷大学	Curtin University	Perth	https://www.curtin.edu.au/
+AU	study_au	伍伦贡大学	University of Wollongong	Wollongong	https://www.uow.edu.au/
+AU	study_au	纽卡斯尔大学（澳洲）	University of Newcastle	Newcastle	https://www.newcastle.edu.au/

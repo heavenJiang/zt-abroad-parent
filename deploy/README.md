@@ -62,6 +62,10 @@ cp .env.example .env && vi .env     # 填域名、数据库 / Redis 密码、TOK
 - 资源：镜像约 460 MB，常驻内存约 300–500 MB，CPU 识别一页 0.5–2 秒（并发请求排队）
 - 停用：去掉 `abr-admin` 的 `ABR_OCR_URL` 即可，学生上传图片时会提示手动填写
 
+## 项目自动采集（M2-08）
+
+定时任务 `abrCrawlTask.discover()`（每天 02:30）与 `abrCrawlTask.fetch()`（每 2 分钟）在生产默认启用，按 robots.txt 低频抓取各校官网项目页；进度在管理后台「院校库 → 项目采集」查看。配置真实大模型（`ABR_AI_DEEPSEEK_API_KEY` 或 `ABR_AI_QWEN_API_KEY`，并在「Agent 配置」把 `catalog_extractor` 的主模型改为对应模型）后，均分要求等复杂字段由大模型抽取，项目才能满足上架条件。
+
 ## HTTPS（上线前必须，小程序只能请求 HTTPS）
 
 1. 证书放到 `deploy/certs/`（如 `admin.pem` / `admin.key`，按域名命名）。

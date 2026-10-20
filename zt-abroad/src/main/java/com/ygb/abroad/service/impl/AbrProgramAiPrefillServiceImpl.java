@@ -178,6 +178,14 @@ public class AbrProgramAiPrefillServiceImpl implements IAbrProgramAiPrefillServi
     /**
      * 字典有效编码（只取正常状态）；缓存未加载时返回 null，由校验器使用内置编码
      */
+    /**
+     * 字典类型 → 有效编码（项目采集复用同一校验）
+     */
+    static Set<String> dictValuesFor(String dictType)
+    {
+        return dictValues(dictType);
+    }
+
     private static Set<String> dictValues(String dictType)
     {
         List<SysDictData> datas = DictUtils.getDictCache(dictType);

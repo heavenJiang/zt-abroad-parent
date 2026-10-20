@@ -46,4 +46,14 @@ class AbrRobotsPolicyTest
         assertTrue(AbrRobotsPolicy.decide(AbrRobotsPolicy.parse("User-agent: *\nDisallow:\n", AbrRobotsPolicy.AGENT), "/anything"));
         assertTrue(AbrRobotsPolicy.decide(AbrRobotsPolicy.parse("", AbrRobotsPolicy.AGENT), "/"));
     }
+
+    @Test
+    void sitemapsAndDelay()
+    {
+        String txt = "Sitemap: https://www.x.ac.uk/sitemap.xml\nUser-agent: *\nCrawl-delay: 10\nDisallow: /a\n\nUser-agent: AbroadCatalogBot\nCrawl-delay: 3\n";
+        assertEquals(List.of("https://www.x.ac.uk/sitemap.xml"), AbrRobotsPolicy.sitemapLines(txt));
+        assertEquals(3, AbrRobotsPolicy.crawlDelay(txt, AbrRobotsPolicy.AGENT));
+        assertEquals(10, AbrRobotsPolicy.crawlDelay("User-agent: *\nCrawl-delay: 9.5\n", AbrRobotsPolicy.AGENT));
+        assertEquals(0, AbrRobotsPolicy.crawlDelay("User-agent: *\nDisallow: /x\n", AbrRobotsPolicy.AGENT));
+    }
 }

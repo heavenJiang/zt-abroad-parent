@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrCrawlMapper">
+
+    <resultMap type="AbrCrawlSite" id="AbrCrawlSiteResult">
+        <result property="siteId"             column="site_id"              />
+        <result property="schoolId"           column="school_id"            />
+        <result property="schoolName"         column="school_name"          />
+        <result property="schoolNameEn"       column="school_name_en"       />
+        <result property="country"            column="country"              />
+        <result property="baseUrl"            column="base_url"             />
+        <result property="status"             column="status"               />
+        <result property="sitemaps"           column="sitemaps"             />
+        <result property="crawlDelay"         column="crawl_delay"          />
+        <result property="lastDiscoverTime"   column="last_discover_time"   />
+        <result property="lastDiscoverResult" column="last_discover_result" />
+        <result property="pageCount"          column="page_count"           />
+        <result property="programCount"       column="program_count"        />
+        <result property="pendingCount"       column="pending_count"        />
+        <result property="problemCount"       column="problem_count"        />
+        <result property="createTime"         column="create_time"          />
+        <result property="updateTime"         column="update_time"          />
+    </resultMap>
+
+    <resultMap type="AbrCrawlPage" id="AbrCrawlPageResult">
+        <result property="pageId"        column="page_id"         />
+        <result property="siteId"        column="site_id"         />
+        <result property="schoolId"      column="school_id"       />
+        <result property="schoolName"    column="school_name"     />
+        <result property="url"           column="url"             />
+        <result property="kind"          column="kind"            />
+        <result property="depth"         column="depth"           />
+        <result property="foundFrom"     column="found_from"      />
+        <result property="linkText"      column="link_text"       />
+        <result property="status"        column="status"          />
+        <result property="title"         column="title"           />
+        <result property="snapshotId"    column="snapshot_id"     />
+        <result property="contentHash"   column="content_hash"    />
+        <result property="programId"     column="program_id"      />
+        <result property="programNameEn" column="program_name_en" />
+        <result property="programStatus" column="program_status"  />
+        <result property="requirementId" column="requirement_id"  />
+        <result property="fieldsFound"   column="fields_found"    />
+        <result property="result"        column="result"          />
+        <result property="failCount"     column="fail_count"      />
+        <result property="reason"        column="reason"          />
+        <result property="fetchedTime"   column="fetched_time"    />
+        <result property="nextFetchTime" column="next_fetch_time" />
+        <result property="createTime"    column="create_time"     />
+        <result property="updateTime"    column="update_time"     />
+    </resultMap>
+
+    <insert id="insertMissingSites">
+        insert into abr_crawl_site (school_id, base_url, create_time)
+        select s.school_id, s.website, now()
+        from abr_school s
+        where s.del_flag = '0' and s.status = '0' and coalesce(s.website, '') &lt;&gt; ''
+          and s.country in <foreach collection="countries" item="c" open="(" separator="," close=")">#{c}</foreach>
+          and not exists (select 1 from abr_crawl_site c where c.school_id = s.school_id)
+    </insert>
+
+    <sql id="selectSiteVo">
+        select c.site_id, c.school_id, s.school_name, s.school_name_en, s.country, c.base_url, c.status, c.sitemaps, c.crawl_delay,
+               c.last_discover_time, c.last_discover_result, c.create_time, c.update_time,
+               (select count(*) from abr_crawl_page p where p.site_id = c.site_id) as page_count,
+               (select count(*) from abr_crawl_page p where p.site_id = c.site_id and p.status = 'done' and p.program_id is not null) as program_count,
+               (select count(*) from abr_crawl_page p where p.site_id = c.site_id and p.status = 'new') as pending_count,
+               (select count(*) from abr_crawl_page p where p.site_id = c.site_id and p.status in ('failed', 'blocked')) as problem_count
+        from abr_crawl_site c
+        join abr_school s on s.school_id = c.school_id
+    </sql>
+
+    <select id="selectSiteList" parameterType="AbrCrawlSite" resultMap="AbrCrawlSiteResult">
+        <include refid="selectSiteVo"/>
+        <where>
+            <if test="country != null and country != ''">and s.country = #{country}</if>
+            <if test="status != null and status != ''">and c.status = #{status}</if>
+            <if test="schoolName != null and schoolName != ''">and (s.school_name like concat('%', #{schoolName}, '%') or s.school_name_en ilike concat('%', #{schoolName}, '%'))</if>
+        </where>
+        order by s.country, s.school_name_en
+    </select>
+
+    <select id="selectSiteBySchool" parameterType="Long" resultMap="AbrCrawlSiteResult">
+        <include refid="selectSiteVo"/>
+        where c.school_id = #{schoolId}
+    </select>
+
+    <select id="selectSiteById" parameterType="Long" resultMap="AbrCrawlSiteResult">
+        <include refid="selectSiteVo"/>
+        where c.site_id = #{siteId}
+    </select>
+
+    <select id="selectSitesToDiscover" resultMap="AbrCrawlSiteResult">
+        <include refid="selectSiteVo"/>
+        where c.status = '0' and (c.last_discover_time is null or c.last_discover_time &lt; #{before})
+          and s.country in <foreach collection="countries" item="x" open="(" separator="," close=")">#{x}</foreach>
+        order by c.last_discover_time nulls first, c.site_id
+    </select>
+
+    <update id="updateSiteDiscovered">
+        update abr_crawl_site
+        set sitemaps = cast(#{sitemaps} as jsonb), crawl_delay = #{crawlDelay}, last_discover_time = now(), last_discover_result = #{result}, update_time = now()
+        where site_id = #{siteId}
+    </update>
+
+    <update id="updateSiteStatus">
+        update abr_crawl_site set status = #{status}, update_time = now() where site_id = #{siteId}
+    </update>
+
+    <insert id="insertPage" parameterType="AbrCrawlPage">
+        insert into abr_crawl_page (site_id, school_id, url, kind, depth, found_from, link_text, status, next_fetch_time, create_time)
+        values (#{siteId}, #{schoolId}, #{url}, #{kind}, coalesce(#{depth}, 0), #{foundFrom}, coalesce(#{linkText}, ''), 'new', now(), now())
+        on conflict (url) do nothing
+    </insert>
+
+    <sql id="selectPageVo">
+        select p.page_id, p.site_id, p.school_id, s.school_name, p.url, p.kind, p.depth, p.found_from, p.link_text, p.status, p.title, p.snapshot_id,
+               p.content_hash, p.program_id, g.program_name_en, g.status as program_status, p.requirement_id, p.fields_found, p.result,
+               p.fail_count, p.reason, p.fetched_time, p.next_fetch_time, p.create_time, p.update_time
+        from abr_crawl_page p
+        join abr_school s on s.school_id = p.school_id
+        left join abr_program g on g.program_id = p.program_id
+    </sql>
+
+    <select id="selectPageList" parameterType="AbrCrawlPage" resultMap="AbrCrawlPageResult">
+        <include refid="selectPageVo"/>
+        <where>
+            <if test="schoolId != null">and p.school_id = #{schoolId}</if>
+            <if test="siteId != null">and p.site_id = #{siteId}</if>
+            <if test="status != null and status != ''">and p.status = #{status}</if>
+            <if test="kind != null and kind != ''">and p.kind = #{kind}</if>
+            <if test="url != null and url != ''">and p.url ilike concat('%', #{url}, '%')</if>
+        </where>
+        order by p.update_time desc nulls last, p.page_id desc
+    </select>
+
+    <select id="selectPageById" parameterType="Long" resultMap="AbrCrawlPageResult">
+        <include refid="selectPageVo"/>
+        where p.page_id = #{pageId}
+    </select>
+
+    <!-- 每个站点各取最早到期的若干个（站点之间并行推进；新页面优先） -->
+    <select id="selectDuePages" resultMap="AbrCrawlPageResult">
+        with due as (
+            select p.page_id,
+                   row_number() over (partition by p.site_id order by case when p.status = 'new' then 0 else 1 end, p.next_fetch_time, p.page_id) as rn
+            from abr_crawl_page p
+            join abr_crawl_site c on c.site_id = p.site_id
+            join abr_school s on s.school_id = p.school_id
+            where c.status = '0' and p.next_fetch_time &lt;= now()
+              and s.country in <foreach collection="countries" item="x" open="(" separator="," close=")">#{x}</foreach>
+        )
+        <include refid="selectPageVo"/>
+        join due d on d.page_id = p.page_id
+        where d.rn &lt;= 20
+        order by d.rn, p.page_id
+        limit #{limit}
+    </select>
+
+    <update id="updatePageResult" parameterType="AbrCrawlPage">
+        update abr_crawl_page
+        set status = #{status}, title = coalesce(#{title}, title), snapshot_id = coalesce(#{snapshotId}, snapshot_id),
+            content_hash = coalesce(#{contentHash}, content_hash), program_id = coalesce(#{programId}, program_id),
+            requirement_id = coalesce(#{requirementId}, requirement_id), fields_found = coalesce(#{fieldsFound}, fields_found),
+            result = coalesce(cast(#{result} as jsonb), result), fail_count = coalesce(#{failCount}, fail_count), reason = coalesce(#{reason}, ''),
+            fetched_time = coalesce(#{fetchedTime}, fetched_time), next_fetch_time = #{nextFetchTime}, update_time = now()
+        where page_id = #{pageId}
+    </update>
+
+    <update id="requeuePage" parameterType="Long">
+        update abr_crawl_page set next_fetch_time = now(), content_hash = '', update_time = now() where page_id = #{pageId}
+    </update>
+
+    <select id="countPagesOfSite" parameterType="Long" resultType="int">
+        select count(*) from abr_crawl_page where site_id = #{siteId}
+    </select>
+
+</mapper>

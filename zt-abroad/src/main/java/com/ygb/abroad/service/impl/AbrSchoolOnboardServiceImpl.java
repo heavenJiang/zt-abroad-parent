@@ -26,16 +26,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import com.ygb.abroad.domain.AbrFieldSource;
-import com.ygb.abroad.domain.AbrSchool;
 import com.ygb.abroad.domain.AbrSourceSnapshot;
-import com.ygb.abroad.integration.AbrFetchException;
-import com.ygb.abroad.integration.AbrRobotsPolicy;
-import com.ygb.abroad.integration.AbrWebPage;
-import com.ygb.abroad.integration.AbrWebPageFetcher;
-import com.ygb.abroad.mapper.AbrFieldSourceMapper;
-import com.ygb.abroad.mapper.AbrSchoolMapper;
 import com.ygb.abroad.service.IAbrSchoolOnboardService;
-import com.ygb.abroad.service.IAbrSchoolService;
 import com.ygb.abroad.service.IAbrSourceArchiveService;
 import com.ygb.common.core.redis.RedisCache;
 import com.ygb.common.utils.StringUtils;
@@ -66,7 +58,7 @@ public class AbrSchoolOnboardServiceImpl implements IAbrSchoolOnboardService
 
     static final String STATUS_KEY = "abroad:onboard:us_national";
 
-    static final String AGENT = "school_onboard";
+    static final String AGENT = AbrSchoolOnboardWriter.AGENT;
 
     /** 每次调用接口的编号数 */
     static final int BATCH = 50;
@@ -78,22 +70,11 @@ public class AbrSchoolOnboardServiceImpl implements IAbrSchoolOnboardService
     private final AtomicBoolean running = new AtomicBoolean(false);
 
     @Autowired
-    private IAbrSchoolService schoolService;
-
-    @Autowired
-    private AbrSchoolMapper schoolMapper;
-
-    @Autowired
-    private AbrFieldSourceMapper sourceMapper;
+    private AbrSchoolOnboardWriter writer;
 
     @Autowired
     private IAbrSourceArchiveService archiveService;
 
-    @Autowired
-    private AbrRobotsPolicy robots;
-
-    @Autowired
-    private AbrWebPageFetcher fetcher;
 
     @Autowired
     private RedisCache redisCache;
@@ -114,9 +95,6 @@ public class AbrSchoolOnboardServiceImpl implements IAbrSchoolOnboardService
     @Value("${abroad.catalog.scorecard-refresh-days:7}")
     private int refreshDays;
 
-    /** 抓取官网首页的间隔（毫秒） */
-    @Value("${abroad.catalog.homepage-interval-ms:1000}")
-    private long homepageIntervalMs;
 
     /** 名单一行 */
     record SeedRow(String nameZh, String nameEn, String city, String state, String website, String ipeds)
@@ -229,62 +207,20 @@ public class AbrSchoolOnboardServiceImpl implements IAbrSchoolOnboardService
             }
             String quote = StringUtils.substring(StringUtils.defaultIfBlank(rawOf.get(row.ipeds()), rec.toString()), 0, 2000);
             Map<String, AbrFieldSource> sources = new LinkedHashMap<>();
-            for (String f : List.of("schoolNameEn", "city", "extIds", "aliases"))
+            for (String f : List.of("schoolNameEn", "city", "extIds", "aliases", "website"))
             {
-                sources.put(f, source(f, pageUrlOf.get(row.ipeds()), quote, snapshotOf.get(row.ipeds()), operator));
+                sources.put(f, AbrSchoolOnboardWriter.source(f, pageUrlOf.get(row.ipeds()), quote, snapshotOf.get(row.ipeds()), operator));
             }
-            sources.put("website", source("website", pageUrlOf.get(row.ipeds()), quote, snapshotOf.get(row.ipeds()), operator));
-            Long home = homepage(website, issues, row.nameEn());
-            if (home != null)
+            String result = writer.write(new AbrSchoolOnboardWriter.Candidate("US", row.nameZh(), row.nameEn(),
+                    rec.path("school.city").asString(row.city()) + ", " + row.state(), website,
+                    AbrSchoolOnboardRules.aliases(row.nameEn(), official, rec.path("school.alias").asString("")), "ipeds", row.ipeds(), sources),
+                    issues, operator);
+            homepages += result.endsWith("+home") ? 1 : 0;
+            switch (result.replace("+home", ""))
             {
-                homepages++;
-                AbrFieldSource hs = source("website", website, archiveService.selectSnapshot(home).getTitle(), home, operator);
-                sources.put("website", hs);
-            }
-            AbrSchool probe = new AbrSchool();
-            probe.setCountry("US");
-            probe.setSchoolNameEn(row.nameEn());
-            AbrSchool old = schoolMapper.checkAbrSchoolUnique(probe);
-            AbrSchool s = old == null ? new AbrSchool() : schoolService.selectAbrSchoolById(old.getSchoolId());
-            boolean isNew = old == null;
-            AbrSchool before = isNew ? null : copy(s);
-            s.setSchoolName(row.nameZh());
-            s.setSchoolNameEn(row.nameEn());
-            s.setCountry("US");
-            s.setCity(rec.path("school.city").asString(row.city()) + ", " + row.state());
-            s.setWebsite(website);
-            s.setAliases(MAPPER.writeValueAsString(AbrSchoolOnboardRules.aliases(row.nameEn(), official, rec.path("school.alias").asString(""))));
-            s.setExtIds(AbrSchoolOnboardRules.extIds(s.getExtIds(), "ipeds", row.ipeds()));
-            if (isNew)
-            {
-                s.setRankings("[]");
-                // 教育部认可状态为空表示待核对（不做推断）
-                s.setMoeRecognized(AbrSchoolOnboardRules.MOE_PENDING);
-                s.setStatus("0");
-                s.setCreateBy(operator);
-            }
-            s.setUpdateBy(operator);
-            s.getParams().put(IAbrSourceArchiveService.PARAM_CHANGE_MODE, "import");
-            s.getParams().put("sources", sources);
-            if (isNew)
-            {
-                schoolService.insertAbrSchool(s);
-                created++;
-            }
-            else if (AbrSchoolOnboardRules.changed(before, s))
-            {
-                schoolService.updateAbrSchool(s);
-                updated++;
-            }
-            else
-            {
-                unchanged++;
-            }
-            for (AbrFieldSource src : sources.values())
-            {
-                src.setTableName(AbrSchoolServiceImpl.SCHOOL_TABLE);
-                src.setRecordId(s.getSchoolId());
-                sourceMapper.upsertAbrFieldSource(src);
+                case "created" -> created++;
+                case "updated" -> updated++;
+                default -> unchanged++;
             }
         }
         Map<String, Object> out = new LinkedHashMap<>();
@@ -299,57 +235,8 @@ public class AbrSchoolOnboardServiceImpl implements IAbrSchoolOnboardService
         return out;
     }
 
-    private static AbrSchool copy(AbrSchool s)
-    {
-        AbrSchool c = new AbrSchool();
-        c.setSchoolName(s.getSchoolName());
-        c.setSchoolNameEn(s.getSchoolNameEn());
-        c.setCity(s.getCity());
-        c.setWebsite(s.getWebsite());
-        c.setAliases(s.getAliases());
-        c.setExtIds(s.getExtIds());
-        return c;
-    }
 
-    private static AbrFieldSource source(String field, String url, String quote, Long snapshotId, String operator)
-    {
-        AbrFieldSource f = new AbrFieldSource();
-        f.setFieldName(field);
-        f.setSourceUrl(StringUtils.substring(url, 0, 1000));
-        f.setQuote(quote);
-        f.setOrigin("2");
-        f.setSnapshotId(snapshotId);
-        f.setVerifiedBy(operator);
-        return f;
-    }
 
-    /**
-     * robots 允许时抓取官网首页并存档；返回存档 ID，不允许或失败为 null（原因写进 issues）
-     */
-    private Long homepage(String website, List<String> issues, String name)
-    {
-        if (!robots.allowed(website))
-        {
-            issues.add(name + "：官网 robots.txt 不允许本系统抓取首页，官网依据为官方记录");
-            return null;
-        }
-        try
-        {
-            Thread.sleep(Math.max(0, homepageIntervalMs));
-            AbrWebPage page = fetcher.fetch(website);
-            return archiveService.archive(website, page.getFinalUrl(), "web", 200, page.getContentType(), page.getTitle(), page.getText(), AGENT);
-        }
-        catch (AbrFetchException e)
-        {
-            issues.add(name + "：官网首页抓取失败（" + e.getMessage() + "），官网依据为官方记录");
-            return null;
-        }
-        catch (InterruptedException e)
-        {
-            Thread.currentThread().interrupt();
-            return null;
-        }
-    }
 
     private String get(String url)
     {

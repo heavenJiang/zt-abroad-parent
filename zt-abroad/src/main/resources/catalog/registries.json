@@ -1,0 +1,18 @@
+{
+  "_comment": "各国官方高校名录（M2-13）：建档时下载并存档，学校英文名须在对应名录中出现；format 为 html（网页正文）、gov_uk（GOV.UK 内容接口）、ofs_xlsx（英国学生办公室名录表格，含 UKPRN 与官网）",
+  "UK": [
+    { "key": "ofs", "title": "英国学生办公室（OfS）英格兰高校名录", "url": "https://register-api.officeforstudents.org.uk/api/Download/", "format": "ofs_xlsx" },
+    { "key": "scot", "title": "苏格兰政府：大学政策与认可院校", "url": "https://www.gov.scot/policies/universities/", "format": "html" },
+    { "key": "wales", "title": "GOV.UK：威尔士认可院校", "url": "https://www.gov.uk/api/content/check-university-award-degree", "format": "gov_uk", "part": "recognised-bodies-wales" },
+    { "key": "ni", "title": "北爱尔兰经济部：高等教育与认可院校", "url": "https://www.economy-ni.gov.uk/articles/higher-education-policy", "format": "html" }
+  ],
+  "HK": [
+    { "key": "ugc", "title": "香港大学教育资助委员会（UGC）资助大学", "url": "https://www.ugc.edu.hk/eng/ugc/site/fund_inst.html", "format": "html" }
+  ],
+  "SG": [
+    { "key": "moe", "title": "新加坡教育部：自治大学", "url": "https://www.moe.gov.sg/post-secondary/overview/autonomous-universities", "format": "html" }
+  ],
+  "AU": [
+    { "key": "study_au", "title": "澳大利亚政府 Study Australia：澳洲大学名单", "url": "https://www.studyaustralia.gov.au/en/plan-your-studies/list-of-australian-universities", "format": "html" }
+  ]
+}

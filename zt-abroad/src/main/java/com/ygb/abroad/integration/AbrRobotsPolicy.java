@@ -55,7 +55,7 @@ public class AbrRobotsPolicy
     {
     }
 
-    record Cached(List<Rule> rules, boolean allowAll, boolean denyAll, long at)
+    record Cached(List<Rule> rules, boolean allowAll, boolean denyAll, long at, List<String> sitemaps, int crawlDelay)
     {
     }
 
@@ -67,6 +67,44 @@ public class AbrRobotsPolicy
      */
     public boolean allowed(String url)
     {
+        Cached c = cached(url);
+        if (c == null || c.denyAll())
+        {
+            return false;
+        }
+        if (c.allowAll())
+        {
+            return true;
+        }
+        URI uri = URI.create(url);
+        String path = (uri.getRawPath() == null || uri.getRawPath().isEmpty() ? "/" : uri.getRawPath())
+                + (uri.getRawQuery() == null ? "" : "?" + uri.getRawQuery());
+        return decide(c.rules(), path);
+    }
+
+    /**
+     * 站点 robots.txt 中声明的站点地图
+     *
+     * @param url 站点内任一网址
+     * @return 站点地图网址（没有为空）
+     */
+    public List<String> sitemaps(String url)
+    {
+        Cached c = cached(url);
+        return c == null ? List.of() : c.sitemaps();
+    }
+
+    /**
+     * 站点要求的抓取间隔（秒；没有声明为 0）
+     */
+    public int crawlDelay(String url)
+    {
+        Cached c = cached(url);
+        return c == null ? 0 : c.crawlDelay();
+    }
+
+    private Cached cached(String url)
+    {
         URI uri;
         try
         {
@@ -74,11 +112,11 @@ public class AbrRobotsPolicy
         }
         catch (IllegalArgumentException e)
         {
-            return false;
+            return null;
         }
         if (uri.getHost() == null || !("http".equals(uri.getScheme()) || "https".equals(uri.getScheme())))
         {
-            return false;
+            return null;
         }
         String site = uri.getScheme() + "://" + uri.getRawAuthority();
         Cached c = cache.get(site);
@@ -87,17 +125,7 @@ public class AbrRobotsPolicy
             c = load(site, uri.getHost());
             cache.put(site, c);
         }
-        if (c.denyAll())
-        {
-            return false;
-        }
-        if (c.allowAll())
-        {
-            return true;
-        }
-        String path = (uri.getRawPath() == null || uri.getRawPath().isEmpty() ? "/" : uri.getRawPath())
-                + (uri.getRawQuery() == null ? "" : "?" + uri.getRawQuery());
-        return decide(c.rules(), path);
+        return c;
     }
 
     private Cached load(String site, String host)
@@ -109,7 +137,7 @@ public class AbrRobotsPolicy
             {
                 if (!properties.isAllowPrivateHosts() && AbrWebPageFetcher.isBlockedAddress(a))
                 {
-                    return new Cached(List.of(), false, true, now);
+                    return new Cached(List.of(), false, true, now, List.of(), 0);
                 }
             }
             HttpRequest req = HttpRequest.newBuilder(URI.create(site + "/robots.txt")).timeout(Duration.ofSeconds(15))
@@ -118,15 +146,15 @@ public class AbrRobotsPolicy
             int code = resp.statusCode();
             if (code == 404 || code == 410)
             {
-                return new Cached(List.of(), true, false, now);
+                return new Cached(List.of(), true, false, now, List.of(), 0);
             }
             if (code != 200)
             {
-                return new Cached(List.of(), false, true, now);
+                return new Cached(List.of(), false, true, now, List.of(), 0);
             }
             byte[] body = resp.body();
             String text = new String(body, 0, Math.min(body.length, MAX_BYTES), StandardCharsets.UTF_8);
-            return new Cached(parse(text, AGENT), false, false, now);
+            return new Cached(parse(text, AGENT), false, false, now, sitemapLines(text), crawlDelay(text, AGENT));
         }
         catch (Exception e)
         {
@@ -134,7 +162,7 @@ public class AbrRobotsPolicy
             {
                 Thread.currentThread().interrupt();
             }
-            return new Cached(List.of(), false, true, now);
+            return new Cached(List.of(), false, true, now, List.of(), 0);
         }
     }
 
@@ -182,6 +210,89 @@ public class AbrRobotsPolicy
         }
         mineFound |= flush(groupAgents, group, me, mine, star);
         return mineFound ? mine : star;
+    }
+
+    /**
+     * robots.txt 中的 Sitemap 行（与规则组无关）
+     */
+    static List<String> sitemapLines(String text)
+    {
+        List<String> out = new ArrayList<>();
+        for (String raw : text.split("\\r?\\n"))
+        {
+            String line = raw.trim();
+            if (line.toLowerCase(Locale.ROOT).startsWith("sitemap:"))
+            {
+                String u = line.substring("sitemap:".length()).trim();
+                if (u.startsWith("http") && out.size() < 50)
+                {
+                    out.add(u);
+                }
+            }
+        }
+        return out;
+    }
+
+    /**
+     * 适用于本系统的 Crawl-delay（专门的组优先，否则 *；没有为 0，最多 60 秒）
+     */
+    static int crawlDelay(String text, String agent)
+    {
+        String me = agent.toLowerCase(Locale.ROOT);
+        int mine = -1;
+        int star = -1;
+        List<String> agents = new ArrayList<>();
+        boolean inRules = false;
+        for (String raw : (text + "\n").split("\\r?\\n"))
+        {
+            String line = raw.replaceAll("#.*$", "").trim();
+            int colon = line.indexOf(':');
+            if (colon <= 0)
+            {
+                continue;
+            }
+            String key = line.substring(0, colon).trim().toLowerCase(Locale.ROOT);
+            String value = line.substring(colon + 1).trim();
+            if ("user-agent".equals(key))
+            {
+                if (inRules)
+                {
+                    agents = new ArrayList<>();
+                    inRules = false;
+                }
+                agents.add(value.toLowerCase(Locale.ROOT));
+            }
+            else if ("allow".equals(key) || "disallow".equals(key))
+            {
+                inRules = true;
+            }
+            else if ("crawl-delay".equals(key))
+            {
+                inRules = true;
+                int d;
+                try
+                {
+                    d = (int) Math.ceil(Double.parseDouble(value));
+                }
+                catch (NumberFormatException e)
+                {
+                    continue;
+                }
+                for (String a : agents)
+                {
+                    if (!a.equals("*") && me.contains(a))
+                    {
+                        mine = d;
+                    }
+                    else if (a.equals("*"))
+                    {
+                        star = d;
+                    }
+                }
+            }
+        }
+        int d = mine >= 0 ? mine : Math.max(star, 0);
+        return Math.min(d, 60);
     }
 
     private static boolean flush(List<String> agents, List<Rule> group, String me, List<Rule> mine, List<Rule> star)

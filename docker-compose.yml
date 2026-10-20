@@ -83,6 +83,8 @@ services:
       ABR_SMS_MOCK: "true"
       ABR_CHANNEL_MOCK: "true"
       ABR_OCR_URL: http://abr-ocr:9003
+      # 本机走“假 IP”代理（域名解析到 198.18.x 等保留地址）时，自动抓取会被内网地址保护拦下；只在本地 .env 中设 ABR_FETCH_ALLOW_PRIVATE=true，生产不设
+      ABROAD_AI_FETCH_ALLOWPRIVATEHOSTS: ${ABR_FETCH_ALLOW_PRIVATE:-false}
       TZ: Asia/Shanghai
     ports:
       - "8090:8090"
