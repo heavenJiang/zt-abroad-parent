@@ -13,6 +13,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="rankings"       column="rankings"        />
         <result property="moeRecognized"  column="moe_recognized"  />
         <result property="website"        column="website"         />
+        <result property="aliases"        column="aliases"         />
+        <result property="extIds"         column="ext_ids"         />
         <result property="status"         column="status"          />
         <result property="delFlag"        column="del_flag"        />
         <result property="programCount"   column="program_count"   />
@@ -24,7 +26,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectAbrSchoolVo">
-        select s.school_id, s.school_name, s.school_name_en, s.country, s.city, s.rankings, s.moe_recognized, s.website,
+        select s.school_id, s.school_name, s.school_name_en, s.country, s.city, s.rankings, s.moe_recognized, s.website, s.aliases, s.ext_ids,
                s.status, s.del_flag, s.create_by, s.create_time, s.update_by, s.update_time, s.remark,
                (select count(*) from abr_program p where p.school_id = s.school_id and p.del_flag = '0') as program_count
         from abr_school s
@@ -56,9 +58,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <insert id="insertAbrSchool" parameterType="AbrSchool" useGeneratedKeys="true" keyProperty="schoolId" keyColumn="school_id">
-        insert into abr_school (school_name, school_name_en, country, city, rankings, moe_recognized, website, status, create_by, create_time, remark)
+        insert into abr_school (school_name, school_name_en, country, city, rankings, moe_recognized, website, aliases, ext_ids, status, create_by, create_time, remark)
         values (#{schoolName}, #{schoolNameEn}, #{country}, coalesce(#{city}, ''), coalesce(cast(#{rankings} as jsonb), '[]'::jsonb),
-                coalesce(#{moeRecognized}, 'Y'), coalesce(#{website}, ''), coalesce(#{status}, '0'), #{createBy}, now(), #{remark})
+                nullif(coalesce(#{moeRecognized}, 'Y'), ''), coalesce(#{website}, ''), coalesce(cast(#{aliases} as jsonb), '[]'::jsonb),
+                coalesce(cast(#{extIds} as jsonb), '{}'::jsonb), coalesce(#{status}, '0'), #{createBy}, now(), #{remark})
     </insert>
 
     <update id="updateAbrSchool" parameterType="AbrSchool">
@@ -68,7 +71,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             country        = #{country},
             city           = coalesce(#{city}, ''),
             rankings       = coalesce(cast(#{rankings} as jsonb), '[]'::jsonb),
-            moe_recognized = coalesce(#{moeRecognized}, 'Y'),
+            moe_recognized = nullif(coalesce(#{moeRecognized}, 'Y'), ''),
+            <if test="aliases != null">aliases = cast(#{aliases} as jsonb),</if>
+            <if test="extIds != null">ext_ids = cast(#{extIds} as jsonb),</if>
             website        = coalesce(#{website}, ''),
             status         = coalesce(#{status}, '0'),
             remark         = #{remark},

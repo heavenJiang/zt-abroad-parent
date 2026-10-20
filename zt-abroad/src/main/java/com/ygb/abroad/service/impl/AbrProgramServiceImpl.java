@@ -16,6 +16,8 @@ import com.ygb.abroad.mapper.AbrFieldSourceMapper;
 import com.ygb.abroad.mapper.AbrProgramMapper;
 import com.ygb.abroad.mapper.AbrRequirementMapper;
 import com.ygb.abroad.service.IAbrProgramService;
+import com.ygb.abroad.service.IAbrSourceArchiveService;
+import com.ygb.common.core.domain.BaseEntity;
 import com.ygb.common.exception.ServiceException;
 import com.ygb.common.utils.StringUtils;
 
@@ -29,6 +31,17 @@ public class AbrProgramServiceImpl implements IAbrProgramService
 {
     /** 申请要求所在表名（字段来源用） */
     public static final String REQUIREMENT_TABLE = "abr_requirement";
+
+    public static final String PROGRAM_TABLE = "abr_program";
+
+    /** 记录字段历史的项目字段（M2-09） */
+    static final List<String> PROGRAM_FIELDS = List.of("schoolId", "programName", "programNameEn", "degree", "fieldGroup", "majorDirection",
+            "durationMonths", "intakes", "tuition", "currency", "teachingLanguage", "website", "apsRequired", "difficulty", "status");
+
+    /** 记录字段历史的申请要求字段（M2-09） */
+    static final List<String> REQUIREMENT_FIELDS = List.of("season", "minGpa", "tiersNotAccepted", "ieltsOverall", "ieltsMinSub", "otherLanguage",
+            "testRequirement", "testDetail", "prerequisites", "prerequisitesRequired", "workYears", "acceptCrossMajor", "acceptPreSessional",
+            "gpaNoCutoff", "deadlines", "materials", "status");
 
     /**
      * 保存时必须附来源 URL 的关键字段（均分、语言、截止日）：属性名 → 中文名
@@ -72,6 +85,9 @@ public class AbrProgramServiceImpl implements IAbrProgramService
 
     @Autowired
     private AbrFieldSourceMapper sourceMapper;
+
+    @Autowired
+    private IAbrSourceArchiveService archiveService;
 
     /**
      * 查询项目列表
@@ -118,9 +134,12 @@ public class AbrProgramServiceImpl implements IAbrProgramService
      * @return 影响行数
      */
     @Override
+    @Transactional
     public int insertAbrProgram(AbrProgram program)
     {
-        return programMapper.insertAbrProgram(program);
+        int rows = programMapper.insertAbrProgram(program);
+        archiveService.recordChanges(PROGRAM_TABLE, program.getProgramId(), null, program, PROGRAM_FIELDS, null, changeMode(program), program.getCreateBy());
+        return rows;
     }
 
     /**
@@ -130,9 +149,34 @@ public class AbrProgramServiceImpl implements IAbrProgramService
      * @return 影响行数
      */
     @Override
+    @Transactional
     public int updateAbrProgram(AbrProgram program)
     {
-        return programMapper.updateAbrProgram(program);
+        AbrProgram old = programMapper.selectAbrProgramById(program.getProgramId());
+        int rows = programMapper.updateAbrProgram(program);
+        if (old != null && rows > 0)
+        {
+            archiveService.recordChanges(PROGRAM_TABLE, program.getProgramId(), old, program, PROGRAM_FIELDS, null, changeMode(program),
+                    program.getUpdateBy());
+        }
+        return rows;
+    }
+
+    /**
+     * 生效方式：调用方放在 params.changeMode（导入、自动、回滚等），默认人工
+     */
+    static String changeMode(BaseEntity entity)
+    {
+        Object mode = entity.getParams().get(IAbrSourceArchiveService.PARAM_CHANGE_MODE);
+        return mode == null ? "manual" : String.valueOf(mode);
+    }
+
+    /**
+     * 要记历史的申请要求字段：materials 为空表示本次不修改，不比较
+     */
+    private static List<String> requirementFields(AbrRequirement r)
+    {
+        return r.getMaterials() == null ? REQUIREMENT_FIELDS.stream().filter(f -> !"materials".equals(f)).toList() : REQUIREMENT_FIELDS;
     }
 
     /**
@@ -215,6 +259,8 @@ public class AbrProgramServiceImpl implements IAbrProgramService
         Map<String, AbrFieldSource> sources = normalizeAndCheck(requirement);
         int rows = requirementMapper.insertAbrRequirement(requirement);
         saveSources(requirement, sources, requirement.getCreateBy());
+        archiveService.recordChanges(REQUIREMENT_TABLE, requirement.getRequirementId(), null, requirement, requirementFields(requirement), sources,
+                changeMode(requirement), requirement.getCreateBy());
         return rows;
     }
 
@@ -238,6 +284,8 @@ public class AbrProgramServiceImpl implements IAbrProgramService
         Map<String, AbrFieldSource> sources = normalizeAndCheck(requirement);
         int rows = requirementMapper.updateAbrRequirement(requirement);
         saveSources(requirement, sources, requirement.getUpdateBy());
+        archiveService.recordChanges(REQUIREMENT_TABLE, requirement.getRequirementId(), old, requirement, requirementFields(requirement), sources,
+                changeMode(requirement), requirement.getUpdateBy());
         return rows;
     }
 
@@ -334,7 +382,7 @@ public class AbrProgramServiceImpl implements IAbrProgramService
             source.setTableName(REQUIREMENT_TABLE);
             source.setRecordId(recordId);
             source.setFieldName(e.getKey());
-            source.setOrigin("1".equals(source.getOrigin()) ? "1" : "0");
+            source.setOrigin("1".equals(source.getOrigin()) || "2".equals(source.getOrigin()) ? source.getOrigin() : "0");
             source.setVerifiedBy(operator);
             sourceMapper.upsertAbrFieldSource(source);
         }

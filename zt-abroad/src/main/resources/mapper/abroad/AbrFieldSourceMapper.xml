@@ -12,6 +12,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="sourceUrl"     column="source_url"     />
         <result property="quote"         column="quote"          />
         <result property="origin"        column="origin"         />
+        <result property="snapshotId"    column="snapshot_id"    />
+        <result property="snapshotTitle" column="snapshot_title" />
+        <result property="snapshotTime"  column="snapshot_time"  />
         <result property="verifiedBy"    column="verified_by"    />
         <result property="verifiedTime"  column="verified_time"  />
         <result property="createBy"      column="create_by"      />
@@ -21,22 +24,26 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <select id="selectAbrFieldSourceByRecord" resultMap="AbrFieldSourceResult">
-        select source_id, table_name, record_id, field_name, source_url, quote, origin, verified_by, verified_time,
-               create_by, create_time, update_by, update_time
-        from abr_field_source
-        where table_name = #{tableName} and record_id = #{recordId}
-        order by field_name
+        select f.source_id, f.table_name, f.record_id, f.field_name, f.source_url, f.quote, f.origin, f.snapshot_id,
+               s.title as snapshot_title, s.last_seen_time as snapshot_time, f.verified_by, f.verified_time,
+               f.create_by, f.create_time, f.update_by, f.update_time
+        from abr_field_source f
+        left join abr_source_snapshot s on s.snapshot_id = f.snapshot_id
+        where f.table_name = #{tableName} and f.record_id = #{recordId}
+        order by f.field_name
     </select>
 
     <insert id="upsertAbrFieldSource" parameterType="AbrFieldSource">
-        insert into abr_field_source (table_name, record_id, field_name, source_url, quote, origin, verified_by, verified_time,
+        insert into abr_field_source (table_name, record_id, field_name, source_url, quote, origin, snapshot_id, verified_by, verified_time,
                                       create_by, create_time)
-        values (#{tableName}, #{recordId}, #{fieldName}, #{sourceUrl}, #{quote}, coalesce(#{origin}, '0'), #{verifiedBy}, now(),
+        values (#{tableName}, #{recordId}, #{fieldName}, #{sourceUrl}, #{quote}, coalesce(#{origin}, '0'), #{snapshotId}, #{verifiedBy}, now(),
                 #{verifiedBy}, now())
         on conflict (table_name, record_id, field_name) do update set
             source_url    = excluded.source_url,
             quote         = excluded.quote,
             origin        = excluded.origin,
+            snapshot_id   = case when excluded.snapshot_id is not null then excluded.snapshot_id
+                                 when abr_field_source.source_url = excluded.source_url then abr_field_source.snapshot_id end,
             verified_by   = excluded.verified_by,
             verified_time = excluded.verified_time,
             update_by     = excluded.verified_by,

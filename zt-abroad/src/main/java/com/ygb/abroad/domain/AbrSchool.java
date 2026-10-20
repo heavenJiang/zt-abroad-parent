@@ -47,6 +47,12 @@ public class AbrSchool extends BaseEntity
     @Excel(name = "官网")
     private String website;
 
+    /** 别名（JSON 数组） */
+    private String aliases;
+
+    /** 外部编号（JSON 对象，如 {"ipeds": "166027"}） */
+    private String extIds;
+
     /** 状态（0正常 1停用） */
     @Excel(name = "状态", readConverterExp = "0=正常,1=停用")
     private String status;
@@ -174,6 +180,26 @@ public class AbrSchool extends BaseEntity
         return programCount;
     }
 
+    public String getAliases()
+    {
+        return aliases;
+    }
+
+    public void setAliases(String aliases)
+    {
+        this.aliases = aliases;
+    }
+
+    public String getExtIds()
+    {
+        return extIds;
+    }
+
+    public void setExtIds(String extIds)
+    {
+        this.extIds = extIds;
+    }
+
     @Override
     public String toString()
     {
@@ -186,6 +212,8 @@ public class AbrSchool extends BaseEntity
             .append("rankings", getRankings())
             .append("moeRecognized", getMoeRecognized())
             .append("website", getWebsite())
+            .append("aliases", getAliases())
+            .append("extIds", getExtIds())
             .append("status", getStatus())
             .append("delFlag", getDelFlag())
             .append("programCount", getProgramCount())

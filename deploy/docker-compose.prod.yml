@@ -83,6 +83,7 @@ services:
       ABR_WECOM_AGENT_ID: ${WECOM_AGENT_ID:-}
       ABR_WECOM_SECRET: ${WECOM_SECRET:-}
       ABR_OCR_URL: http://abr-ocr:9003
+      ABR_SCORECARD_API_KEY: ${SCORECARD_API_KEY:-DEMO_KEY}
       TZ: Asia/Shanghai
     volumes:
       - abr-upload:/home/zt

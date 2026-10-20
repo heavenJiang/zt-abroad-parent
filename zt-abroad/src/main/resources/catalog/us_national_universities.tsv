@@ -1,0 +1,115 @@
+# 美国全国性大学（US News National Universities 前 100 及名次边界附近的学校）学校档案种子（M2-12）
+# 名单按 2025 / 2026 两版前 100 合并整理；名次不在此填写，由榜单导入（M2-10）从存档的官方榜单填入并自动对齐名单
+# 中文名	英文名	城市	州	官网	IPEDS 编号
+普林斯顿大学	Princeton University	Princeton	NJ	https://www.princeton.edu/	186131
+麻省理工学院	Massachusetts Institute of Technology	Cambridge	MA	https://www.mit.edu/	166683
+哈佛大学	Harvard University	Cambridge	MA	https://www.harvard.edu/	166027
+斯坦福大学	Stanford University	Stanford	CA	https://www.stanford.edu/	243744
+耶鲁大学	Yale University	New Haven	CT	https://www.yale.edu/	130794
+加州理工学院	California Institute of Technology	Pasadena	CA	https://www.caltech.edu/	110404
+杜克大学	Duke University	Durham	NC	https://www.duke.edu/	198419
+约翰斯·霍普金斯大学	Johns Hopkins University	Baltimore	MD	https://www.jhu.edu/	162928
+西北大学	Northwestern University	Evanston	IL	https://www.northwestern.edu/	147767
+宾夕法尼亚大学	University of Pennsylvania	Philadelphia	PA	https://www.upenn.edu/	215062
+康奈尔大学	Cornell University	Ithaca	NY	https://www.cornell.edu/	190415
+芝加哥大学	University of Chicago	Chicago	IL	https://www.uchicago.edu/	144050
+布朗大学	Brown University	Providence	RI	https://www.brown.edu/	217156
+哥伦比亚大学	Columbia University	New York	NY	https://www.columbia.edu/	190150
+达特茅斯学院	Dartmouth College	Hanover	NH	https://home.dartmouth.edu/	182670
+加州大学洛杉矶分校	University of California, Los Angeles	Los Angeles	CA	https://www.ucla.edu/	110662
+加州大学伯克利分校	University of California, Berkeley	Berkeley	CA	https://www.berkeley.edu/	110635
+莱斯大学	Rice University	Houston	TX	https://www.rice.edu/	227757
+圣母大学	University of Notre Dame	Notre Dame	IN	https://www.nd.edu/	152080
+范德堡大学	Vanderbilt University	Nashville	TN	https://www.vanderbilt.edu/	221999
+卡内基梅隆大学	Carnegie Mellon University	Pittsburgh	PA	https://www.cmu.edu/	211440
+密歇根大学安娜堡分校	University of Michigan-Ann Arbor	Ann Arbor	MI	https://umich.edu/	170976
+圣路易斯华盛顿大学	Washington University in St. Louis	St. Louis	MO	https://washu.edu/	179867
+埃默里大学	Emory University	Atlanta	GA	https://www.emory.edu/	139658
+乔治城大学	Georgetown University	Washington	DC	https://www.georgetown.edu/	131496
+弗吉尼亚大学	University of Virginia	Charlottesville	VA	https://www.virginia.edu/	234076
+北卡罗来纳大学教堂山分校	University of North Carolina at Chapel Hill	Chapel Hill	NC	https://www.unc.edu/	199120
+南加州大学	University of Southern California	Los Angeles	CA	https://www.usc.edu/	123961
+加州大学圣地亚哥分校	University of California, San Diego	La Jolla	CA	https://ucsd.edu/	110680
+纽约大学	New York University	New York	NY	https://www.nyu.edu/	193900
+佛罗里达大学	University of Florida	Gainesville	FL	https://www.ufl.edu/	134130
+德克萨斯大学奥斯汀分校	University of Texas at Austin	Austin	TX	https://www.utexas.edu/	228778
+佐治亚理工学院	Georgia Institute of Technology	Atlanta	GA	https://www.gatech.edu/	139755
+加州大学戴维斯分校	University of California, Davis	Davis	CA	https://www.ucdavis.edu/	110644
+加州大学尔湾分校	University of California, Irvine	Irvine	CA	https://uci.edu/	110653
+伊利诺伊大学厄巴纳-香槟分校	University of Illinois Urbana-Champaign	Champaign	IL	https://illinois.edu/	145637
+波士顿学院	Boston College	Chestnut Hill	MA	https://www.bc.edu/	164924
+塔夫茨大学	Tufts University	Medford	MA	https://www.tufts.edu/	168148
+加州大学圣塔芭芭拉分校	University of California, Santa Barbara	Santa Barbara	CA	https://www.ucsb.edu/	110705
+威斯康星大学麦迪逊分校	University of Wisconsin-Madison	Madison	WI	https://www.wisc.edu/	240444
+波士顿大学	Boston University	Boston	MA	https://www.bu.edu/	164988
+俄亥俄州立大学	The Ohio State University	Columbus	OH	https://www.osu.edu/	204796
+罗格斯大学新布朗斯维克分校	Rutgers University-New Brunswick	New Brunswick	NJ	https://www.rutgers.edu/	186380
+马里兰大学帕克分校	University of Maryland, College Park	College Park	MD	https://umd.edu/	163286
+罗切斯特大学	University of Rochester	Rochester	NY	https://www.rochester.edu/	195030
+理海大学	Lehigh University	Bethlehem	PA	https://www2.lehigh.edu/	213543
+普渡大学	Purdue University	West Lafayette	IN	https://www.purdue.edu/	243780
+佐治亚大学	University of Georgia	Athens	GA	https://www.uga.edu/	139959
+华盛顿大学	University of Washington	Seattle	WA	https://www.washington.edu/	236948
+维克森林大学	Wake Forest University	Winston-Salem	NC	https://www.wfu.edu/	199847
+凯斯西储大学	Case Western Reserve University	Cleveland	OH	https://case.edu/	201645
+德克萨斯农工大学	Texas A&M University	College Station	TX	https://www.tamu.edu/	228723
+弗吉尼亚理工大学	Virginia Tech	Blacksburg	VA	https://www.vt.edu/	233921
+佛罗里达州立大学	Florida State University	Tallahassee	FL	https://www.fsu.edu/	134097
+东北大学	Northeastern University	Boston	MA	https://www.northeastern.edu/	167358
+明尼苏达大学双城分校	University of Minnesota, Twin Cities	Minneapolis	MN	https://twin-cities.umn.edu/	174066
+威廉与玛丽学院	William & Mary	Williamsburg	VA	https://www.wm.edu/	231624
+纽约州立大学石溪分校	Stony Brook University	Stony Brook	NY	https://www.stonybrook.edu/	196097
+康涅狄格大学	University of Connecticut	Storrs	CT	https://uconn.edu/	129020
+布兰迪斯大学	Brandeis University	Waltham	MA	https://www.brandeis.edu/	165015
+密歇根州立大学	Michigan State University	East Lansing	MI	https://msu.edu/	171100
+北卡罗来纳州立大学	North Carolina State University	Raleigh	NC	https://www.ncsu.edu/	199193
+宾夕法尼亚州立大学	Pennsylvania State University	University Park	PA	https://www.psu.edu/	214777
+伦斯勒理工学院	Rensselaer Polytechnic Institute	Troy	NY	https://www.rpi.edu/	194824
+圣克拉拉大学	Santa Clara University	Santa Clara	CA	https://www.scu.edu/	122931
+加州大学默塞德分校	University of California, Merced	Merced	CA	https://www.ucmerced.edu/	445188
+乔治·华盛顿大学	George Washington University	Washington	DC	https://www.gwu.edu/	131469
+雪城大学	Syracuse University	Syracuse	NY	https://www.syracuse.edu/	196413
+马萨诸塞大学阿默斯特分校	University of Massachusetts Amherst	Amherst	MA	https://www.umass.edu/	166629
+迈阿密大学	University of Miami	Coral Gables	FL	https://welcome.miami.edu/	135726
+匹兹堡大学	University of Pittsburgh	Pittsburgh	PA	https://www.pitt.edu/	215293
+维拉诺瓦大学	Villanova University	Villanova	PA	https://www1.villanova.edu/	216597
+纽约州立大学宾汉姆顿分校	Binghamton University	Binghamton	NY	https://www.binghamton.edu/	196079
+印第安纳大学伯明顿分校	Indiana University Bloomington	Bloomington	IN	https://bloomington.iu.edu/	151351
+科罗拉多矿业大学	Colorado School of Mines	Golden	CO	https://www.mines.edu/	126775
+杜兰大学	Tulane University	New Orleans	LA	https://tulane.edu/	160755
+史蒂文斯理工学院	Stevens Institute of Technology	Hoboken	NJ	https://www.stevens.edu/	186867
+加州大学河滨分校	University of California, Riverside	Riverside	CA	https://www.ucr.edu/	110671
+佩珀代因大学	Pepperdine University	Malibu	CA	https://www.pepperdine.edu/	121150
+克莱姆森大学	Clemson University	Clemson	SC	https://www.clemson.edu/	217882
+南卫理公会大学	Southern Methodist University	Dallas	TX	https://www.smu.edu/	228246
+纽约州立大学布法罗分校	University at Buffalo	Buffalo	NY	https://www.buffalo.edu/	196088
+爱荷华大学	University of Iowa	Iowa City	IA	https://uiowa.edu/	153658
+特拉华大学	University of Delaware	Newark	DE	https://www.udel.edu/	130943
+伍斯特理工学院	Worcester Polytechnic Institute	Worcester	MA	https://www.wpi.edu/	168421
+科罗拉多大学博尔德分校	University of Colorado Boulder	Boulder	CO	https://www.colorado.edu/	126614
+俄勒冈大学	University of Oregon	Eugene	OR	https://www.uoregon.edu/	209551
+加州大学圣克鲁兹分校	University of California, Santa Cruz	Santa Cruz	CA	https://www.ucsc.edu/	110714
+福特汉姆大学	Fordham University	New York	NY	https://www.fordham.edu/	191241
+马凯特大学	Marquette University	Milwaukee	WI	https://www.marquette.edu/	239105
+贝勒大学	Baylor University	Waco	TX	https://www.baylor.edu/	223232
+霍华德大学	Howard University	Washington	DC	https://howard.edu/	131520
+亚利桑那州立大学	Arizona State University	Tempe	AZ	https://www.asu.edu/	104151
+亚利桑那大学	University of Arizona	Tucson	AZ	https://www.arizona.edu/	104179
+犹他大学	University of Utah	Salt Lake City	UT	https://www.utah.edu/	230764
+南佛罗里达大学	University of South Florida	Tampa	FL	https://www.usf.edu/	137351
+奥本大学	Auburn University	Auburn	AL	https://www.auburn.edu/	100858
+田纳西大学诺克斯维尔分校	University of Tennessee, Knoxville	Knoxville	TN	https://www.utk.edu/	221759
+天普大学	Temple University	Philadelphia	PA	https://www.temple.edu/	216339
+伊利诺伊大学芝加哥分校	University of Illinois Chicago	Chicago	IL	https://www.uic.edu/	145600
+德克萨斯大学达拉斯分校	University of Texas at Dallas	Richardson	TX	https://www.utdallas.edu/	228787
+德雷塞尔大学	Drexel University	Philadelphia	PA	https://drexel.edu/	212054
+美利坚大学	American University	Washington	DC	https://www.american.edu/	131159
+圣路易斯大学	Saint Louis University	St. Louis	MO	https://www.slu.edu/	179159
+南卡罗来纳大学	University of South Carolina	Columbia	SC	https://sc.edu/	218663
+圣地亚哥大学	University of San Diego	San Diego	CA	https://www.sandiego.edu/	122436
+洛约拉马利蒙特大学	Loyola Marymount University	Los Angeles	CA	https://www.lmu.edu/	117946
+阿拉巴马大学	University of Alabama	Tuscaloosa	AL	https://www.ua.edu/	100751
+爱荷华州立大学	Iowa State University	Ames	IA	https://www.iastate.edu/	153603
+德克萨斯基督教大学	Texas Christian University	Fort Worth	TX	https://www.tcu.edu/	228875
+丹佛大学	University of Denver	Denver	CO	https://www.du.edu/	127060
+堪萨斯大学	University of Kansas	Lawrence	KS	https://ku.edu/	155317

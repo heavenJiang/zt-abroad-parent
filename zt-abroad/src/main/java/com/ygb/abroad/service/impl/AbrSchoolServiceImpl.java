@@ -1,12 +1,16 @@
 package com.ygb.abroad.service.impl;
 
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.ygb.abroad.domain.AbrFieldSource;
 import com.ygb.abroad.domain.AbrSchool;
 import com.ygb.abroad.mapper.AbrProgramMapper;
 import com.ygb.abroad.mapper.AbrSchoolMapper;
 import com.ygb.abroad.service.IAbrSchoolService;
+import com.ygb.abroad.service.IAbrSourceArchiveService;
 import com.ygb.common.exception.ServiceException;
 import com.ygb.common.utils.StringUtils;
 
@@ -18,6 +22,15 @@ import com.ygb.common.utils.StringUtils;
 @Service
 public class AbrSchoolServiceImpl implements IAbrSchoolService
 {
+    public static final String SCHOOL_TABLE = "abr_school";
+
+    /** 记录字段历史的院校字段（M2-09） */
+    static final List<String> SCHOOL_FIELDS = List.of("schoolName", "schoolNameEn", "country", "city", "rankings", "moeRecognized", "website",
+            "aliases", "extIds", "status");
+
+    @Autowired
+    private IAbrSourceArchiveService archiveService;
+
     @Autowired
     private AbrSchoolMapper schoolMapper;
 
@@ -69,10 +82,37 @@ public class AbrSchoolServiceImpl implements IAbrSchoolService
      * @return 影响行数
      */
     @Override
+    @Transactional
     public int insertAbrSchool(AbrSchool school)
     {
+        normalize(school);
+        int rows = schoolMapper.insertAbrSchool(school);
+        archiveService.recordChanges(SCHOOL_TABLE, school.getSchoolId(), null, school, SCHOOL_FIELDS, sources(school),
+                AbrProgramServiceImpl.changeMode(school), school.getCreateBy());
+        return rows;
+    }
+
+    private static void normalize(AbrSchool school)
+    {
         school.setRankings(AbrJsonFields.requireArray(school.getRankings(), "榜单名次"));
-        return schoolMapper.insertAbrSchool(school);
+        if (school.getAliases() != null)
+        {
+            school.setAliases(AbrJsonFields.requireArray(school.getAliases(), "别名"));
+        }
+        if (school.getExtIds() != null)
+        {
+            school.setExtIds(AbrJsonFields.requireObject(school.getExtIds(), "外部编号"));
+        }
+    }
+
+    /**
+     * 调用方随修改带来的字段来源（params.sources：字段名 → 来源），用于历史中带出依据
+     */
+    @SuppressWarnings("unchecked")
+    private static Map<String, AbrFieldSource> sources(AbrSchool school)
+    {
+        Object v = school.getParams().get("sources");
+        return v instanceof Map<?, ?> m ? (Map<String, AbrFieldSource>) m : null;
     }
 
     /**
@@ -82,10 +122,20 @@ public class AbrSchoolServiceImpl implements IAbrSchoolService
      * @return 影响行数
      */
     @Override
+    @Transactional
     public int updateAbrSchool(AbrSchool school)
     {
-        school.setRankings(AbrJsonFields.requireArray(school.getRankings(), "榜单名次"));
-        return schoolMapper.updateAbrSchool(school);
+        normalize(school);
+        AbrSchool old = schoolMapper.selectAbrSchoolById(school.getSchoolId());
+        int rows = schoolMapper.updateAbrSchool(school);
+        if (old != null && rows > 0)
+        {
+            List<String> fields = SCHOOL_FIELDS.stream().filter(f -> !("aliases".equals(f) && school.getAliases() == null)
+                    && !("extIds".equals(f) && school.getExtIds() == null)).toList();
+            archiveService.recordChanges(SCHOOL_TABLE, school.getSchoolId(), old, school, fields, sources(school),
+                    AbrProgramServiceImpl.changeMode(school), school.getUpdateBy());
+        }
+        return rows;
     }
 
     /**

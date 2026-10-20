@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrSourceArchiveMapper">
+
+    <resultMap type="AbrSourceSnapshot" id="AbrSourceSnapshotResult">
+        <result property="snapshotId"    column="snapshot_id"     />
+        <result property="sourceUrl"     column="source_url"      />
+        <result property="finalUrl"      column="final_url"       />
+        <result property="sourceKind"    column="source_kind"     />
+        <result property="httpStatus"    column="http_status"     />
+        <result property="contentType"   column="content_type"    />
+        <result property="contentHash"   column="content_hash"    />
+        <result property="content"       column="content"         />
+        <result property="contentSize"   column="content_size"    />
+        <result property="title"         column="title"           />
+        <result property="firstSeenTime" column="first_seen_time" />
+        <result property="lastSeenTime"  column="last_seen_time"  />
+        <result property="seenCount"     column="seen_count"      />
+        <result property="fetchedBy"     column="fetched_by"      />
+        <result property="remark"        column="remark"          />
+    </resultMap>
+
+    <resultMap type="AbrFieldHistory" id="AbrFieldHistoryResult">
+        <result property="historyId"         column="history_id"         />
+        <result property="tableName"         column="table_name"         />
+        <result property="recordId"          column="record_id"          />
+        <result property="fieldName"         column="field_name"         />
+        <result property="oldValue"          column="old_value"          />
+        <result property="newValue"          column="new_value"          />
+        <result property="snapshotId"        column="snapshot_id"        />
+        <result property="snapshotAvailable" column="snapshot_available" />
+        <result property="sourceUrl"         column="source_url"         />
+        <result property="quote"             column="quote"              />
+        <result property="changeMode"        column="change_mode"        />
+        <result property="status"            column="status"             />
+        <result property="operator"          column="operator"           />
+        <result property="createTime"        column="create_time"        />
+    </resultMap>
+
+    <select id="selectSnapshotId" resultType="Long">
+        select snapshot_id from abr_source_snapshot where source_url = #{sourceUrl} and content_hash = #{contentHash}
+    </select>
+
+    <insert id="insertSnapshot" parameterType="AbrSourceSnapshot" useGeneratedKeys="true" keyProperty="snapshotId" keyColumn="snapshot_id">
+        insert into abr_source_snapshot (source_url, final_url, source_kind, http_status, content_type, content_hash, content, content_size, title,
+                                         first_seen_time, last_seen_time, seen_count, fetched_by, remark)
+        values (#{sourceUrl}, coalesce(#{finalUrl}, ''), #{sourceKind}, #{httpStatus}, coalesce(#{contentType}, ''), #{contentHash}, #{content},
+                #{contentSize}, coalesce(#{title}, ''), now(), now(), 1, coalesce(#{fetchedBy}, ''), #{remark})
+        on conflict (source_url, content_hash) do update set last_seen_time = now(), seen_count = abr_source_snapshot.seen_count + 1
+    </insert>
+
+    <update id="touchSnapshot">
+        update abr_source_snapshot
+        set last_seen_time = now(), seen_count = seen_count + 1,
+            final_url = coalesce(#{finalUrl}, final_url), http_status = coalesce(#{httpStatus}, http_status)
+        where snapshot_id = #{snapshotId}
+    </update>
+
+    <select id="selectSnapshotById" parameterType="Long" resultMap="AbrSourceSnapshotResult">
+        select snapshot_id, source_url, final_url, source_kind, http_status, content_type, content_hash, content, content_size, title,
+               first_seen_time, last_seen_time, seen_count, fetched_by, remark
+        from abr_source_snapshot where snapshot_id = #{snapshotId}
+    </select>
+
+    <select id="selectRecentSnapshot" resultMap="AbrSourceSnapshotResult">
+        select snapshot_id, source_url, final_url, source_kind, http_status, content_type, content_hash, content, content_size, title,
+               first_seen_time, last_seen_time, seen_count, fetched_by, remark
+        from abr_source_snapshot
+        where source_url = #{sourceUrl} and last_seen_time &gt;= #{since}
+        order by last_seen_time desc
+        limit 1
+    </select>
+
+    <delete id="purgeSnapshots">
+        delete from abr_source_snapshot s
+        where s.last_seen_time &lt; #{cutoff}
+          and not exists (select 1 from abr_field_source f where f.snapshot_id = s.snapshot_id)
+    </delete>
+
+    <insert id="insertHistory" parameterType="AbrFieldHistory" useGeneratedKeys="true" keyProperty="historyId" keyColumn="history_id">
+        insert into abr_field_history (table_name, record_id, field_name, old_value, new_value, snapshot_id, source_url, quote, change_mode,
+                                       status, operator, create_time)
+        values (#{tableName}, #{recordId}, #{fieldName}, #{oldValue}, #{newValue}, #{snapshotId}, coalesce(#{sourceUrl}, ''),
+                coalesce(#{quote}, ''), #{changeMode}, 'applied', coalesce(#{operator}, ''), now())
+    </insert>
+
+    <sql id="selectHistoryVo">
+        select h.history_id, h.table_name, h.record_id, h.field_name, h.old_value, h.new_value, h.snapshot_id,
+               exists (select 1 from abr_source_snapshot s where s.snapshot_id = h.snapshot_id) as snapshot_available,
+               h.source_url, h.quote, h.change_mode, h.status, h.operator, h.create_time
+        from abr_field_history h
+    </sql>
+
+    <select id="selectHistory" resultMap="AbrFieldHistoryResult">
+        <include refid="selectHistoryVo"/>
+        where h.table_name = #{tableName} and h.record_id = #{recordId}
+        order by h.history_id desc
+    </select>
+
+    <select id="selectHistoryById" parameterType="Long" resultMap="AbrFieldHistoryResult">
+        <include refid="selectHistoryVo"/>
+        where h.history_id = #{historyId}
+    </select>
+
+    <update id="markRolledBack" parameterType="Long">
+        update abr_field_history set status = 'rolled_back' where history_id = #{historyId} and status = 'applied'
+    </update>
+
+</mapper>

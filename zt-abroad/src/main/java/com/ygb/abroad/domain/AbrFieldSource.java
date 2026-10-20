@@ -38,6 +38,15 @@ public class AbrFieldSource extends BaseEntity
     /** 来源方式（0人工 1AI预填） */
     private String origin;
 
+    /** 依据的存档 */
+    private Long snapshotId;
+
+    /** 存档标题（查询时带出） */
+    private String snapshotTitle;
+
+    /** 存档最近一次看到的时间（查询时带出） */
+    private Date snapshotTime;
+
     /** 核对人 */
     private String verifiedBy;
 
@@ -137,6 +146,36 @@ public class AbrFieldSource extends BaseEntity
         return verifiedTime;
     }
 
+    public Long getSnapshotId()
+    {
+        return snapshotId;
+    }
+
+    public void setSnapshotId(Long snapshotId)
+    {
+        this.snapshotId = snapshotId;
+    }
+
+    public String getSnapshotTitle()
+    {
+        return snapshotTitle;
+    }
+
+    public void setSnapshotTitle(String snapshotTitle)
+    {
+        this.snapshotTitle = snapshotTitle;
+    }
+
+    public Date getSnapshotTime()
+    {
+        return snapshotTime;
+    }
+
+    public void setSnapshotTime(Date snapshotTime)
+    {
+        this.snapshotTime = snapshotTime;
+    }
+
     @Override
     public String toString()
     {
@@ -148,6 +187,9 @@ public class AbrFieldSource extends BaseEntity
             .append("sourceUrl", getSourceUrl())
             .append("quote", getQuote())
             .append("origin", getOrigin())
+            .append("snapshotId", getSnapshotId())
+            .append("snapshotTitle", getSnapshotTitle())
+            .append("snapshotTime", getSnapshotTime())
             .append("verifiedBy", getVerifiedBy())
             .append("verifiedTime", getVerifiedTime())
             .append("createBy", getCreateBy())

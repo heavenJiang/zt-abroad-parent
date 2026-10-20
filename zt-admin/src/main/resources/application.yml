@@ -228,6 +228,17 @@ abroad:
   attribution:
     # 归因看板（M9-03）：算作“自然推荐”的渠道码（分享、推荐码、offer 卡）
     natural-channels: share,ref,offer
+  source:
+    # 源信息存档（M2-09）：最近一次看到超过这么多年、且不再被当前字段来源引用的存档每天自动清理
+    retention-years: 2
+  catalog:
+    # 美国院校官方记录（M2-12）：美国教育部 College Scorecard 接口；密钥在 api.data.gov 免费申请，未配置时用 DEMO_KEY（每小时 10 次）
+    scorecard-url: https://api.data.gov/ed/collegescorecard/v1
+    scorecard-api-key: ${ABR_SCORECARD_API_KEY:DEMO_KEY}
+    # 官方记录在多少天内已存档就复用存档、不再请求接口
+    scorecard-refresh-days: 7
+    # 自动抓取官网首页的间隔（毫秒；只在 robots.txt 允许时抓取）
+    homepage-interval-ms: 1000
   ocr:
     # 内嵌文字识别（MA-15）：同一部署内的 abr-ocr 服务（RapidOCR + PaddleOCR 开源模型），图片不出服务器；为空时不启用（图片 / 扫描件提示手动填写）
     url: ${ABR_OCR_URL:}
