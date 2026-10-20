@@ -43,15 +43,45 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         values (#{taskId}, #{agentCode}, #{targetType}, #{targetId}, #{channel}, #{category}, #{status}, coalesce(#{reason}, ''), #{contentRef}, now())
     </insert>
 
+    <!-- 同一个人的全部身份（访客、学生账号、线索）：退订与触达归因按人而不是按某一个身份 -->
+    <sql id="personIdentities">
+        with base as (
+            select cast(#{targetType} as varchar) as t, cast(#{targetId} as bigint) as id
+        ),
+        users as (
+            select id as app_user_id from base where t = 'app_user'
+            union select v.app_user_id from base b join abr_visitor v on b.t = 'visitor' and v.visitor_id = b.id where v.app_user_id is not null
+            union select l.app_user_id from base b join abr_lead l on b.t = 'lead' and l.lead_id = b.id where l.app_user_id is not null
+        ),
+        visitors as (
+            select id as visitor_id from base where t = 'visitor'
+            union select v.visitor_id from abr_visitor v join users u on v.app_user_id = u.app_user_id
+            union select a.primary_visitor_id from abr_app_user a join users u on a.app_user_id = u.app_user_id where a.primary_visitor_id is not null
+            union select l.visitor_id from base b join abr_lead l on b.t = 'lead' and l.lead_id = b.id where l.visitor_id is not null
+        ),
+        leads as (
+            select id as lead_id from base where t = 'lead'
+            union select l.lead_id from abr_lead l join users u on l.app_user_id = u.app_user_id
+            union select l.lead_id from abr_lead l join visitors v on l.visitor_id = v.visitor_id
+        ),
+        ids(t, id) as (
+            select 'visitor', visitor_id from visitors
+            union select 'app_user', app_user_id from users
+            union select 'lead', lead_id from leads
+        )
+    </sql>
+
     <select id="countMarketingSent" resultType="int">
-        select count(*) from abr_touch_log
-        where target_type = #{targetType} and target_id = #{targetId} and category = 'marketing' and status = 'sent' and create_time &gt;= #{since}
+        <include refid="personIdentities"/>
+        select count(*) from abr_touch_log k join ids on ids.t = k.target_type and ids.id = k.target_id
+        where k.category = 'marketing' and k.status = 'sent' and k.create_time &gt;= #{since}
     </select>
 
     <select id="selectLastTouchAgent" resultType="String">
-        select agent_code from abr_touch_log
-        where target_type = #{targetType} and target_id = #{targetId} and status = 'sent' and create_time &gt;= #{since}
-        order by touch_id desc
+        <include refid="personIdentities"/>
+        select k.agent_code from abr_touch_log k join ids on ids.t = k.target_type and ids.id = k.target_id
+        where k.status = 'sent' and k.create_time &gt;= #{since}
+        order by k.touch_id desc
         limit 1
     </select>
 
@@ -62,7 +92,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="existsOptout" resultType="boolean">
-        select exists (select 1 from abr_touch_optout where target_type = #{targetType} and target_id = #{targetId} and scope = #{scope})
+        <include refid="personIdentities"/>
+        select exists (select 1 from abr_touch_optout o join ids on ids.t = o.target_type and ids.id = o.target_id where o.scope = #{scope})
     </select>
 
     <insert id="insertOptout">

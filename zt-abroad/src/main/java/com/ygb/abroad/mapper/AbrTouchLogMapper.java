@@ -30,7 +30,7 @@ public interface AbrTouchLogMapper
     public int insertAbrTouchLog(AbrTouchLog log);
 
     /**
-     * 对象某时刻以来已发出的营销触达数（频控）
+     * 对象某时刻以来已发出的营销触达数（频控；按人：同一人的访客、学生账号、线索合起来算）
      * 
      * @param targetType 对象类型
      * @param targetId 对象ID
@@ -40,7 +40,7 @@ public interface AbrTouchLogMapper
     public int countMarketingSent(@Param("targetType") String targetType, @Param("targetId") Long targetId, @Param("since") Date since);
 
     /**
-     * 对象某时刻以来最近一次已发出触达的 Agent（退订归因）
+     * 对象某时刻以来最近一次已发出触达的 Agent（退订归因；按人：同一人的访客、学生账号、线索合起来算）
      * 
      * @param targetType 对象类型
      * @param targetId 对象ID
@@ -63,7 +63,7 @@ public interface AbrTouchLogMapper
      * @param targetType 对象类型
      * @param targetId 对象ID
      * @param scope 范围
-     * @return 是否退订
+     * @return 是否退订（按人：同一人的访客、学生账号、线索任一退订即视为退订）
      */
     public boolean existsOptout(@Param("targetType") String targetType, @Param("targetId") Long targetId, @Param("scope") String scope);
 

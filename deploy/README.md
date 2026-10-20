@@ -80,3 +80,7 @@ cp .env.example .env && vi .env     # 填域名、数据库 / Redis 密码、TOK
 
 - 测试环境自动部署：服务器就绪后在 CI 中加部署步骤（SSH 到测试机执行 `git pull && ./deploy.sh`），密钥放 CI 机密变量。
 - 对象存储异地备份、HTTPS 证书（见上）。
+
+## 熔断演练（M10-03）
+
+测试环境上线前或改动熔断规则后，用 `deploy/drill/breaker-drill.sh` 演练退订激增、投诉、平台违规提示三种情况（只在消息渠道为 mock 的测试环境运行）。用法与验证点见 `doc/研发/06-熔断演练.md`。
