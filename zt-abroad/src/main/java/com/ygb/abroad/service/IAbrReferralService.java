@@ -98,6 +98,15 @@ public interface IAbrReferralService
     public String link(String refCode);
 
     /**
+     * 推荐人的链接（合作方用 ch=partner，其他用 ch=ref）
+     * 
+     * @param referrerType 推荐人类型
+     * @param refCode 推荐码
+     * @return C 端首页链接
+     */
+    public String link(String referrerType, String refCode);
+
+    /**
      * 查询被推荐人
      *
      * @param referral 条件

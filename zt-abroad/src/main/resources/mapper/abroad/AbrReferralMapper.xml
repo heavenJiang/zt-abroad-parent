@@ -12,6 +12,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="appUserId"       column="app_user_id"      />
         <result property="leadId"          column="lead_id"          />
         <result property="status"          column="status"           />
+        <result property="commissionRate"  column="commission_rate"  />
+        <result property="windowDays"      column="window_days"      />
         <result property="registeredCount" column="registered_count" />
         <result property="validCount"      column="valid_count"      />
         <result property="signedCount"     column="signed_count"     />
@@ -56,7 +58,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectReferrerVo">
-        select f.referrer_id, f.referrer_type, f.display_name, f.ref_code, f.app_user_id, f.lead_id, f.status, f.create_by, f.create_time, f.update_by,
+        select f.referrer_id, f.referrer_type, f.display_name, f.ref_code, f.app_user_id, f.lead_id, f.status, f.commission_rate, f.window_days, f.create_by, f.create_time, f.update_by,
                f.update_time, f.remark,
                (select count(*) from abr_referral r where r.referrer_id = f.referrer_id) as registered_count,
                (select count(*) from abr_referral r where r.referrer_id = f.referrer_id and r.status in ('valid', 'signed')) as valid_count,
@@ -100,13 +102,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <insert id="insertReferrer" parameterType="AbrReferrer" useGeneratedKeys="true" keyProperty="referrerId" keyColumn="referrer_id">
-        insert into abr_referrer (referrer_type, display_name, ref_code, app_user_id, lead_id, status, create_by, create_time, remark)
-        values (#{referrerType}, #{displayName}, #{refCode}, #{appUserId}, #{leadId}, #{status}, #{createBy}, now(), #{remark})
+        insert into abr_referrer (referrer_type, display_name, ref_code, app_user_id, lead_id, status, commission_rate, window_days, create_by, create_time, remark)
+        values (#{referrerType}, #{displayName}, #{refCode}, #{appUserId}, #{leadId}, #{status}, #{commissionRate}, #{windowDays}, #{createBy}, now(), #{remark})
     </insert>
 
     <update id="updateReferrer" parameterType="AbrReferrer">
         update abr_referrer
-        set referrer_type = #{referrerType}, display_name = #{displayName}, status = #{status}, remark = #{remark}, update_by = #{updateBy}, update_time = now()
+        set referrer_type = #{referrerType}, display_name = #{displayName}, status = #{status}, commission_rate = #{commissionRate}, window_days = #{windowDays},
+            remark = #{remark}, update_by = #{updateBy}, update_time = now()
         where referrer_id = #{referrerId}
     </update>
 

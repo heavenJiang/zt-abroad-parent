@@ -43,7 +43,7 @@ public class AbrReferralController extends BaseController
     {
         startPage();
         List<AbrReferrer> list = referralService.selectReferrerList(referrer);
-        list.forEach(f -> f.getParams().put("link", referralService.link(f.getRefCode())));
+        list.forEach(f -> f.getParams().put("link", referralService.link(f.getReferrerType(), f.getRefCode())));
         return getDataTable(list);
     }
 

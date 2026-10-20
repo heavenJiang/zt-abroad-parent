@@ -1,6 +1,11 @@
 package com.ygb.abroad.growth.card;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Map;
+import javax.imageio.ImageIO;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
 import com.google.zxing.WriterException;
@@ -36,6 +41,35 @@ public final class QrCodes
         catch (WriterException e)
         {
             throw new IllegalArgumentException("二维码内容过长", e);
+        }
+    }
+
+    /**
+     * 生成二维码 PNG（黑白）
+     *
+     * @param content 内容
+     * @param size 边长（像素）
+     * @return PNG 字节
+     */
+    public static byte[] png(String content, int size)
+    {
+        BitMatrix m = matrix(content, size);
+        BufferedImage img = new BufferedImage(m.getWidth(), m.getHeight(), BufferedImage.TYPE_BYTE_BINARY);
+        for (int y = 0; y < m.getHeight(); y++)
+        {
+            for (int x = 0; x < m.getWidth(); x++)
+            {
+                img.setRGB(x, y, m.get(x, y) ? 0xFF000000 : 0xFFFFFFFF);
+            }
+        }
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream())
+        {
+            ImageIO.write(img, "png", out);
+            return out.toByteArray();
+        }
+        catch (IOException e)
+        {
+            throw new UncheckedIOException(e);
         }
     }
 }

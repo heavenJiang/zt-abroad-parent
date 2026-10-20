@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ygb.abroad.mapper.AbrPartnerMapper">
+
+    <resultMap type="AbrPartnerCommission" id="AbrPartnerCommissionResult">
+        <result property="commissionId"     column="commission_id"     />
+        <result property="referrerId"       column="referrer_id"       />
+        <result property="referrerName"     column="referrer_name"     />
+        <result property="refCode"          column="ref_code"          />
+        <result property="referralId"       column="referral_id"       />
+        <result property="leadId"           column="lead_id"           />
+        <result property="leadName"         column="lead_name"         />
+        <result property="orderId"          column="order_id"          />
+        <result property="orderNo"          column="order_no"          />
+        <result property="productName"      column="product_name"      />
+        <result property="currency"         column="currency"          />
+        <result property="orderAmount"      column="order_amount"      />
+        <result property="rate"             column="rate"              />
+        <result property="commissionAmount" column="commission_amount" />
+        <result property="orderPaidTime"    column="order_paid_time"   />
+        <result property="settleMonth"      column="settle_month"      />
+        <result property="status"           column="status"            />
+        <result property="refundFlag"       column="refund_flag"       />
+        <result property="voidReason"       column="void_reason"       />
+        <result property="confirmBy"        column="confirm_by"        />
+        <result property="confirmTime"      column="confirm_time"      />
+        <result property="paidBy"           column="paid_by"           />
+        <result property="paidTime"         column="paid_time"         />
+        <result property="paidNote"         column="paid_note"         />
+        <result property="createBy"         column="create_by"         />
+        <result property="createTime"       column="create_time"       />
+        <result property="updateBy"         column="update_by"         />
+        <result property="updateTime"       column="update_time"       />
+        <result property="remark"           column="remark"            />
+    </resultMap>
+
+    <!--
+        订单 → 线索（含并入它的线索）→ 被推荐人（按线索、访客或学生账号）→ 合作方；
+        被推荐人判为无效的不分成；只算被推荐人进入后、有效天数内收款的订单；比例为 0 的不写
+    -->
+    <insert id="insertCommissions">
+        insert into abr_partner_commission (referrer_id, referral_id, lead_id, order_id, order_no, product_name, currency, order_amount, rate,
+                                            commission_amount, order_paid_time, settle_month, status, create_by, create_time)
+        select distinct on (o.order_id)
+               f.referrer_id, r.referral_id, o.lead_id, o.order_id, o.order_no, o.product_name, o.currency, o.amount,
+               coalesce(f.commission_rate, #{defaultRate}),
+               round(o.amount * coalesce(f.commission_rate, #{defaultRate}) / 100, 2),
+               o.paid_time, to_char(o.paid_time, 'YYYY-MM'), 'pending', #{operator}, now()
+        from abr_order o
+        join abr_referral r on r.status &lt;&gt; 'invalid'
+             and (r.lead_id = o.lead_id
+                  or exists (select 1 from abr_lead l
+                             where (l.lead_id = o.lead_id or l.merged_into = o.lead_id)
+                               and (l.lead_id = r.lead_id or l.visitor_id = r.visitor_id
+                                    or (l.app_user_id is not null and l.app_user_id = r.app_user_id))))
+        join abr_referrer f on f.referrer_id = r.referrer_id and f.referrer_type = 'partner'
+        where o.status = 'paid' and o.paid_time is not null
+          and o.paid_time &gt;= r.create_time
+          and o.paid_time &lt;= r.create_time + make_interval(days =&gt; coalesce(f.window_days, #{defaultWindow}))
+          and coalesce(f.commission_rate, #{defaultRate}) &gt; 0
+          and not exists (select 1 from abr_partner_commission c where c.order_id = o.order_id)
+        order by o.order_id, r.create_time
+        on conflict (order_id) do nothing
+    </insert>
+
+    <update id="voidCancelledOrders">
+        update abr_partner_commission c
+        set status = 'void', void_reason = case when o.status = 'refunded' then '订单已退款' else '订单已取消' end,
+            update_by = #{operator}, update_time = now()
+        from abr_order o
+        where o.order_id = c.order_id and o.status in ('refunded', 'cancelled') and c.status in ('pending', 'confirmed')
+    </update>
+
+    <update id="flagRefundedPaid">
+        update abr_partner_commission c
+        set refund_flag = 'Y', update_by = #{operator}, update_time = now()
+        from abr_order o
+        where o.order_id = c.order_id and o.status = 'refunded' and c.status = 'paid' and c.refund_flag = 'N'
+    </update>
+
+    <sql id="selectCommissionVo">
+        select c.commission_id, c.referrer_id, f.display_name as referrer_name, f.ref_code, c.referral_id, c.lead_id, l.display_name as lead_name,
+               c.order_id, c.order_no, c.product_name, c.currency, c.order_amount, c.rate, c.commission_amount, c.order_paid_time, c.settle_month,
+               c.status, c.refund_flag, c.void_reason, c.confirm_by, c.confirm_time, c.paid_by, c.paid_time, c.paid_note,
+               c.create_by, c.create_time, c.update_by, c.update_time, c.remark
+        from abr_partner_commission c
+        join abr_referrer f on f.referrer_id = c.referrer_id
+        left join abr_lead l on l.lead_id = c.lead_id
+    </sql>
+
+    <select id="selectCommissionList" parameterType="AbrPartnerCommission" resultMap="AbrPartnerCommissionResult">
+        <include refid="selectCommissionVo"/>
+        <where>
+            <if test="referrerId != null">and c.referrer_id = #{referrerId}</if>
+            <if test="status != null and status != ''">and c.status = #{status}</if>
+            <if test="settleMonth != null and settleMonth != ''">and c.settle_month = #{settleMonth}</if>
+            <if test="refundFlag != null and refundFlag != ''">and c.refund_flag = #{refundFlag}</if>
+            <if test="orderNo != null and orderNo != ''">and c.order_no = #{orderNo}</if>
+        </where>
+        order by c.order_paid_time desc, c.commission_id desc
+    </select>
+
+    <update id="confirmCommissions">
+        update abr_partner_commission
+        set status = 'confirmed', confirm_by = #{operator}, confirm_time = now(), update_by = #{operator}, update_time = now()
+        where status = 'pending' and commission_id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+    <update id="payCommissions">
+        update abr_partner_commission
+        set status = 'paid', paid_by = #{operator}, paid_time = now(), paid_note = #{note}, update_by = #{operator}, update_time = now()
+        where status = 'confirmed' and commission_id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+    <update id="voidCommission">
+        update abr_partner_commission
+        set status = 'void', void_reason = #{reason}, update_by = #{operator}, update_time = now()
+        where commission_id = #{id} and status in ('pending', 'confirmed')
+    </update>
+
+    <update id="clearRefundFlag">
+        update abr_partner_commission
+        set refund_flag = 'D', paid_note = concat(paid_note, case when paid_note = '' then '' else '；' end, '退款处理：', #{note}),
+            update_by = #{operator}, update_time = now()
+        where commission_id = #{id} and refund_flag = 'Y'
+    </update>
+
+    <select id="selectStatement" resultType="java.util.HashMap">
+        select f.referrer_id, f.display_name as referrer_name, f.ref_code, c.currency,
+               count(*) filter (where c.status &lt;&gt; 'void') as orders,
+               coalesce(sum(c.order_amount) filter (where c.status &lt;&gt; 'void'), 0) as order_amount,
+               coalesce(sum(c.commission_amount) filter (where c.status &lt;&gt; 'void'), 0) as commission_amount,
+               coalesce(sum(c.commission_amount) filter (where c.status = 'pending'), 0) as pending_amount,
+               coalesce(sum(c.commission_amount) filter (where c.status = 'confirmed'), 0) as confirmed_amount,
+               coalesce(sum(c.commission_amount) filter (where c.status = 'paid'), 0) as paid_amount,
+               count(*) filter (where c.status = 'void') as void_count,
+               count(*) filter (where c.refund_flag = 'Y') as refund_flags
+        from abr_partner_commission c
+        join abr_referrer f on f.referrer_id = c.referrer_id
+        where c.settle_month = #{month}
+        group by f.referrer_id, f.display_name, f.ref_code, c.currency
+        order by commission_amount desc, f.referrer_id
+    </select>
+
+</mapper>

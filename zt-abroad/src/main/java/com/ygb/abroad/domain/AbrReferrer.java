@@ -1,5 +1,6 @@
 package com.ygb.abroad.domain;
 
+import java.math.BigDecimal;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.ygb.common.core.domain.BaseEntity;
@@ -34,6 +35,12 @@ public class AbrReferrer extends BaseEntity
     /** 状态 */
     private String status;
 
+    /** 分成比例（%，只对合作方；为空用默认比例） */
+    private BigDecimal commissionRate;
+
+    /** 归因有效天数（只对合作方；为空用默认天数） */
+    private Integer windowDays;
+
     /** 已进入人数 */
     private Integer registeredCount;
 
@@ -42,6 +49,26 @@ public class AbrReferrer extends BaseEntity
 
     /** 已签约人数 */
     private Integer signedCount;
+
+    public BigDecimal getCommissionRate()
+    {
+        return commissionRate;
+    }
+
+    public void setCommissionRate(BigDecimal commissionRate)
+    {
+        this.commissionRate = commissionRate;
+    }
+
+    public Integer getWindowDays()
+    {
+        return windowDays;
+    }
+
+    public void setWindowDays(Integer windowDays)
+    {
+        this.windowDays = windowDays;
+    }
 
     public Long getReferrerId()
     {
@@ -154,6 +181,8 @@ public class AbrReferrer extends BaseEntity
             .append("appUserId", getAppUserId())
             .append("leadId", getLeadId())
             .append("status", getStatus())
+            .append("commissionRate", getCommissionRate())
+            .append("windowDays", getWindowDays())
             .append("registeredCount", getRegisteredCount())
             .append("validCount", getValidCount())
             .append("signedCount", getSignedCount())

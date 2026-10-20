@@ -1,5 +1,6 @@
 package com.ygb.abroad.service.impl;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -349,6 +350,12 @@ public class AbrReferralServiceImpl implements IAbrReferralService
     }
 
     @Override
+    public String link(String referrerType, String refCode)
+    {
+        return shareSupport.appLink("?ch=" + AbrReferralRules.channel(referrerType) + "&ct=" + refCode);
+    }
+
+    @Override
     public List<AbrReferrer> selectReferrerList(AbrReferrer referrer)
     {
         return referralMapper.selectReferrerList(referrer);
@@ -407,6 +414,22 @@ public class AbrReferralServiceImpl implements IAbrReferralService
         }
         f.setDisplayName(f.getDisplayName().trim());
         f.setStatus("1".equals(f.getStatus()) ? "1" : "0");
+        if (!AbrReferralRules.PARTNER.equals(f.getReferrerType()))
+        {
+            // 分成只对合作方
+            f.setCommissionRate(null);
+            f.setWindowDays(null);
+            return;
+        }
+        if (f.getCommissionRate() != null && (f.getCommissionRate().signum() < 0 || f.getCommissionRate().compareTo(BigDecimal.valueOf(100)) > 0
+                || f.getCommissionRate().scale() > 2))
+        {
+            throw new ServiceException("分成比例应为 0–100 之间、最多两位小数的百分数");
+        }
+        if (f.getWindowDays() != null && (f.getWindowDays() < 1 || f.getWindowDays() > 1095))
+        {
+            throw new ServiceException("归因有效天数应为 1–1095 天");
+        }
     }
 
     @Override

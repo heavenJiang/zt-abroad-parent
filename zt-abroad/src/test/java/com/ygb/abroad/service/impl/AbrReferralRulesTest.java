@@ -29,6 +29,9 @@ class AbrReferralRulesTest
         assertNull(AbrReferralRules.refCode("share", "abcd2345"));
         assertNull(AbrReferralRules.refCode("ref", " "));
         assertNull(AbrReferralRules.refCode(null, null));
+        assertEquals("abcd2345", AbrReferralRules.refCode("partner", "abcd2345"));
+        assertEquals("partner", AbrReferralRules.channel("partner"));
+        assertEquals("ref", AbrReferralRules.channel("student"));
     }
 
     @Test

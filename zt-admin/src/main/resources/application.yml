@@ -229,6 +229,12 @@ abroad:
   attribution:
     # 归因看板（M9-03）：算作“自然推荐”的渠道码（分享、推荐码、offer 卡）
     natural-channels: share,ref,offer
+  partner:
+    # 合作方分成（M9-05）：合作方没单独设置时的分成比例（%，0 表示须在合作方上设置才分成）与归因有效天数（进入后多少天内收款的订单分成）
+    default-rate: 0
+    window-days: 365
+    # 可嵌入的工具链接：编码:名称:C 端页面（逗号分隔，页面为空是首页），链接自动带 ch=partner&ct=推荐码
+    tools: "home:首页:,quick:30 秒快测:pages/quick/index,recognition:本校认可度:pages/tool/recognition,ielts:雅思够不够:pages/tool/ielts,open:现在还能申:pages/tool/open"
   compliance:
     # 合规闸门（M6-03）：AI 生成的消息（自动回复、培育消息）须带的标识；词表在管理端「合规词表」配置
     message-ai-label: （AI 回复）

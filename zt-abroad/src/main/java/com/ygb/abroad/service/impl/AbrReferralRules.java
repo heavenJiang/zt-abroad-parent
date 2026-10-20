@@ -14,6 +14,11 @@ final class AbrReferralRules
     /** 推荐链接的渠道码 */
     static final String CHANNEL = "ref";
 
+    /** 合作方链接的渠道码（M9-05：归因看板中与学生、校园大使的推荐分开统计） */
+    static final String PARTNER_CHANNEL = "partner";
+
+    static final String PARTNER = "partner";
+
     static final Set<String> TYPES = Set.of("student", "ambassador", "partner");
 
     static final Set<String> MILESTONES = Set.of("valid_assessment", "signed");
@@ -53,7 +58,19 @@ final class AbrReferralRules
      */
     static String refCode(String channelCode, String contentCode)
     {
-        return CHANNEL.equals(channelCode) && StringUtils.isNotBlank(contentCode) ? contentCode.trim().toLowerCase() : null;
+        return (CHANNEL.equals(channelCode) || PARTNER_CHANNEL.equals(channelCode)) && StringUtils.isNotBlank(contentCode)
+                ? contentCode.trim().toLowerCase() : null;
+    }
+
+    /**
+     * 推荐人类型对应的链接渠道码
+     *
+     * @param referrerType 推荐人类型
+     * @return 合作方为 partner，其他为 ref
+     */
+    static String channel(String referrerType)
+    {
+        return PARTNER.equals(referrerType) ? PARTNER_CHANNEL : CHANNEL;
     }
 
     /**
